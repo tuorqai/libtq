@@ -63,12 +63,36 @@ void audio_stop_sound(tq_handle_t sound_handle)
 
 tq_handle_t audio_open_music_from_file(char const *path)
 {
-    return mixer->open_music(path);
+    stream_t stream;
+
+    if (file_stream_open(&stream, path) == -1) {
+        return TQ_INVALID_HANDLE;
+    }
+
+    tq_handle_t music_handle = mixer->open_music(&stream);
+
+    if (music_handle == TQ_INVALID_HANDLE) {
+        stream.close(stream.data);
+    }
+
+    return music_handle;
 }
 
 tq_handle_t audio_open_music_from_memory(uint8_t const *buffer, size_t length)
 {
-    return TQ_INVALID_HANDLE;
+    stream_t stream;
+
+    if (memory_stream_open(&stream, buffer, length) == -1) {
+        return TQ_INVALID_HANDLE;
+    }
+
+    tq_handle_t music_handle = mixer->open_music(&stream);
+
+    if (music_handle == TQ_INVALID_HANDLE) {
+        stream.close(stream.data);
+    }
+
+    return music_handle;
 }
 
 void audio_close_music(tq_handle_t music_handle)

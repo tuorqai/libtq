@@ -5,10 +5,13 @@
 
 //------------------------------------------------------------------------------
 
+#include <string.h>
+
 #include <SFML/Audio.h>
 
 #include "tq_handle_list.h"
 #include "tq_mixer.h"
+#include "tq_stream.h"
 
 //------------------------------------------------------------------------------
 
@@ -18,8 +21,48 @@ typedef struct sf2_sound_pair
     sfSound *sound;
 } sf2_sound_pair_t;
 
+struct music
+{
+    stream_t        *stream;
+    sfInputStream   *stream_adapter;
+    sfMusic         *music;
+};
+
 static handle_list_t *sound_list;
 static handle_list_t *music_list;
+
+//------------------------------------------------------------------------------
+
+static sfInt64 sf2_stream_read(void *dst, sfInt64 size, void *stream)
+{
+    return ((stream_t *) stream)->read(((stream_t *) stream)->data, dst, size);
+}
+
+static sfInt64 sf2_stream_seek(sfInt64 position, void *stream)
+{
+    return ((stream_t *) stream)->seek(((stream_t *) stream)->data, position);
+}
+
+static sfInt64 sf2_stream_tell(void *stream)
+{
+    return ((stream_t *) stream)->tell(((stream_t *) stream)->data);
+}
+
+static sfInt64 sf2_stream_get_size(void *stream)
+{
+    return ((stream_t *) stream)->get_size(((stream_t *) stream)->data);
+}
+
+static void sf2_stream_adapt(sfInputStream *sf2_stream, stream_t *stream)
+{
+    *sf2_stream = (sfInputStream) {
+        .userData = stream,
+        .read = sf2_stream_read,
+        .seek = sf2_stream_seek,
+        .tell = sf2_stream_tell,
+        .getSize = sf2_stream_get_size,
+    };
+}
 
 //------------------------------------------------------------------------------
 
@@ -33,7 +76,13 @@ static void sound_dtor(void *item)
 
 static void music_dtor(void *item)
 {
-    sfMusic_destroy(*(sfMusic **) item);
+    struct music *music = (struct music *) item;
+
+    music->stream->close(music->stream->data);
+
+    sfMusic_destroy(music->music);
+    free(music->stream_adapter);
+    free(music->stream);
 }
 
 //------------------------------------------------------------------------------
@@ -41,7 +90,7 @@ static void music_dtor(void *item)
 static void sf2_mixer_initialize(void)
 {
     sound_list = handle_list_create(sizeof(sf2_sound_pair_t), sound_dtor);
-    music_list = handle_list_create(sizeof(sfMusic *), music_dtor);
+    music_list = handle_list_create(sizeof(struct music), music_dtor);
 }
 
 static void sf2_mixer_terminate(void)
@@ -104,11 +153,26 @@ static void sf2_mixer_stop_sound(tq_handle_t sound_handle)
     sfSound_stop(pair->sound);
 }
 
-static tq_handle_t sf2_mixer_open_music(char const *path)
+static tq_handle_t sf2_mixer_open_music(stream_t const *stream)
 {
-    sfMusic *music = sfMusic_createFromFile(path);
+    struct music music = {
+        .stream = malloc(sizeof(stream_t)),
+        .stream_adapter = malloc(sizeof(sfInputStream)),
+    };
 
-    if (!music) {
+    if (!music.stream || !music.stream_adapter) {
+        return TQ_INVALID_HANDLE;
+    }
+
+    memcpy(music.stream, stream, sizeof(stream_t));
+    sf2_stream_adapt(music.stream_adapter, music.stream);
+
+    music.music = sfMusic_createFromStream(music.stream_adapter);
+
+    if (!music.music) {
+        free(music.stream_adapter);
+        free(music.stream);
+
         return TQ_INVALID_HANDLE;
     }
 
@@ -122,48 +186,48 @@ static void sf2_mixer_close_music(tq_handle_t music_handle)
 
 static void sf2_mixer_play_music(tq_handle_t music_handle)
 {
-    sfMusic **music = (sfMusic **) handle_list_get(music_list, music_handle);
+    struct music *music = handle_list_get(music_list, music_handle);
 
     if (!music) {
         return;
     }
 
-    sfMusic_setLoop(*music, sfFalse);
-    sfMusic_play(*music);
+    sfMusic_setLoop(music->music, sfFalse);
+    sfMusic_play(music->music);
 }
 
 static void sf2_mixer_loop_music(tq_handle_t music_handle)
 {
-    sfMusic **music = (sfMusic **) handle_list_get(music_list, music_handle);
+    struct music *music = handle_list_get(music_list, music_handle);
 
     if (!music) {
         return;
     }
 
-    sfMusic_setLoop(*music, sfTrue);
-    sfMusic_play(*music);
+    sfMusic_setLoop(music->music, sfTrue);
+    sfMusic_play(music->music);
 }
 
 static void sf2_mixer_pause_music(tq_handle_t music_handle)
 {
-    sfMusic **music = (sfMusic **) handle_list_get(music_list, music_handle);
+    struct music *music = handle_list_get(music_list, music_handle);
 
     if (!music) {
         return;
     }
 
-    sfMusic_pause(*music);
+    sfMusic_pause(music->music);
 }
 
 static void sf2_mixer_stop_music(tq_handle_t music_handle)
 {
-    sfMusic **music = (sfMusic **) handle_list_get(music_list, music_handle);
+    struct music *music = handle_list_get(music_list, music_handle);
 
     if (!music) {
         return;
     }
 
-    sfMusic_stop(*music);
+    sfMusic_stop(music->music);
 }
 
 //------------------------------------------------------------------------------

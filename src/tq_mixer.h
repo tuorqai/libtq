@@ -6,6 +6,7 @@
 
 #include "tq/tq.h"
 #include "tq_file.h"
+#include "tq_stream.h"
 
 //------------------------------------------------------------------------------
 
@@ -18,7 +19,7 @@ struct mixer
     void (*play_sound)(tq_handle_t);
     void (*loop_sound)(tq_handle_t);
     void (*stop_sound)(tq_handle_t);
-    tq_handle_t (*open_music)(char const *);
+    tq_handle_t (*open_music)(stream_t const *stream);
     void (*close_music)(tq_handle_t);
     void (*play_music)(tq_handle_t);
     void (*loop_music)(tq_handle_t);

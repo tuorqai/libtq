@@ -6,6 +6,7 @@
 
 #include "tq_graphics.h"
 #include "tq_file.h"
+#include "tq_stream.h"
 
 //------------------------------------------------------------------------------
 
@@ -348,17 +349,27 @@ void graphics_set_fill_color(tq_color_t fill_color_)
 
 tq_handle_t graphics_load_texture_from_file(char const *path)
 {
-    uint8_t *buffer;
-    size_t length;
+    stream_t stream;
 
-    if (file_load(path, &length, &buffer) >= 0) {
-        tq_handle_t texture_handle = renderer->load_texture(buffer, length);
-        free(buffer);
-
-        return texture_handle;
+    if (file_stream_open(&stream, path) == -1) {
+        return TQ_INVALID_HANDLE;
     }
 
-    return TQ_INVALID_HANDLE;
+    tq_handle_t handle = TQ_INVALID_HANDLE;
+    size_t length = stream.get_size(stream.data);
+    uint8_t *buffer = malloc(length);
+
+    if (buffer) {
+        if (stream.read(stream.data, buffer, length) == length) {
+            handle = renderer->load_texture(buffer, length);
+        }
+
+        free(buffer);
+    }
+
+    stream.close(stream.data);
+
+    return handle;
 }
 
 tq_handle_t graphics_load_texture_from_memory(uint8_t const *buffer, size_t length)

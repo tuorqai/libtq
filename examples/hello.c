@@ -31,13 +31,23 @@ int main(int argc, char *argv[])
 
     tq_initialize();
 
+    tq_handle_t moon = tq_load_texture_from_file("assets/moon.png");
+    tq_handle_t ostrich = tq_open_music_from_file("assets/ostrich.ogg");
+
     tq_set_clear_color(tq_rgb(237, 199, 229));
     tq_set_outline_color(tq_rgb(40, 112, 106));
     tq_set_fill_color(tq_rgb(213, 237, 199));
 
+    tq_loop_music(ostrich);
+
     while (tq_process()) {
+        if (tq_is_key_pressed(TQ_KEY_ESCAPE)) {
+            break;
+        }
+
         tq_clear();
         tq_draw_rectangle_f(128.0f, 128.0f, 256.0f, 256.0f);
+        tq_draw_texture_f(moon, 128.0f, 128.0f, 256.0f, 256.0f);
     }
 
     tq_terminate();

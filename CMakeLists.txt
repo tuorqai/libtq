@@ -12,7 +12,8 @@ add_library(tq
     "src/tq_meta.c"
     "src/tq_sf2_clock.c"
     "src/tq_sf2_display_and_renderer.c"
-    "src/tq_sf2_mixer.c")
+    "src/tq_sf2_mixer.c"
+    "src/tq_stream.c")
 
 target_include_directories(tq PUBLIC "include")
 
