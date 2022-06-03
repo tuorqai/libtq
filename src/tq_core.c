@@ -142,7 +142,7 @@ char const *core_get_title(void)
 
 void core_set_title(char const *title_)
 {
-    strncpy(title, title_, sizeof(title_) - 1);
+    strncpy(title, title_, sizeof(title) - 1);
 
     if (display) {
         display->set_title(title);
