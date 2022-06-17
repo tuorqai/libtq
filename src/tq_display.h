@@ -21,7 +21,7 @@ struct display
 //------------------------------------------------------------------------------
 
 #if defined(TQ_USE_SFML)
-    void construct_sf2_display(struct display *display);
+    void construct_sf_display(struct display *display);
 #endif
 
 //------------------------------------------------------------------------------

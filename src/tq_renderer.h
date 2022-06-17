@@ -35,7 +35,7 @@ struct renderer
 //------------------------------------------------------------------------------
 
 #if defined(TQ_USE_SFML)
-    void construct_sf2_renderer(struct renderer *renderer);
+    void construct_sf_renderer(struct renderer *renderer);
 #endif
 
 //------------------------------------------------------------------------------

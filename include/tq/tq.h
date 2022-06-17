@@ -432,6 +432,8 @@ TQ_EXPORT TQ_API void TQ_CALL tq_set_fill_color(tq_color_t fill_color);
 //--------------------------------------
 // Textures
 
+#define TQ_TEXTURE_LIMIT        256
+
 /* Load texture from a file. */
 TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_load_texture_from_file(char const *path);
 
@@ -485,22 +487,32 @@ TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_v(
 //------------------------------------------------------------------------------
 // Audio
 
+#define TQ_MUSIC_LIMIT              32
+#define TQ_SOUND_LIMIT              256
+#define TQ_WAVE_LIMIT               16
+#define TQ_SOUND_STREAM_LIMIT       16
+
+typedef enum tq_wave_state
+{
+    TQ_WAVE_STATE_INACTIVE,
+    TQ_WAVE_STATE_PAUSED,
+    TQ_WAVE_STATE_PLAYING,
+} tq_wave_state_t;
+
 TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_load_sound_from_file(char const *path);
 TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_load_sound_from_memory(uint8_t const *buffer, size_t length);
 TQ_EXPORT TQ_API void TQ_CALL tq_delete_sound(tq_handle_t sound_handle);
-
-TQ_EXPORT TQ_API void TQ_CALL tq_play_sound(tq_handle_t sound_handle);
-TQ_EXPORT TQ_API void TQ_CALL tq_loop_sound(tq_handle_t sound_handle);
-TQ_EXPORT TQ_API void TQ_CALL tq_stop_sound(tq_handle_t sound_handle);
+TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_play_sound(tq_handle_t sound_handle, float left_volume, float right_volume, int loop);
 
 TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_open_music_from_file(char const *path);
 TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_open_music_from_memory(uint8_t const *buffer, size_t length);
 TQ_EXPORT TQ_API void TQ_CALL tq_close_music(tq_handle_t music_handle);
+TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_play_music(tq_handle_t music_handle, int loop);
 
-TQ_EXPORT TQ_API void TQ_CALL tq_play_music(tq_handle_t music_handle);
-TQ_EXPORT TQ_API void TQ_CALL tq_loop_music(tq_handle_t music_handle);
-TQ_EXPORT TQ_API void TQ_CALL tq_pause_music(tq_handle_t music_handle);
-TQ_EXPORT TQ_API void TQ_CALL tq_stop_music(tq_handle_t music_handle);
+TQ_EXPORT TQ_API tq_wave_state_t TQ_CALL tq_get_wave_state(tq_handle_t wave_handle);
+TQ_EXPORT TQ_API void TQ_CALL tq_pause_wave(tq_handle_t wave_handle);
+TQ_EXPORT TQ_API void TQ_CALL tq_unpause_wave(tq_handle_t wave_handle);
+TQ_EXPORT TQ_API void TQ_CALL tq_stop_wave(tq_handle_t wave_handle);
 
 //------------------------------------------------------------------------------
 

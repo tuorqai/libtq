@@ -23,10 +23,10 @@ void meta_initialize(void)
 
 #if defined(TQ_USE_SFML)
 
-    construct_sf2_clock(&clock);
-    construct_sf2_display(&display);
-    construct_sf2_renderer(&renderer);
-    construct_sf2_mixer(&mixer);
+    construct_sf_clock(&clock);
+    construct_sf_display(&display);
+    construct_sf_renderer(&renderer);
+    construct_sf_mixer(&mixer);
 
 #endif
 

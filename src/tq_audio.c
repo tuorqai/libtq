@@ -46,19 +46,9 @@ void audio_delete_sound(tq_handle_t sound_handle)
     mixer->delete_sound(sound_handle);
 }
 
-void audio_play_sound(tq_handle_t sound_handle)
+tq_handle_t audio_play_sound(tq_handle_t sound_handle, float left_volume, float right_volume, int loop)
 {
-    mixer->play_sound(sound_handle);
-}
-
-void audio_loop_sound(tq_handle_t sound_handle)
-{
-    mixer->loop_sound(sound_handle);
-}
-
-void audio_stop_sound(tq_handle_t sound_handle)
-{
-    mixer->stop_sound(sound_handle);
+    return mixer->play_sound(sound_handle, left_volume, right_volume, loop);
 }
 
 tq_handle_t audio_open_music_from_file(char const *path)
@@ -100,24 +90,29 @@ void audio_close_music(tq_handle_t music_handle)
     mixer->close_music(music_handle);
 }
 
-void audio_play_music(tq_handle_t music_handle)
+tq_handle_t audio_play_music(tq_handle_t music_handle, int loop)
 {
-    mixer->play_music(music_handle);
+    return mixer->play_music(music_handle, loop);
 }
 
-void audio_loop_music(tq_handle_t music_handle)
+tq_wave_state_t audio_get_wave_state(tq_handle_t wave_handle)
 {
-    mixer->loop_music(music_handle);
+    return mixer->get_wave_state(wave_handle);
 }
 
-void audio_pause_music(tq_handle_t music_handle)
+void audio_pause_wave(tq_handle_t wave_handle)
 {
-    mixer->pause_music(music_handle);
+    mixer->pause_wave(wave_handle);
 }
 
-void audio_stop_music(tq_handle_t music_handle)
+void audio_unpause_wave(tq_handle_t wave_handle)
 {
-    mixer->stop_music(music_handle);
+    mixer->unpause_wave(wave_handle);
+}
+
+void audio_stop_wave(tq_handle_t wave_handle)
+{
+    mixer->stop_wave(wave_handle);
 }
 
 //------------------------------------------------------------------------------

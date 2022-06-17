@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     tq_set_outline_color(tq_rgb(40, 112, 106));
     tq_set_fill_color(tq_rgb(213, 237, 199));
 
-    tq_loop_music(ostrich);
+    tq_handle_t ostrich_wave = tq_play_music(ostrich, -1);
 
     while (tq_process()) {
         if (tq_is_key_pressed(TQ_KEY_ESCAPE)) {

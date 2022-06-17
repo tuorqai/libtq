@@ -395,19 +395,9 @@ void tq_delete_sound(tq_handle_t sound_handle)
     audio_delete_sound(sound_handle);
 }
 
-void tq_play_sound(tq_handle_t sound_handle)
+tq_handle_t tq_play_sound(tq_handle_t sound_handle, float left_volume, float right_volume, int loop)
 {
-    audio_play_sound(sound_handle);
-}
-
-void tq_loop_sound(tq_handle_t sound_handle)
-{
-    audio_loop_sound(sound_handle);
-}
-
-void tq_stop_sound(tq_handle_t sound_handle)
-{
-    audio_stop_sound(sound_handle);
+    return audio_play_sound(sound_handle, left_volume, right_volume, loop);
 }
 
 tq_handle_t tq_open_music_from_file(char const *path)
@@ -425,24 +415,29 @@ void tq_close_music(tq_handle_t music_handle)
     audio_close_music(music_handle);
 }
 
-void tq_play_music(tq_handle_t music_handle)
+tq_handle_t tq_play_music(tq_handle_t music_handle, int loop)
 {
-    audio_play_music(music_handle);
+    return audio_play_music(music_handle, loop);
 }
 
-void tq_loop_music(tq_handle_t music_handle)
+tq_wave_state_t tq_get_wave_state(tq_handle_t wave_handle)
 {
-    audio_loop_music(music_handle);
+    return audio_get_wave_state(wave_handle);
 }
 
-void tq_pause_music(tq_handle_t music_handle)
+void tq_pause_wave(tq_handle_t wave_handle)
 {
-    audio_pause_music(music_handle);
+    audio_pause_wave(wave_handle);
 }
 
-void tq_stop_music(tq_handle_t music_handle)
+void tq_unpause_wave(tq_handle_t wave_handle)
 {
-    audio_stop_music(music_handle);
+    audio_unpause_wave(wave_handle);
+}
+
+void tq_stop_wave(tq_handle_t wave_handle)
+{
+    audio_stop_wave(wave_handle);
 }
 
 //------------------------------------------------------------------------------

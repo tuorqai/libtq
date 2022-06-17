@@ -21,7 +21,7 @@ struct clock
 //------------------------------------------------------------------------------
 
 #if defined(TQ_USE_SFML)
-    void construct_sf2_clock(struct clock *clock);
+    void construct_sf_clock(struct clock *clock);
 #endif
 
 //------------------------------------------------------------------------------
