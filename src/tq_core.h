@@ -46,6 +46,8 @@ void core_on_mouse_button_pressed(tq_mouse_button_t mouse_button);
 void core_on_mouse_button_released(tq_mouse_button_t mouse_button);
 void core_on_mouse_cursor_moved(int32_t x, int32_t y);
 
+void tq_core_on_display_resized(uint32_t width, uint32_t height);
+
 //------------------------------------------------------------------------------
 
 #endif // TQ_CORE_H_INC

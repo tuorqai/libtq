@@ -19,7 +19,7 @@ static double       prev_time;
 static double       current_time;
 static double       delta_time;
 
-static uint8_t      key_state[8];
+static uint8_t      key_state[32];
 static uint8_t      mouse_button_state;
 static int32_t      mouse_cursor_x;
 static int32_t      mouse_cursor_y;
@@ -213,6 +213,14 @@ void core_on_mouse_cursor_moved(int32_t x, int32_t y)
 {
     mouse_cursor_x = x;
     mouse_cursor_y = y;
+}
+
+void tq_core_on_display_resized(uint32_t width, uint32_t height)
+{
+    display_width = width;
+    display_height = height;
+
+    tq_graphics_on_display_resized(width, height);
 }
 
 //------------------------------------------------------------------------------

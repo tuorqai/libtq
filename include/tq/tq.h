@@ -303,14 +303,33 @@ TQ_EXPORT TQ_API void TQ_CALL tq_set_clear_color(tq_color_t clear_color);
 //----------------------------------------------------------
 // Views
 
-/* Set current view rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_set_view_f(float x, float y, float width, float height, float angle);
+/** @brief Set the view rectangle.
+ *
+ * @note The view is reset every frame.
+ *
+ * @param x,y      Center of the view.
+ * @param w,h      Size of the view rectangle.
+ * @param rotation Rotation of the view, in degrees.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_view(
+    float x, float y,
+    float w, float h,
+    float rotation
+);
 
-/* Set current view rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_set_view_v(tq_vec2_t position, tq_vec2_t size, float angle);
-
-/* Reset view to its default state. */
-TQ_EXPORT TQ_API void TQ_CALL tq_reset_view(void);
+/** @brief Set the view rectangle (vector arguments).
+ *
+ * @note The view is reset every frame.
+ *
+ * @param center    Center of the view.
+ * @param size      Size of the view rectangle.
+ * @param rotation  Rotation of the view, in degrees.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_view_v(
+    tq_vec2_t center,
+    tq_vec2_t size,
+    float rotation
+);
 
 //----------------------------------------------------------
 // Transformation matrix

@@ -121,19 +121,14 @@ void tq_set_clear_color(tq_color_t clear_color)
     graphics_set_clear_color(clear_color);
 }
 
-void tq_set_view_f(float x, float y, float width, float height, float angle)
+void tq_view(float x, float y, float width, float height, float angle)
 {
-    graphics_set_view(x, y, width, height, angle);
+    tq_graphics_view(x, y, width, height, angle);
 }
 
-void tq_set_view_v(tq_vec2_t position, tq_vec2_t size, float angle)
+void tq_view_v(tq_vec2_t position, tq_vec2_t size, float angle)
 {
-    graphics_set_view(position.x, position.y, size.x, size.y, angle);
-}
-
-void tq_reset_view(void)
-{
-    graphics_reset_view();
+    tq_graphics_view(position.x, position.y, size.x, size.y, angle);
 }
 
 void tq_push_matrix(void)

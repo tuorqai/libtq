@@ -1,8 +1,12 @@
 
 //------------------------------------------------------------------------------
 
+#if defined(TQ_USE_SFML)
+
+//------------------------------------------------------------------------------
+
 #include <cstdint>
-#include <SFML/Graphics/RenderWindow.hpp>
+
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window/Mouse.hpp>
@@ -13,16 +17,6 @@ extern "C" {
     #include "tq_display.h"
     #include "tq_log.h"
     #include "tq_renderer.h"
-}
-
-//------------------------------------------------------------------------------
-
-namespace tq
-{
-    namespace sf
-    {
-        ::sf::RenderTarget *canvas;
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -192,20 +186,22 @@ namespace
     }
 }
 
+//------------------------------------------------------------------------------
+
 namespace
 {
     sf::Window *window;
 
     void initialize(std::uint32_t width, std::uint32_t height, char const *title)
     {
-        auto render_window = new sf::RenderWindow(
-            { width, height },
-            title,
-            sf::Style::Titlebar | sf::Style::Close
-        );
+        auto mode = sf::VideoMode(width, height);
+        auto style = sf::Style::Default;
 
-        window = render_window;
-        tq::sf::canvas = render_window;
+        window = new sf::Window(mode, title, style, sf::ContextSettings(
+            0, 0, 4, 2, 1
+        ));
+
+        window->setActive();
 
         window->setKeyRepeatEnabled(false);
         window->setVerticalSyncEnabled(true);
@@ -244,6 +240,9 @@ namespace
             case sf::Event::MouseMoved:
                 core_on_mouse_cursor_moved(event.mouseMove.x, event.mouseMove.y);
                 break;
+            case sf::Event::Resized:
+                tq_core_on_display_resized(event.size.width, event.size.height);
+                break;
             case sf::Event::Closed:
                 window->close();
                 break;
@@ -277,5 +276,9 @@ void construct_sf_display(struct display *display)
     display->set_size       = ::set_size;
     display->set_title      = ::set_title;
 }
+
+//------------------------------------------------------------------------------
+
+#endif // defined(TQ_USE_SFML)
 
 //------------------------------------------------------------------------------

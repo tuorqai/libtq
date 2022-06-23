@@ -4,38 +4,44 @@
 
 //------------------------------------------------------------------------------
 
-#include "tq/tq.h"
+#include "tq_stream.h"
 
 //------------------------------------------------------------------------------
 
-struct renderer
+typedef struct tq_renderer
 {
-    void (*initialize)(void);
-    void (*terminate)(void);
-    void (*clear)(void);
-    void (*set_clear_color)(tq_color_t);
-    void (*set_view)(float, float, float, float, float);
-    void (*reset_view)(void);
-    void (*transform)(float const *);
-    void (*draw_points)(float const *, unsigned int);
-    void (*draw_lines)(float const *, unsigned int);
-    void (*draw_outline)(float const *, unsigned int);
-    void (*draw_fill)(float const *, unsigned int);
-    void (*set_point_color)(tq_color_t);
-    void (*set_line_color)(tq_color_t);
-    void (*set_outline_color)(tq_color_t);
-    void (*set_fill_color)(tq_color_t);
-    tq_handle_t (*load_texture)(uint8_t const *, size_t);
-    void (*delete_texture)(tq_handle_t);
-    void (*get_texture_size)(tq_handle_t, uint32_t *, uint32_t *);
-    void (*draw_texture)(float const *, unsigned int, tq_handle_t);
-    void (*flush)(void);
-};
+    void        (*initialize)(void);
+    void        (*terminate)(void);
+
+    void        (*clear)(void);
+    void        (*set_clear_color)(tq_color_t);
+
+    void        (*update_viewport)(int x, int y, int w, int h);
+    void        (*update_projection)(float const *mat4);
+    void        (*update_model_view)(float const *mat3);
+
+    void        (*draw_points)(float const *, unsigned int);
+    void        (*draw_lines)(float const *, unsigned int);
+    void        (*draw_outline)(float const *, unsigned int);
+    void        (*draw_fill)(float const *, unsigned int);
+
+    void        (*set_point_color)(tq_color_t);
+    void        (*set_line_color)(tq_color_t);
+    void        (*set_outline_color)(tq_color_t);
+    void        (*set_fill_color)(tq_color_t);
+
+    int32_t     (*load_texture)(stream_t const *stream);
+    void        (*delete_texture)(int32_t texture_id);
+    void        (*get_texture_size)(int32_t texture_id, uint32_t *width, uint32_t *height);
+    void        (*draw_texture)(int32_t texture_id, float const *data, uint32_t num_vertices);
+
+    void        (*flush)(void);
+} tq_renderer_t;
 
 //------------------------------------------------------------------------------
 
-#if defined(TQ_USE_SFML)
-    void construct_sf_renderer(struct renderer *renderer);
+#if defined(TQ_USE_OPENGL)
+    void tq_construct_gl_renderer(tq_renderer_t *renderer);
 #endif
 
 //------------------------------------------------------------------------------

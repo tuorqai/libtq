@@ -13,10 +13,13 @@ typedef struct stream
 {
     void *data;
 
+    char const *(*identifier)(void *);
+
     int64_t (*read)(void *, void *dst, int64_t size);
     int64_t (*seek)(void *, int64_t position);
     int64_t (*tell)(void *);
     int64_t (*get_size)(void *);
+    void const *(*buffer)(void *);
 
     void (*close)(void *);
 } stream_t;

@@ -4,30 +4,62 @@
 #include <math.h>
 #include <string.h>
 
+#include "tq_core.h"
 #include "tq_graphics.h"
 #include "tq_file.h"
+#include "tq_math.h"
 #include "tq_stream.h"
 
 //------------------------------------------------------------------------------
+// Declarations
 
 #define MAX_MATRICES 32
 
+typedef struct tq_graphics_priv
+{
+    tq_renderer_t const *renderer;
+
+    float           default_projection[16];
+    float           model_view[MAX_MATRICES][9];
+    uint32_t        model_view_index;
+
+    tq_color_t      clear_color;
+    tq_color_t      point_color;
+    tq_color_t      line_color;
+    tq_color_t      outline_color;
+    tq_color_t      fill_color;
+} tq_graphics_priv_t;
+
 //------------------------------------------------------------------------------
+// Definitions
 
-static struct renderer const *renderer;
-
-static float        matrices[MAX_MATRICES][9];
-static unsigned int current_matrix;
-
-static tq_color_t   clear_color;
-static tq_color_t   point_color;
-static tq_color_t   line_color;
-static tq_color_t   outline_color;
-static tq_color_t   fill_color;
+static tq_graphics_priv_t graphics;
 
 //------------------------------------------------------------------------------
+// Utility functions
 
-static float *build_circle(float x, float y, float radius, unsigned int *length)
+static void make_projection(float *dst, float x, float y, float w, float h, float rotation)
+{
+    float left      = x - (w / 2.0f);
+    float right     = x + (w / 2.0f);
+    float bottom    = y + (h / 2.0f);
+    float top       = y - (h / 2.0f);
+
+    mat4_ortho(dst, left, right, bottom, top, -1.0f, +1.0f);
+
+    if (rotation != 0.0f) {
+        mat4_translate(dst, x, y, 0.0f);
+        mat4_rotate(dst, RADIANS(rotation), 0.0f, 0.0f, 1.0f);
+        mat4_translate(dst, -x, -y, 0.0f);
+    }
+}
+
+static void make_default_projection(float *dst, uint32_t w, uint32_t h)
+{
+    mat4_ortho(dst, 0.0f, (float) w, (float) h, 0.0f, -1.0f, +1.0f);
+}
+
+static float *make_circle(float x, float y, float radius, unsigned int *length)
 {
     float e = 0.25f;
     float angle = acosf(2.0f * (1.0f - e / radius) * (1.0f - e / radius) - 1.0f);
@@ -45,306 +77,241 @@ static float *build_circle(float x, float y, float radius, unsigned int *length)
 
 //------------------------------------------------------------------------------
 
-#define RADIANS(deg) ((deg) * (M_PI / 180.0))
-#define DEGREES(rad) ((rad) * (180.0 / M_PI))
-
-void matrix3_identity(float *matrix)
+void graphics_initialize(tq_renderer_t const *renderer)
 {
-    static float const identity[] = {
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
-    };
+    graphics.renderer = renderer;
 
-    memcpy(matrix, identity, 9 * sizeof(float));
-}
+    make_default_projection(graphics.default_projection,
+        core_get_display_width(),
+        core_get_display_height());
 
-void matrix3_copy(float *dst, float const *src)
-{
-    memcpy(dst, src, 9 * sizeof(float));
-}
+    for (int index = 0; index < MAX_MATRICES; index++) {
+        mat3_identity(graphics.model_view[index]);
+    }
+    
+    graphics.model_view_index = 0;
 
-void matrix3_multiply(float *m, float const *n)
-{
-    float const result[] = {
-        m[0] * n[0] + m[1] * n[3] + m[2] * n[6],
-        m[0] * n[1] + m[1] * n[4] + m[2] * n[7],
-        m[0] * n[2] + m[1] * n[5] + m[2] * n[8],
-        m[3] * n[0] + m[4] * n[3] + m[5] * n[6],
-        m[3] * n[1] + m[4] * n[4] + m[5] * n[7],
-        m[3] * n[2] + m[4] * n[5] + m[5] * n[8],
-        m[6] * n[0] + m[7] * n[6] + m[8] * n[6],
-        m[6] * n[1] + m[7] * n[7] + m[8] * n[7],
-        m[6] * n[2] + m[7] * n[8] + m[8] * n[8],
-    };
+    graphics.clear_color = tq_rgb(128, 128, 128);
+    graphics.point_color = tq_rgb(255, 0, 255);
+    graphics.line_color = tq_rgb(255, 0, 255);
+    graphics.outline_color = tq_rgb(255, 0, 255);
+    graphics.fill_color = tq_rgb(0, 255, 255);
 
-    memcpy(m, result, 9 * sizeof(float));
-}
+    graphics.renderer->initialize();
 
-void matrix3_translate(float *matrix, float x, float y)
-{
-    float const multiplier[] = {
-        1.0f, 0.0f, x,
-        0.0f, 1.0f, y,
-        0.0f, 0.0f, 1.0f,
-    };
+    graphics.renderer->update_viewport(0, 0, 200, 200);
+    graphics.renderer->update_projection(graphics.default_projection);
+    graphics.renderer->update_model_view(graphics.model_view[0]);
 
-    matrix3_multiply(matrix, multiplier);
-}
-
-void matrix3_scale(float *matrix, float x, float y)
-{
-    float const multiplier[] = {
-        x,      0.0f,   0.0f,
-        0.0f,   y,      0.0f,
-        0.0f,   0.0f,   1.0f,
-    };
-
-    matrix3_multiply(matrix, multiplier);
-}
-
-void matrix3_rotate(float *matrix, float a)
-{
-    float c = cosf(a);
-    float s = sinf(a);
-
-    float const multiplier[] = {
-        c,      -s,     0.0f,
-        s,      c,      0.0f,
-        0.0f,   0.0f,   1.0f,
-    };
-
-    matrix3_multiply(matrix, multiplier);
-}
-
-//------------------------------------------------------------------------------
-
-void graphics_initialize(struct renderer const *renderer_)
-{
-    renderer = renderer_;
-    renderer->initialize();
-
-    clear_color = tq_rgb(128, 128, 128);
-    point_color = tq_rgb(255, 0, 255);
-    line_color = tq_rgb(255, 0, 255);
-    outline_color = tq_rgb(255, 0, 255);
-    fill_color = tq_rgb(0, 255, 255);
-
-    matrix3_identity(matrices[0]);
-    renderer->transform(matrices[0]);
-
-    current_matrix = 0;
-
-    renderer->set_clear_color(clear_color);
-    renderer->set_point_color(point_color);
-    renderer->set_line_color(point_color);
-    renderer->set_outline_color(outline_color);
-    renderer->set_fill_color(fill_color);
+    graphics.renderer->set_clear_color(graphics.clear_color);
+    graphics.renderer->set_point_color(graphics.point_color);
+    graphics.renderer->set_line_color(graphics.line_color);
+    graphics.renderer->set_outline_color(graphics.outline_color);
+    graphics.renderer->set_fill_color(graphics.fill_color);
 }
 
 void graphics_terminate(void)
 {
-    renderer->terminate();
+    graphics.renderer->terminate();
 }
 
-void graphics_flush(void)
+void tq_graphics_finish(void)
 {
-    renderer->flush();
+    graphics.renderer->flush();
 
-    current_matrix = 0;
-    matrix3_identity(matrices[0]);
+    graphics.model_view_index = 0;
+    mat3_identity(graphics.model_view[0]);
 
-    renderer->transform(matrices[0]);
+    graphics.renderer->update_projection(graphics.default_projection);
+    graphics.renderer->update_model_view(graphics.model_view[0]);
 }
 
 void graphics_clear(void)
 {
-    renderer->clear();
+    graphics.renderer->clear();
 }
 
 tq_color_t graphics_get_clear_color(void)
 {
-    return clear_color;
+    return graphics.clear_color;
 }
 
-void graphics_set_clear_color(tq_color_t clear_color_)
+void graphics_set_clear_color(tq_color_t clear_color)
 {
-    clear_color = clear_color_;
-    renderer->set_clear_color(clear_color);
+    graphics.clear_color = clear_color;
+    graphics.renderer->set_clear_color(graphics.clear_color);
 }
 
-void graphics_set_view(float x, float y, float width, float height, float angle)
+void tq_graphics_view(float x, float y, float w, float h, float rotation)
 {
-    renderer->set_view(x, y, width, height, angle);
-}
+    float projection[16];
 
-void graphics_reset_view(void)
-{
-    renderer->reset_view();
+    make_projection(projection, x, y, w, h, rotation);
+    graphics.renderer->update_projection(projection);
 }
 
 void graphics_push_matrix(void)
 {
-    unsigned int index = current_matrix;
+    unsigned int index = graphics.model_view_index;
 
     if (index == (MAX_MATRICES - 1)) {
         return;
     }
 
-    matrix3_copy(matrices[index + 1], matrices[index]);
+    mat3_copy(graphics.model_view[index + 1], graphics.model_view[index]);
 
-    current_matrix++;
-    renderer->transform(matrices[current_matrix]);
+    graphics.model_view_index++;
+    graphics.renderer->update_model_view(graphics.model_view[graphics.model_view_index]);
 }
 
 void graphics_pop_matrix(void)
 {
-    if (current_matrix == 0) {
+    if (graphics.model_view_index == 0) {
         return;
     }
 
-    current_matrix--;
-    renderer->transform(matrices[current_matrix]);
+    graphics.model_view_index--;
+    graphics.renderer->update_model_view(graphics.model_view[graphics.model_view_index]);
 }
 
 void graphics_translate_matrix(float x, float y)
 {
-    unsigned int index = current_matrix;
-    matrix3_translate(matrices[index], x, y);
-    renderer->transform(matrices[index]);
+    unsigned int index = graphics.model_view_index;
+    mat3_translate(graphics.model_view[index], x, y);
+    graphics.renderer->update_model_view(graphics.model_view[index]);
 }
 
 void graphics_scale_matrix(float x, float y)
 {
-    unsigned int index = current_matrix;
-    matrix3_scale(matrices[index], x, y);
-    renderer->transform(matrices[index]);
+    unsigned int index = graphics.model_view_index;
+    mat3_scale(graphics.model_view[index], x, y);
+    graphics.renderer->update_model_view(graphics.model_view[index]);
 }
 
 void graphics_rotate_matrix(float a)
 {
-    unsigned int index = current_matrix;
-    matrix3_rotate(matrices[index], RADIANS(a));
-    renderer->transform(matrices[index]);
+    unsigned int index = graphics.model_view_index;
+    mat3_rotate(graphics.model_view[index], RADIANS(a));
+    graphics.renderer->update_model_view(graphics.model_view[index]);
 }
 
 void graphics_draw_point(float x, float y)
 {
     float data[] = { x, y };
-    renderer->draw_points(data, 1);
+    graphics.renderer->draw_points(data, 1);
 }
 
 void graphics_draw_line(float ax, float ay, float bx, float by)
 {
     float data[] = { ax, ay, bx, by };
-    renderer->draw_lines(data, 2);
+    graphics.renderer->draw_lines(data, 2);
 }
 
 void graphics_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy)
 {
     float data[] = { ax, ay, bx, by, cx, cy };
-    renderer->draw_fill(data, 3);
-    renderer->draw_outline(data, 3);
+    graphics.renderer->draw_fill(data, 3);
+    graphics.renderer->draw_outline(data, 3);
 }
 
 void graphics_draw_rectangle(float x, float y, float w, float h)
 {
     float data[] = { x, y, x + w, y, x + w, y + h, x, y + h };
-    renderer->draw_fill(data, 4);
-    renderer->draw_outline(data, 4);
+    graphics.renderer->draw_fill(data, 4);
+    graphics.renderer->draw_outline(data, 4);
 }
 
 void graphics_draw_circle(float x, float y, float radius)
 {
     unsigned int length;
-    float *data = build_circle(x, y, radius, &length);
-    renderer->draw_fill(data, length);
-    renderer->draw_outline(data, length);
+    float *data = make_circle(x, y, radius, &length);
+    graphics.renderer->draw_fill(data, length);
+    graphics.renderer->draw_outline(data, length);
     free(data);
 }
 
 void graphics_outline_triangle(float ax, float ay, float bx, float by, float cx, float cy)
 {
     float data[] = { ax, ay, bx, by, cx, cy };
-    renderer->draw_outline(data, 3);
+    graphics.renderer->draw_outline(data, 3);
 }
 
 void graphics_outline_rectangle(float x, float y, float w, float h)
 {
     float data[] = { x, y, x + w, y, x + w, y + h, x, y + h };
-    renderer->draw_outline(data, 4);
+    graphics.renderer->draw_outline(data, 4);
 }
 
 void graphics_outline_circle(float x, float y, float radius)
 {
     unsigned int length;
-    float *data = build_circle(x, y, radius, &length);
-    renderer->draw_outline(data, length);
+    float *data = make_circle(x, y, radius, &length);
+    graphics.renderer->draw_outline(data, length);
     free(data);
 }
 
 void graphics_fill_triangle(float ax, float ay, float bx, float by, float cx, float cy)
 {
     float data[] = { ax, ay, bx, by, cx, cy };
-    renderer->draw_fill(data, 3);
+    graphics.renderer->draw_fill(data, 3);
 }
 
 void graphics_fill_rectangle(float x, float y, float w, float h)
 {
     float data[] = { x, y, x + w, y, x + w, y + h, x, y + h };
-    renderer->draw_fill(data, 4);
+    graphics.renderer->draw_fill(data, 4);
 }
 
 void graphics_fill_circle(float x, float y, float radius)
 {
     unsigned int length;
-    float *data = build_circle(x, y, radius, &length);
-    renderer->draw_fill(data, length);
+    float *data = make_circle(x, y, radius, &length);
+    graphics.renderer->draw_fill(data, length);
     free(data);
 }
 
 tq_color_t graphics_get_point_color(void)
 {
-    return point_color;
+    return graphics.point_color;
 }
 
-void graphics_set_point_color(tq_color_t point_color_)
+void graphics_set_point_color(tq_color_t point_color)
 {
-    point_color = point_color_;
-    renderer->set_point_color(point_color);
+    graphics.point_color = point_color;
+    graphics.renderer->set_point_color(graphics.point_color);
 }
 
 tq_color_t graphics_get_line_color(void)
 {
-    return line_color;
+    return graphics.line_color;
 }
 
-void graphics_set_line_color(tq_color_t line_color_)
+void graphics_set_line_color(tq_color_t line_color)
 {
-    line_color = line_color_;
-    renderer->set_line_color(line_color);
+    graphics.line_color = line_color;
+    graphics.renderer->set_line_color(graphics.line_color);
 }
 
 tq_color_t graphics_get_outline_color(void)
 {
-    return outline_color;
+    return graphics.outline_color;
 }
 
-void graphics_set_outline_color(tq_color_t outline_color_)
+void graphics_set_outline_color(tq_color_t outline_color)
 {
-    outline_color = outline_color_;
-    renderer->set_outline_color(outline_color);
+    graphics.outline_color = outline_color;
+    graphics.renderer->set_outline_color(graphics.outline_color);
 }
 
 tq_color_t graphics_get_fill_color(void)
 {
-    return fill_color;
+    return graphics.fill_color;
 }
 
-void graphics_set_fill_color(tq_color_t fill_color_)
+void graphics_set_fill_color(tq_color_t fill_color)
 {
-    fill_color = fill_color_;
-    renderer->set_fill_color(fill_color);
+    graphics.fill_color = fill_color;
+    graphics.renderer->set_fill_color(graphics.fill_color);
 }
 
 tq_handle_t graphics_load_texture_from_file(char const *path)
@@ -355,56 +322,54 @@ tq_handle_t graphics_load_texture_from_file(char const *path)
         return TQ_INVALID_HANDLE;
     }
 
-    tq_handle_t handle = TQ_INVALID_HANDLE;
-    size_t length = stream.get_size(stream.data);
-    uint8_t *buffer = malloc(length);
-
-    if (buffer) {
-        if (stream.read(stream.data, buffer, length) == length) {
-            handle = renderer->load_texture(buffer, length);
-        }
-
-        free(buffer);
-    }
+    tq_handle_t texture_id = graphics.renderer->load_texture(&stream);
 
     stream.close(stream.data);
-
-    return handle;
+    return texture_id;
 }
 
 tq_handle_t graphics_load_texture_from_memory(uint8_t const *buffer, size_t length)
 {
-    return renderer->load_texture(buffer, length);
+    stream_t stream;
+
+    if (memory_stream_open(&stream, buffer, length) == -1) {
+        return TQ_INVALID_HANDLE;
+    }
+
+    tq_handle_t texture_id = graphics.renderer->load_texture(&stream);
+
+    stream.close(stream.data);
+    return texture_id;
 }
 
 void graphics_delete_texture(tq_handle_t texture_handle)
 {
-    renderer->delete_texture(texture_handle);
+    graphics.renderer->delete_texture(texture_handle);
 }
 
 void graphics_get_texture_size(tq_handle_t texture_handle, uint32_t *width, uint32_t *height)
 {
-    renderer->get_texture_size(texture_handle, width, height);
+    graphics.renderer->get_texture_size(texture_handle, width, height);
 }
 
-void graphics_draw_texture(tq_handle_t texture_handle,
+void graphics_draw_texture(tq_handle_t texture_id,
     float x, float y,
     float w, float h)
 {
-    uint32_t tw, th;
-    renderer->get_texture_size(texture_handle, &tw, &th);
+    uint32_t u, v;
+    graphics.renderer->get_texture_size(texture_id, &u, &v);
 
     float data[] = {
         x,      y,      0.0f,   0.0f,
-        x + w,  y,      tw,     0.0f,
-        x + w,  y + h,  tw,     th,
-        x,      y + h,  0.0f,   th,
+        x + w,  y,      u,      0.0f,
+        x + w,  y + h,  u,      v,
+        x,      y + h,  0.0f,   v,
     };
 
-    renderer->draw_texture(data, 4, texture_handle);
+    graphics.renderer->draw_texture(texture_id, data, 4);
 }
 
-void graphics_draw_texture_fragment(tq_handle_t texture_handle,
+void graphics_draw_texture_fragment(tq_handle_t texture_id,
     float x, float y,
     float w, float h,
     float u0, float v0,
@@ -417,7 +382,21 @@ void graphics_draw_texture_fragment(tq_handle_t texture_handle,
         x,      y + h,  u0,     v1,
     };
 
-    renderer->draw_texture(data, 4, texture_handle);
+    graphics.renderer->draw_texture(texture_id, data, 4);
+}
+
+//--------------------------------------
+// tq::graphics::on_display_resized
+//--------------------------------------
+void tq_graphics_on_display_resized(uint32_t width, uint32_t height)
+{
+    // This function is called when the user resizes the window.
+    // Here we just replace the default projection with the new one
+    // and tell the renderer to update its viewport
+    // (basically call glViewport).
+
+    make_default_projection(graphics.default_projection, width, height);
+    graphics.renderer->update_viewport(0, 0, (int) width, (int) height);
 }
 
 //------------------------------------------------------------------------------
