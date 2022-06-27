@@ -27,6 +27,7 @@ typedef struct image
 } image_t;
 
 int32_t     image_load(image_t *image, stream_t const *stream);
+int32_t     image_cut(image_t *image, image_t *src, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 void        image_free(image_t *image);
 
 //------------------------------------------------------------------------------
