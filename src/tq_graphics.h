@@ -126,8 +126,8 @@ void graphics_draw_texture(tq_handle_t texture_id,
 void graphics_draw_texture_fragment(tq_handle_t texture_id,
     float x, float y,
     float w, float h,
-    float u0, float v0,
-    float u1, float v1);
+    float fx, float fy,
+    float fw, float fh);
 
 // [tq::graphics::on_display_resized]
 void tq_graphics_on_display_resized(uint32_t width, uint32_t height);

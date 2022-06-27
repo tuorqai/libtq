@@ -165,7 +165,7 @@ void draw_stage(stage_t const *self)
                 0.0f, 0.0f,
                 32.0f, 32.0f,
                 x * 16.0f, y * 16.0f,
-                (x * 16.0f) + 16.0f, (y * 16.0f) + 16.0f
+                16.0f, 16.0f
             );
             tq_pop_matrix();
         }
@@ -375,7 +375,7 @@ void draw_players(players_t const *self)
             0.0f, 0.0f,
             32.0f, 36.0f,
             self->frame[id] * 16.0f, y_frame * 18.0f,
-            (self->frame[id] * 16.0f) + 16.0f, (y_frame * 18.0f) + 18.0f
+            16.0f, 18.0f
         );
         tq_pop_matrix();
     }
@@ -441,7 +441,7 @@ void draw_objects(objects_t const *self)
 
         tq_draw_texture_fragment_f(self->texture,
             self->x[id], self->y[id], 32.0f, 32.0f,
-            160.0f, 112.0f, 176.0f, 128.0f);
+            160.0f, 112.0f, 16.0f, 16.0f);
     }
 }
 

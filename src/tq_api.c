@@ -362,14 +362,26 @@ void tq_draw_texture_v(tq_handle_t texture_handle, tq_vec2_t position, tq_vec2_t
     graphics_draw_texture(texture_handle, position.x, position.y, size.x, size.y);
 }
 
-void tq_draw_texture_fragment_f(tq_handle_t texture_handle, float x, float y, float w, float h, float u0, float v0, float u1, float v1)
+void tq_draw_texture_fragment_f(tq_handle_t texture_handle,
+    float x, float y,
+    float w, float h,
+    float fx, float fy,
+    float fw, float fh)
 {
-    graphics_draw_texture_fragment(texture_handle, x, y, w, h, u0, v0, u1, v1);
+    graphics_draw_texture_fragment(texture_handle, x, y, w, h, fx, fy, fw, fh);
 }
 
-void tq_draw_texture_fragment_v(tq_handle_t texture_handle, tq_vec2_t position, tq_vec2_t size, tq_vec2_t uv0, tq_vec2_t uv1)
+void tq_draw_texture_fragment_v(tq_handle_t texture_handle,
+    tq_vec2_t position,
+    tq_vec2_t size,
+    tq_vec2_t fragment_position,
+    tq_vec2_t fragment_size)
 {
-    graphics_draw_texture_fragment(texture_handle, position.x, position.y, size.x, size.y, uv0.x, uv0.y, uv1.x, uv1.y);
+    graphics_draw_texture_fragment(texture_handle,
+        position.x, position.y,
+        size.x, size.y,
+        fragment_position.x, fragment_position.y,
+        fragment_size.x, fragment_size.y);
 }
 
 //------------------------------------------------------------------------------

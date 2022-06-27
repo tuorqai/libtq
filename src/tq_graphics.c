@@ -372,14 +372,14 @@ void graphics_draw_texture(tq_handle_t texture_id,
 void graphics_draw_texture_fragment(tq_handle_t texture_id,
     float x, float y,
     float w, float h,
-    float u0, float v0,
-    float u1, float v1)
+    float fx, float fy,
+    float fw, float fh)
 {
     float data[] = {
-        x,      y,      u0,     v0,
-        x + w,  y,      u1,     v0,
-        x + w,  y + h,  u1,     v1,
-        x,      y + h,  u0,     v1,
+        x,      y,      fx,         fy,
+        x + w,  y,      fx + fw,    fy,
+        x + w,  y + h,  fx + fw,    fy + fh,
+        x,      y + h,  fx,         fy + fh,
     };
 
     graphics.renderer->draw_texture(texture_id, data, 4);

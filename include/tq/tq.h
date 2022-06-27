@@ -490,8 +490,8 @@ TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_f(
     tq_handle_t texture_handle,
     float x, float y,
     float w, float h,
-    float u0, float v0,
-    float u1, float v1
+    float fx, float fy,
+    float fw, float fh
 );
 
 /* Draw a part of the texture inside a rectangle. Texture coordinates should be in pixel space. */
@@ -499,8 +499,8 @@ TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_v(
     tq_handle_t texture_handle,
     tq_vec2_t position,
     tq_vec2_t size,
-    tq_vec2_t uv0,
-    tq_vec2_t uv1
+    tq_vec2_t fragment_position,
+    tq_vec2_t fragment_size
 );
 
 //------------------------------------------------------------------------------
