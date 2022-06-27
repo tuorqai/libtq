@@ -59,6 +59,12 @@ function(USE_OPENGL)
     target_link_libraries(tq GLEW::GLEW OpenGL::GL)
 endfunction()
 
+function(USE_OPENGL_ES)
+    find_library(GLESv2_LIBRARY "GLESv2" REQUIRED)
+    target_compile_definitions(tq PRIVATE TQ_USE_OPENGL TQ_USE_OPENGL_ES)
+    target_link_libraries(tq ${GLESv2_LIBRARY})
+endfunction()
+
 if(WIN32)
     #-----------------------------------
     # Windows

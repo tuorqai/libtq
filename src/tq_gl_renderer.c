@@ -6,7 +6,13 @@
 //------------------------------------------------------------------------------
 
 #include <string.h>
-#include <GL/glew.h>
+
+#if !defined(TQ_USE_OPENGL_ES)
+#   include <GL/glew.h>
+#else
+#   include <GLES2/gl2.h>
+#   include <GLES2/gl2ext.h>
+#endif
 
 #include "tq_core.h"
 #include "tq_image_loader.h"
@@ -486,10 +492,12 @@ static int32_t get_texture_index()
 //--------------------------------------
 static void initialize(void)
 {
+#if !defined(TQ_USE_OPENGL_ES)
     // Load OpenGL extensions.
     if (glewInit() != GLEW_OK) {
         log_error("Failed to initialize GLEW.\n");
     }
+#endif
 
     // Set default values.
     // This is done per field on purpose.
@@ -559,7 +567,10 @@ static void initialize(void)
     glEnable(GL_BLEND);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
+
+#if !defined(TQ_USE_OPENGL_ES)
     glEnable(GL_MULTISAMPLE);
+#endif
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
