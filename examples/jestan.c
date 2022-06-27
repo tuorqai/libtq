@@ -10,6 +10,9 @@
 
 //------------------------------------------------------------------------------
 
+#define CAMERA_WIDTH            (256)
+#define CAMERA_HEIGHT           (240)
+
 #define MAX_PLAYERS             4
 
 #define PLAYER_BIT_ACTIVE       (1 << 0)
@@ -147,6 +150,8 @@ void update_stage(world_t *world, stage_t *self)
 
 void draw_stage(stage_t const *self)
 {
+    tq_fill_rectangle_f(0.0f, 0.0f, STAGE_WIDTH * 16.0f, STAGE_HEIGHT * 16.0f);
+
     for (int q = 0; q < STAGE_HEIGHT; q++) {
         for (int p = 0; p < STAGE_WIDTH; p++) {
             int c = self->tiles[q * STAGE_WIDTH + p];
@@ -159,11 +164,11 @@ void draw_stage(stage_t const *self)
             int y = c / 20;
 
             tq_push_matrix();
-            tq_translate_matrix_f(p * 32.0f, q * 32.0f);
+            tq_translate_matrix_f(p * 16.0f, q * 16.0f);
             tq_draw_texture_fragment_f(
                 self->texture,
                 0.0f, 0.0f,
-                32.0f, 32.0f,
+                16.0f, 16.0f,
                 x * 16.0f, y * 16.0f,
                 16.0f, 16.0f
             );
@@ -207,20 +212,20 @@ void update_camera(world_t *world, camera_t *self)
     self->x = world->players.x[world->player_id] + 16.0f;
     self->y = world->players.y[world->player_id] + 16.0f;
 
-    if (self->x < 256.0f) {
-        self->x = 256.0f;
+    if (self->x < CAMERA_WIDTH / 2.0f) {
+        self->x = CAMERA_WIDTH / 2.0f;
     }
 
-    if (self->x > (STAGE_WIDTH * 32.0f) - 256.0f) {
-        self->x = (STAGE_WIDTH * 32.0f) - 256.0f;
+    if (self->x > (STAGE_WIDTH * 16.0f) - CAMERA_WIDTH / 2.0f) {
+        self->x = (STAGE_WIDTH * 16.0f) - CAMERA_WIDTH / 2.0f;
     }
 
-    if (self->y < 192.0f) {
-        self->y = 192.0f;
+    if (self->y < CAMERA_HEIGHT / 2.0f) {
+        self->y = CAMERA_HEIGHT / 2.0f;
     }
 
-    if (self->y > (STAGE_HEIGHT * 32.0f) - 192.0f) {
-        self->y = (STAGE_HEIGHT * 32.0f) - 192.0f;
+    if (self->y > (STAGE_HEIGHT * 16.0f) - CAMERA_HEIGHT / 2.0f) {
+        self->y = (STAGE_HEIGHT * 16.0f) - CAMERA_HEIGHT / 2.0f;
     }
 
     if (tq_is_key_pressed(TQ_KEY_COMMA)) {
@@ -258,10 +263,10 @@ void update_players(world_t *world, players_t *self)
         }
 
         if (id == world->player_id) {
-            float speed = 200.0f;
+            float speed = 100.0f;
 
             if (tq_is_key_pressed(TQ_KEY_LSHIFT)) {
-                speed = 300.0f;
+                speed = 150.0f;
             }
 
             if (tq_is_key_pressed(TQ_KEY_UP) || tq_is_key_pressed(TQ_KEY_W)) {
@@ -288,44 +293,44 @@ void update_players(world_t *world, players_t *self)
         self->x[id] += self->dx[id] * world->dt;
 
         if (self->dx[id] < 0.0f) {
-            int p = (int) floorf((self->x[id] + 4.0f) / 32.0f);
-            int aq = (int) floorf((self->y[id] + 4.0f) / 32.0f);
-            int bq = (int) floorf((self->y[id] + 32.0f) / 32.0f);
+            int p = (int) floorf((self->x[id] + 2.0f) / 16.0f);
+            int aq = (int) floorf((self->y[id] + 2.0f) / 16.0f);
+            int bq = (int) floorf((self->y[id] + 16.0f) / 16.0f);
 
             if (is_tile_solid(&world->stage, p, aq) || is_tile_solid(&world->stage, p, bq)) {
-                self->x[id] = (float) p * 32.0f + 30.0f;
+                self->x[id] = (float) p * 16.0f + 15.0f;
             }
         }
 
         if (self->dx[id] > 0.0f) {
-            int p = (int) floorf((self->x[id] + 28.0f) / 32.0f);
-            int aq = (int) floorf((self->y[id] + 4.0f) / 32.0f);
-            int bq = (int) floorf((self->y[id] + 32.0f) / 32.0f);
+            int p = (int) floorf((self->x[id] + 14.0f) / 16.0f);
+            int aq = (int) floorf((self->y[id] + 2.0f) / 16.0f);
+            int bq = (int) floorf((self->y[id] + 16.0f) / 16.0f);
 
             if (is_tile_solid(&world->stage, p, aq) || is_tile_solid(&world->stage, p, bq)) {
-                self->x[id] = (float) p * 32.0f - 30.0f;
+                self->x[id] = (float) p * 16.0f - 15.0f;
             }
         }
 
         self->y[id] += self->dy[id] * world->dt;
 
         if (self->dy[id] < 0.0f) {
-            int ap = (int) floorf((self->x[id] + 4.0f) / 32.0f);
-            int bp = (int) floorf((self->x[id] + 28.0f) / 32.0f);
-            int q = (int) floorf((self->y[id] + 4.0f) / 32.0f);
+            int ap = (int) floorf((self->x[id] + 2.0f) / 16.0f);
+            int bp = (int) floorf((self->x[id] + 14.0f) / 16.0f);
+            int q = (int) floorf((self->y[id] + 2.0f) / 16.0f);
 
             if (is_tile_solid(&world->stage, ap, q) || is_tile_solid(&world->stage, bp, q)) {
-                self->y[id] = (float) q * 32.0f + 30.0f;
+                self->y[id] = (float) q * 16.0f + 15.0f;
             }
         }
 
         if (self->dy[id] > 0.0f) {
-            int ap = (int) floorf((self->x[id] + 4.0f) / 32.0f);
-            int bp = (int) floorf((self->x[id] + 28.0f) / 32.0f);
-            int q = (int) floorf((self->y[id] + 32.0f) / 32.0f);
+            int ap = (int) floorf((self->x[id] + 2.0f) / 16.0f);
+            int bp = (int) floorf((self->x[id] + 14.0f) / 16.0f);
+            int q = (int) floorf((self->y[id] + 16.0f) / 16.0f);
 
             if (is_tile_solid(&world->stage, ap, q) || is_tile_solid(&world->stage, bp, q)) {
-                self->y[id] = (float) q * 32.0f - 34.0f;
+                self->y[id] = (float) q * 16.0f - 17.0f;
             }
         }
 
@@ -369,11 +374,11 @@ void draw_players(players_t const *self)
 
         tq_push_matrix();
         tq_translate_matrix_f(self->x[id], self->y[id]);
-        tq_outline_rectangle_f(0.0f, 0.0f, 32.0f, 36.0f);
+        tq_outline_rectangle_f(0.0f, 0.0f, 16.0f, 18.0f);
         tq_draw_texture_fragment_f(
             self->texture,
             0.0f, 0.0f,
-            32.0f, 36.0f,
+            16.0f, 18.0f,
             self->frame[id] * 16.0f, y_frame * 18.0f,
             16.0f, 18.0f
         );
@@ -385,64 +390,15 @@ void draw_players(players_t const *self)
 
 int32_t spawn_object(objects_t *self, float x, float y)
 {
-    int32_t id = self->current;
-    self->current = (self->current + 1) % MAX_OBJECTS;
-
-    self->bits[id] = OBJECT_BIT_VISIBLE;
-    self->x[id] = x;
-    self->y[id] = y;
+    return 0;
 }
 
 void update_objects(world_t *world, objects_t *self)
 {
-    if (tq_is_mouse_button_pressed(TQ_MOUSE_BUTTON_LEFT)) {
-        if (self->spawn_tick < world->ct) {
-            float mx = tq_get_mouse_cursor_x() - (tq_get_display_width() / 2.0f);
-            float my = tq_get_mouse_cursor_y() - (tq_get_display_height() / 2.0f);
-
-            uint32_t dw = tq_get_display_width();
-            uint32_t dh = tq_get_display_height();
-            float aspect = (float) dw / (float) dh;
-
-            float w, h;
-
-            if (aspect > 1.0f) {
-                w = 512.0f;
-                h = 512.0f / aspect;
-            } else {
-                w = 512.0f * aspect;
-                h = 512.0f;
-            }
-
-            float sx = w / dw;
-            float sy = h / dh;
-
-            float x = mx * sx + (w / 2.0f);
-            float y = my * sy + (h / 2.0f);
-
-            spawn_object(self, x, y);
-            self->spawn_tick = world->ct + 0.5f;
-        }
-    }
-
-    for (int32_t id = 0; id < MAX_OBJECTS; id++) {
-        if ((self->bits[id] & OBJECT_BIT_ACTIVE) == 0) {
-            continue;
-        }
-    }
 }
 
 void draw_objects(objects_t const *self)
 {
-    for (int32_t id = 0; id < MAX_OBJECTS; id++) {
-        if ((self->bits[id] & OBJECT_BIT_VISIBLE) == 0) {
-            continue;
-        }
-
-        tq_draw_texture_fragment_f(self->texture,
-            self->x[id], self->y[id], 32.0f, 32.0f,
-            160.0f, 112.0f, 16.0f, 16.0f);
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -487,13 +443,13 @@ void draw_world(world_t const *world)
         if (aspect > 1.0f) {
             tq_view(
                 world->camera.x, world->camera.y,
-                512.0f, 512.0f / aspect,
+                CAMERA_HEIGHT * aspect, CAMERA_HEIGHT,
                 world->camera.rotation
             );
         } else {
             tq_view(
                 world->camera.x, world->camera.y,
-                512.0f * aspect, 512.0f,
+                CAMERA_WIDTH, CAMERA_WIDTH / aspect,
                 world->camera.rotation
             );
         }
@@ -506,8 +462,8 @@ void draw_world(world_t const *world)
     draw_objects(&world->objects);
     draw_players(&world->players);
 
-    tq_draw_line_f(world->camera.x - 8.0f, world->camera.y, world->camera.x + 8.0f, world->camera.y);
-    tq_draw_line_f(world->camera.x, world->camera.y - 8.0f, world->camera.x, world->camera.y + 8.0f);
+    tq_draw_line_f(world->camera.x - 2.0f, world->camera.y, world->camera.x + 2.0f, world->camera.y);
+    tq_draw_line_f(world->camera.x, world->camera.y - 2.0f, world->camera.x, world->camera.y + 2.0f);
 }
 
 //------------------------------------------------------------------------------
@@ -519,7 +475,8 @@ int main(int argc, char *argv[])
 
     tq_initialize();
 
-    tq_set_clear_color(tq_rgb(130, 170, 40));
+    tq_set_clear_color(tq_rgb(0, 0, 0));
+    tq_set_fill_color(tq_rgb(130, 170, 40));
 
     world_t *world = malloc(sizeof(world_t));
 
