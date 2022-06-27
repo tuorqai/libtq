@@ -2,6 +2,10 @@
 cmake_minimum_required(VERSION 3.13)
 project(tq)
 
+#---------------------------------------
+# Library target
+#---------------------------------------
+
 add_library(tq
     "src/tq_api.c"
     "src/tq_audio.c"
@@ -21,33 +25,79 @@ add_library(tq
 
 target_include_directories(tq PUBLIC "include")
 target_include_directories(tq PRIVATE "third-party")
-
 target_compile_definitions(tq PRIVATE TQ_BUILD)
-target_compile_definitions(tq PRIVATE TQ_USE_SFML)
-target_compile_definitions(tq PRIVATE TQ_USE_OPENGL)
+
+#---------------------------------------
+# Symbols should be exported explicitly
+#---------------------------------------
 
 set_target_properties(tq PROPERTIES
     C_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_PRESET hidden)
 
-find_package(SFML 2.5 REQUIRED COMPONENTS audio graphics)
+#---------------------------------------
+# Options
+#---------------------------------------
 
-find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
+option(BUILD_SHARED_LIBS "Build shared libraries" NO)
+option(BUILD_EXAMPLES "Build examples" NO)
 
-target_link_libraries(tq
-    sfml-graphics
-    sfml-audio
-    OpenGL::GL
-    GLEW::GLEW
-    m)
+#---------------------------------------
+# Platform-specific
+#---------------------------------------
+
+function(USE_SFML)
+    find_package(SFML 2.5 REQUIRED COMPONENTS audio window)
+    target_compile_definitions(tq PRIVATE TQ_USE_SFML)
+    target_link_libraries(tq sfml-audio sfml-window)
+endfunction()
+
+function(USE_OPENGL)
+    find_package(OpenGL REQUIRED)
+    find_package(GLEW REQUIRED)
+    target_compile_definitions(tq PRIVATE TQ_USE_OPENGL)
+    target_link_libraries(tq GLEW::GLEW OpenGL::GL)
+endfunction()
+
+if(WIN32)
+    #-----------------------------------
+    # Windows
+
+    use_sfml()
+    use_opengl()
+
+    install(TARGETS tq DESTINATION "lib")
+    install(FILES
+        "include/tq/tq.h"
+        "include/tq/tq.hpp"
+        DESTINATION "include")
+elseif(UNIX AND NOT APPLE)
+    #-----------------------------------
+    # Linux
+
+    use_sfml()
+    use_opengl()
+    target_link_libraries(tq m)
+
+    include(GNUInstallDirs)
+    install(TARGETS tq DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(FILES
+        "include/tq/tq.h"
+        "include/tq/tq.hpp"
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+else()
+    # Unsupported OS
+    message(FATAL_ERROR "Sorry, but your OS is not supported :(")
+endif()
 
 #-------------------------------------------------------------------------------
 # Examples
 
-set(EXAMPLES "hello" "defense" "jestan")
+if(BUILD_EXAMPLES)
+    set(EXAMPLES "hello" "defense" "jestan")
 
-foreach(EXAMPLE ${EXAMPLES})
-    add_executable(${EXAMPLE} "examples/${EXAMPLE}.c")
-    target_link_libraries(${EXAMPLE} tq)
-endforeach()
+    foreach(EXAMPLE ${EXAMPLES})
+        add_executable(${EXAMPLE} "examples/${EXAMPLE}.c")
+        target_link_libraries(${EXAMPLE} tq)
+    endforeach()
+endif()
