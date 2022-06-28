@@ -387,64 +387,64 @@ void tq_draw_texture_fragment_v(tq_handle_t texture_handle,
 //------------------------------------------------------------------------------
 // Audio
 
-tq_handle_t tq_load_sound_from_file(char const *path)
+int32_t tq_load_sound_from_file(char const *path)
 {
     audio_load_sound_from_file(path);
 }
 
-tq_handle_t tq_load_sound_from_memory(uint8_t const *buffer, size_t length)
+int32_t tq_load_sound_from_memory(uint8_t const *buffer, size_t length)
 {
     audio_load_sound_from_memory(buffer, length);
 }
 
-void tq_delete_sound(tq_handle_t sound_handle)
+void tq_delete_sound(int32_t sound_id)
 {
-    audio_delete_sound(sound_handle);
+    audio_delete_sound(sound_id);
 }
 
-tq_handle_t tq_play_sound(tq_handle_t sound_handle, float left_volume, float right_volume, int loop)
+int32_t tq_play_sound(int32_t sound_id, int loop)
 {
-    return audio_play_sound(sound_handle, left_volume, right_volume, loop);
+    return audio_play_sound(sound_id, loop);
 }
 
-tq_handle_t tq_open_music_from_file(char const *path)
+int32_t tq_open_music_from_file(char const *path)
 {
     return audio_open_music_from_file(path);
 }
 
-tq_handle_t tq_open_music_from_memory(uint8_t const *buffer, size_t length)
+int32_t tq_open_music_from_memory(uint8_t const *buffer, size_t length)
 {
     return audio_open_music_from_memory(buffer, length);
 }
 
-void tq_close_music(tq_handle_t music_handle)
+void tq_close_music(int32_t music_id)
 {
-    audio_close_music(music_handle);
+    audio_close_music(music_id);
 }
 
-tq_handle_t tq_play_music(tq_handle_t music_handle, int loop)
+int32_t tq_play_music(int32_t music_id, int loop)
 {
-    return audio_play_music(music_handle, loop);
+    return audio_play_music(music_id, loop);
 }
 
-tq_wave_state_t tq_get_wave_state(tq_handle_t wave_handle)
+tq_channel_state_t tq_get_channel_state(int32_t channel_id)
 {
-    return audio_get_wave_state(wave_handle);
+    return audio_get_channel_state(channel_id);
 }
 
-void tq_pause_wave(tq_handle_t wave_handle)
+void tq_pause_channel(int32_t channel_id)
 {
-    audio_pause_wave(wave_handle);
+    audio_pause_channel(channel_id);
 }
 
-void tq_unpause_wave(tq_handle_t wave_handle)
+void tq_unpause_channel(int32_t channel_id)
 {
-    audio_unpause_wave(wave_handle);
+    audio_unpause_channel(channel_id);
 }
 
-void tq_stop_wave(tq_handle_t wave_handle)
+void tq_stop_channel(int32_t channel_id)
 {
-    audio_stop_wave(wave_handle);
+    audio_stop_channel(channel_id);
 }
 
 //------------------------------------------------------------------------------

@@ -165,27 +165,14 @@ void draw_string(float x, float y, float sx, float sy, int align, char const *fm
 //------------------------------------------------------------------------------
 // Utilities
 
-#define RADIANS(d) ((d) * (M_PI / 180.0f))
-#define DEGREES(r) ((r) * (180.0f / M_PI))
-
-float minf(float f0, float f1)
-{
-    return (f0 < f1) ? f0 : f1;
-}
-
-float maxf(float f0, float f1)
-{
-    return (f0 > f1) ? f0 : f1;
-}
-
 float distance(float ax, float ay, float bx, float by)
 {
-    return sqrtf(((by - ay) * (by - ay)) + ((bx - ax) * (bx - ax)));
+    return tq_vec2f_distance(tq_vec2f(ax, ay), tq_vec2f(bx, by));
 }
 
 float look_at(float x, float y, float target_x, float target_y)
 {
-    return DEGREES(atan2f(target_y - y, target_x - x));
+    return tq_vec2f_look_at(tq_vec2f(x, y), tq_vec2f(target_x, target_y));
 }
 
 void move(float *value, float ideal_value, float shrink_rate, float grow_rate, float dt)
@@ -219,8 +206,8 @@ void rotate(float *rotation, float ideal_rotation, float speed, float dt)
 
 void move_to_angle(float *x, float *y, float rotation, float speed, float dt)
 {
-    float const dx = cosf(RADIANS(rotation));
-    float const dy = sinf(RADIANS(rotation));
+    float const dx = cosf(TQ_DEG2RAD(rotation));
+    float const dy = sinf(TQ_DEG2RAD(rotation));
 
     *x += dx * speed * dt;
     *y += dy * speed * dt;
@@ -337,8 +324,8 @@ void turret_auto_control(struct turrets *self, int id, struct enemies const *ene
     float const er = enemies->rotation[self->auto_enemy[id]];
     float const ed = distance(self->x[id], self->y[id], ex, ey);
 
-    float const ax = ex + (cosf(RADIANS(er)) * ed * 0.1f);
-    float const ay = ey + (sinf(RADIANS(er)) * ed * 0.1f);
+    float const ax = ex + (cosf(TQ_DEG2RAD(er)) * ed * 0.1f);
+    float const ay = ey + (sinf(TQ_DEG2RAD(er)) * ed * 0.1f);
 
     float const d = distance(ax, ay, self->aim_x[id], self->aim_y[id]);
     
@@ -349,8 +336,8 @@ void turret_auto_control(struct turrets *self, int id, struct enemies const *ene
         float const a = look_at(self->aim_x[id], self->aim_y[id], ax, ay);
         float const sx = 300.0f + (3000.0f * (d / CANVAS_WIDTH));
         float const sy = 240.0f + (2400.0f * (d / CANVAS_HEIGHT));
-        self->aim_x[id] += cosf(RADIANS(a)) * sx * dt;
-        self->aim_y[id] += sinf(RADIANS(a)) * sy * dt;
+        self->aim_x[id] += cosf(TQ_DEG2RAD(a)) * sx * dt;
+        self->aim_y[id] += sinf(TQ_DEG2RAD(a)) * sy * dt;
     }
 
     float const a = look_at(self->x[id], self->y[id], ex, ey);
@@ -384,18 +371,18 @@ void update_turrets(struct world *world, struct turrets *self, float ct, float d
         if (self->bits[id] & TURRET_BIT_TRIGGER) {
             if (ct > self->trigger_tick[id]) {
                 float const d = distance(self->x[id], self->y[id], self->aim_x[id], self->aim_y[id]);
-                float const v = maxf(d / 128.0f, 1.0f);
+                float const v = TQ_MAX(d / 128.0f, 1.0f);
     
                 self->bob[id] = 7.0f;
 
                 spawn_projectile_from_turret(world, &world->projectiles, id);
-                tq_play_sound(self->fire_sound, 1.0f, 0.0f, 0);
+                tq_play_sound(self->fire_sound, 0);
 
                 self->trigger_tick[id] = ct + (0.125f * v);
-                self->recoil[id] = minf(self->recoil[id] + 400.0f * dt, 300.0f / v);
+                self->recoil[id] = TQ_MIN(self->recoil[id] + 400.0f * dt, 300.0f / v);
             }
         } else {
-            self->recoil[id] = maxf(0.0f, self->recoil[id] + 60.0f * dt);
+            self->recoil[id] = TQ_MAX(0.0f, self->recoil[id] + 60.0f * dt);
         }
 
         move(&self->bob[id], 0.0f, 50.0f, 50.0f, dt);
@@ -458,8 +445,8 @@ int spawn_projectile_from_turret(struct world *world, struct projectiles *self, 
     float const h = -0.5f + ((float) rand() / (float) RAND_MAX);
 
     self->bits[id] = PROJECTILE_BIT_ACTIVE;
-    self->x[id] = x + (cosf(RADIANS(r)) * 20.0f);
-    self->y[id] = y + (sinf(RADIANS(r)) * 20.0f);
+    self->x[id] = x + (cosf(TQ_DEG2RAD(r)) * 20.0f);
+    self->y[id] = y + (sinf(TQ_DEG2RAD(r)) * 20.0f);
     self->rotation[id] = r;
     self->trajectory[id] = h * world->turrets.recoil[turret];
     self->turret[id] = turret;

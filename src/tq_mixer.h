@@ -12,21 +12,21 @@
 
 struct mixer
 {
-    void            (*initialize)(void);
-    void            (*terminate)(void);
+    void        (*initialize)(void);
+    void        (*terminate)(void);
 
-    tq_handle_t     (*load_sound)(uint8_t const *, size_t);
-    void            (*delete_sound)(tq_handle_t);
-    tq_handle_t     (*play_sound)(tq_handle_t, float, float, int);
+    int32_t     (*load_sound)(uint8_t const *buffer, size_t length);
+    void        (*delete_sound)(int32_t sound_id);
+    int32_t     (*play_sound)(int32_t sound_id, int loop);
 
-    tq_handle_t     (*open_music)(stream_t const *);
-    void            (*close_music)(tq_handle_t);
-    tq_handle_t     (*play_music)(tq_handle_t, int);
+    int32_t     (*open_music)(stream_t const *stream);
+    void        (*close_music)(int32_t music_id);
+    int32_t     (*play_music)(int32_t music_id, int loop);
 
-    tq_wave_state_t (*get_wave_state)(tq_handle_t);
-    void            (*pause_wave)(tq_handle_t);
-    void            (*unpause_wave)(tq_handle_t);
-    void            (*stop_wave)(tq_handle_t);
+    tq_channel_state_t  (*get_channel_state)(int32_t channel_id);
+    void                (*pause_channel)(int32_t channel_id);
+    void                (*unpause_channel)(int32_t channel_id);
+    void                (*stop_channel)(int32_t channel_id);
 };
 
 //------------------------------------------------------------------------------

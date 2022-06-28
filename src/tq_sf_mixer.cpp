@@ -59,226 +59,253 @@ namespace
 {
     sf::SoundBuffer     *sound_array[TQ_SOUND_LIMIT];
     sf::InputStream     *music_array[TQ_MUSIC_LIMIT];
-    sf::SoundSource     *wave_array[TQ_WAVE_LIMIT];
+    sf::SoundSource     *channel_array[TQ_CHANNEL_LIMIT];
 
-    std::int32_t        current_sound_index;
-    std::int32_t        current_music_index;
-    std::int32_t        current_wave_index;
-
-    std::int32_t get_sound_index()
+    int32_t get_sound_index()
     {
-        std::int32_t index = current_sound_index++;
-
-        if (current_sound_index == TQ_SOUND_LIMIT) {
-            current_sound_index = 0;
+        for (int32_t index = 0; index < TQ_SOUND_LIMIT; index++) {
+            if (sound_array[index] == nullptr) {
+                return index;
+            }
         }
 
-        if (sound_array[index]) {
-            delete sound_array[index];
-        }
-
-        return index;
+        return -1;
     }
 
-    std::int32_t get_music_index()
+    int32_t get_music_index()
     {
-        std::int32_t index = current_music_index++;
-
-        if (current_music_index == TQ_MUSIC_LIMIT) {
-            current_music_index = 0;
+        for (int32_t index = 0; index < TQ_MUSIC_LIMIT; index++) {
+            if (music_array[index] == nullptr) {
+                return index;
+            }
         }
 
-        if (music_array[index]) {
-            delete music_array[index];
-        }
-
-        return index;
+        return -1;
     }
 
-    std::int32_t get_wave_index()
+    int32_t get_channel_index()
     {
-        std::int32_t index = current_wave_index++;
+        for (int32_t index = 0; index < TQ_MUSIC_LIMIT; index++) {
+            if (channel_array[index] == nullptr) {
+                return index;
+            }
 
-        if (current_wave_index == TQ_WAVE_LIMIT) {
-            current_wave_index = 0;
+            if (channel_array[index]->getStatus() == sf::SoundSource::Stopped) {
+                delete channel_array[index];
+                return index;
+            }
         }
 
-        if (wave_array[index]) {
-            delete wave_array[index];
-        }
-
-        return index;
+        return -1;
     }
 
     void initialize()
     {
+        std::memset(sound_array, 0, sizeof(sound_array));
+        std::memset(music_array, 0, sizeof(music_array));
+        std::memset(channel_array, 0, sizeof(channel_array));
+
         log_info("SFML-based audio mixer is initialized.\n");
     }
 
     void terminate()
     {
-        for (std::int32_t id = 0; id < TQ_WAVE_LIMIT; id++) {
-            delete wave_array[id];
+        for (int32_t index = 0; index < TQ_CHANNEL_LIMIT; index++) {
+            delete channel_array[index];
         }
 
-        for (std::int32_t id = 0; id < TQ_MUSIC_LIMIT; id++) {
-            delete music_array[id];
+        for (int32_t index = 0; index < TQ_MUSIC_LIMIT; index++) {
+            delete music_array[index];
         }
 
-        for (std::int32_t id = 0; id < TQ_SOUND_LIMIT; id++) {
-            delete sound_array[id];
+        for (int32_t index = 0; index < TQ_SOUND_LIMIT; index++) {
+            delete sound_array[index];
         }
 
         log_info("SFML-based audio mixer is terminated.\n");
     }
 
-    tq_handle_t load_sound(std::uint8_t const *buffer, std::size_t length)
+    int32_t load_sound(uint8_t const *buffer, size_t length)
     {
+        int32_t index = get_sound_index();
+
+        if (index == -1) {
+            return -1;
+        }
+
         auto sound = new sf::SoundBuffer();
 
-        if (!sound) {
-            return TQ_INVALID_HANDLE;
+        if (sound == nullptr) {
+            return -1;
         }
 
         if (!sound->loadFromMemory(buffer, length)) {
             delete sound;
-            return TQ_INVALID_HANDLE;
+            return -1;
         }
 
-        std::int32_t index = get_sound_index();
         sound_array[index] = sound;
-
-        return static_cast<tq_handle_t>(index);
+        return index;
     }
 
-    void delete_sound(tq_handle_t sound_handle)
+    void delete_sound(int32_t sound_id)
     {
-        delete sound_array[sound_handle];
-        sound_array[sound_handle] = nullptr;
+        delete sound_array[sound_id];
+        sound_array[sound_id] = nullptr;
     }
 
-    tq_handle_t play_sound(tq_handle_t sound_handle, float left_volume, float right_volume, int loop)
+    int32_t play_sound(int32_t sound_id, int loop)
     {
-        TQ_CHECK_SOUND_HANDLE(sound_handle);
-
-        if (!sound_array[sound_handle]) {
-            return TQ_INVALID_HANDLE;
+        if (sound_id < 0 || sound_id >= TQ_SOUND_LIMIT) {
+            return -1;
         }
 
-        auto wave = new sf::Sound(*sound_array[sound_handle]);
-
-        if (!wave) {
-            return TQ_INVALID_HANDLE;
+        if (sound_array[sound_id] == nullptr) {
+            return -1;
         }
 
-        // ugly temporary solution #1
-        if ((left_volume != 1.0f) || (right_volume != 1.0f)) {
-            float x = (right_volume * 100.0f) - (left_volume * 100.0f);
+        int32_t index = get_channel_index();
 
-            wave->setAttenuation(1000.0f);
-            wave->setPosition({ x, 0.0f, 0.0f });
+        if (index == -1) {
+            return -1;
+        }
+
+        auto channel = new sf::Sound(*sound_array[sound_id]);
+
+        if (channel == nullptr) {
+            return -1;
         }
 
         // ugly temporary solution #2
         if (loop == -1) {
-            wave->setLoop(true);
+            channel->setLoop(true);
         }
 
-        wave->play();
+        channel->play();
 
-        std::int32_t index = get_wave_index();
-        wave_array[index] = wave;
-
-        return static_cast<tq_handle_t>(index);
+        channel_array[index] = channel;
+        return index;
     }
 
-    tq_handle_t open_music(stream_t const *stream)
+    int32_t open_music(stream_t const *stream)
     {
+        int32_t index = get_music_index();
+
+        if (index == -1) {
+            return -1;
+        }
+
         auto music = new input_stream_adapter(stream);
 
         if (!music) {
-            return TQ_INVALID_HANDLE;
+            return -1;
         }
 
-        std::int32_t index = get_music_index();
         music_array[index] = music;
-
-        return static_cast<tq_handle_t>(index);
+        return index;
     }
 
-    void close_music(tq_handle_t music_handle)
+    void close_music(int32_t music_id)
     {
-        delete music_array[music_handle];
-        music_array[music_handle] = nullptr;
+        delete music_array[music_id];
+        music_array[music_id] = nullptr;
     }
 
-    tq_handle_t play_music(tq_handle_t music_handle, int loop)
+    int32_t play_music(int32_t music_id, int loop)
     {
-        if (!music_array[music_handle]) {
-            return TQ_INVALID_HANDLE;
+        if (music_id < 0 || music_id >= TQ_MUSIC_LIMIT) {
+            return -1;
+        }
+    
+        if (music_array[music_id] == nullptr) {
+            return -1;
         }
 
-        auto wave = new sf::Music();
+        int32_t index = get_channel_index();
 
-        if (wave) {
-            if (wave->openFromStream(*music_array[music_handle])) {
-                if (loop == -1) {
-                    wave->setLoop(true);
-                }
-
-                wave->play();
-
-                std::int32_t index = get_wave_index();
-                wave_array[index] = wave;
-                return static_cast<tq_handle_t>(index);
-            }
-
-            delete wave;
+        if (index == -1) {
+            return -1;
         }
 
-        return TQ_INVALID_HANDLE;
+        auto channel = new sf::Music();
+
+        if (channel == nullptr) {
+            return -1;
+        }
+
+        if (!channel->openFromStream(*music_array[music_id])) {
+            delete channel;
+            return -1;
+        }
+
+        if (loop == -1) {
+            channel->setLoop(true);
+        }
+
+        channel->play();
+
+        channel_array[index] = channel;
+        return index;
     }
 
-    tq_wave_state_t get_wave_state(tq_handle_t wave_handle)
+    tq_channel_state_t get_channel_state(int32_t channel_id)
     {
-        TQ_CHECK_WAVE_HANDLE(wave_handle);
-
-        auto wave = wave_array[wave_handle];
-
-        if (!wave) {
-            return TQ_WAVE_STATE_INACTIVE;
+        if (channel_id < 0 || channel_id >= TQ_CHANNEL_LIMIT) {
+            return TQ_CHANNEL_STATE_INACTIVE;
         }
 
-        switch (wave->getStatus()) {
+        if (channel_array[channel_id] == nullptr) {
+            return TQ_CHANNEL_STATE_INACTIVE;
+        }
+
+        switch (channel_array[channel_id]->getStatus()) {
         case sf::SoundSource::Paused:
-            return TQ_WAVE_STATE_PAUSED;
+            return TQ_CHANNEL_STATE_PAUSED;
         case sf::SoundSource::Playing:
-            return TQ_WAVE_STATE_PLAYING;
+            return TQ_CHANNEL_STATE_PLAYING;
         default:
-            return TQ_WAVE_STATE_INACTIVE;
+            return TQ_CHANNEL_STATE_INACTIVE;
         }
     }
 
-    void pause_wave(tq_handle_t wave_handle)
+    void pause_channel(int32_t channel_id)
     {
-        TQ_CHECK_WAVE_HANDLE(wave_handle);
+        if (channel_id < 0 || channel_id >= TQ_CHANNEL_LIMIT) {
+            return;
+        }
 
-        wave_array[wave_handle]->pause();
+        if (channel_array[channel_id] == nullptr) {
+            return;
+        }
+
+        channel_array[channel_id]->pause();
     }
 
-    void unpause_wave(tq_handle_t wave_handle)
+    void unpause_channel(int32_t channel_id)
     {
-        TQ_CHECK_WAVE_HANDLE(wave_handle);
+        if (channel_id < 0 || channel_id >= TQ_CHANNEL_LIMIT) {
+            return;
+        }
 
-        wave_array[wave_handle]->play();
+        if (channel_array[channel_id] == nullptr) {
+            return;
+        }
+
+        channel_array[channel_id]->play();
     }
 
-    void stop_wave(tq_handle_t wave_handle)
+    void stop_channel(int32_t channel_id)
     {
-        TQ_CHECK_WAVE_HANDLE(wave_handle);
+        if (channel_id < 0 || channel_id >= TQ_CHANNEL_LIMIT) {
+            return;
+        }
 
-        delete wave_array[wave_handle];
-        wave_array[wave_handle] = nullptr;
+        if (channel_array[channel_id] == nullptr) {
+            return;
+        }
+
+        delete channel_array[channel_id];
+        channel_array[channel_id] = nullptr;
     }
 }
 
@@ -297,10 +324,10 @@ void construct_sf_mixer(struct mixer *mixer)
     mixer->close_music      = ::close_music;
     mixer->play_music       = ::play_music;
 
-    mixer->get_wave_state   = ::get_wave_state;
-    mixer->pause_wave       = ::pause_wave;
-    mixer->unpause_wave     = ::unpause_wave;
-    mixer->stop_wave        = ::stop_wave;
+    mixer->get_channel_state    = ::get_channel_state;
+    mixer->pause_channel        = ::pause_channel;
+    mixer->unpause_channel      = ::unpause_channel;
+    mixer->stop_channel         = ::stop_channel;
 }
 
 //------------------------------------------------------------------------------

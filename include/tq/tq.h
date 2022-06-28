@@ -17,7 +17,7 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
-// tq library: main and only public header
+// tq library                                                     version 0.2.0
 //------------------------------------------------------------------------------
 
 #ifndef TQ_PUBLIC_H_INC
@@ -26,6 +26,7 @@
 //------------------------------------------------------------------------------
 // Standard headers
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -55,43 +56,39 @@
 #endif
 
 //------------------------------------------------------------------------------
-// Basic constants
+// Constants
 
-/* This value is returned if there is a failure while loading or allocating a resource. */
-#define TQ_INVALID_HANDLE       (-1)
+/**
+ * @brief π number.
+ */
+#define TQ_PI                           (3.14159265358979323846)
 
-//------------------------------------------------------------------------------
-// Basic typedefs
+/**
+ * @brief Maximum number of textures.
+ */
+#define TQ_TEXTURE_LIMIT                (256)
 
-/* Opaque handle to any resource (sound, texture, etc). */
-typedef int32_t tq_handle_t;
+/**
+ * @brief Maximum number of open music tracks.
+ */
+#define TQ_MUSIC_LIMIT                  (32)
 
-//------------------------------------------------------------------------------
-// Math-related things
+/**
+ * @brief Maximum number of sounds.
+ */
+#define TQ_SOUND_LIMIT                  (256)
 
-/* Two-dimensional vector. */
-typedef struct tq_vec2
-{
-    float x;
-    float y;
-} tq_vec2_t;
-
-//------------------------------------------------------------------------------
-// Meta
-
-/* Initialize the library. */
-TQ_EXPORT TQ_API void TQ_CALL tq_initialize(void);
-
-/* Terminate the library and release all resources. */
-TQ_EXPORT TQ_API void TQ_CALL tq_terminate(void);
-
-/* This function should be called every frame. */
-TQ_EXPORT TQ_API bool TQ_CALL tq_process(void);
+/**
+ * @brief Maximum number of playing audio channels.
+ */
+#define TQ_CHANNEL_LIMIT                (16)
 
 //------------------------------------------------------------------------------
-// Core
+// Enumerations
 
-/* Keyboard keys. */
+/**
+ * @brief Enumeration of keyboard keys.
+ */
 typedef enum tq_key
 {
     TQ_KEY_0,
@@ -201,7 +198,9 @@ typedef enum tq_key
     TQ_TOTAL_KEYS,
 } tq_key_t;
 
-/* Mouse buttons. */
+/**
+ * @brief Enumeration of mouse buttons.
+ */
 typedef enum tq_mouse_button
 {
     TQ_MOUSE_BUTTON_LEFT,
@@ -210,17 +209,94 @@ typedef enum tq_mouse_button
     TQ_TOTAL_MOUSE_BUTTONS,
 } tq_mouse_button_t;
 
-/* Joystick axes. */
+/**
+ * @brief Enumeration of joystick axes.
+ */
 typedef enum tq_joystick_axis
 {
     TQ_TOTAL_JOYSTICK_AXES,
 } tq_joystick_axis_t;
 
-/* Joystick buttons. */
+/**
+ * @brief Enumeration of joystick buttons.
+ */
 typedef enum tq_joystick_button
 {
     TQ_TOTAL_JOYSTICK_BUTTONS,
 } tq_joystick_button_t;
+
+/**
+ * @brief Enumeration of audio channel states.
+ */
+typedef enum tq_channel_state
+{
+    TQ_CHANNEL_STATE_INACTIVE,
+    TQ_CHANNEL_STATE_PAUSED,
+    TQ_CHANNEL_STATE_PLAYING,
+} tq_channel_state_t;
+
+//------------------------------------------------------------------------------
+// Typedefs and structs
+
+/**
+ * @brief 32-bit color value.
+ */
+typedef uint32_t tq_color_t;
+
+/**
+ * @brief Two-dimensional vector of integer numbers.
+ */
+typedef struct tq_vec2i
+{
+    int32_t x;
+    int32_t y;
+} tq_vec2i_t;
+
+/**
+ * @brief Two-dimensional vector of unsigned integer numbers.
+ */
+typedef struct tq_vec2u
+{
+    uint32_t x;
+    uint32_t y;
+} tq_vec2u_t;
+
+/**
+ * @brief Two-dimensional vector of real numbers.
+ */
+typedef struct tq_vec2f
+{
+    float x;
+    float y;
+} tq_vec2f_t;
+
+//------------------------------------------------------------------------------
+// Deprecated values
+
+#define TQ_INVALID_HANDLE           (-1)
+
+typedef tq_vec2f_t                  tq_vec2_t;
+typedef int32_t                     tq_handle_t;
+
+//------------------------------------------------------------------------------
+
+/**
+ * @brief Initialize the library.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_initialize(void);
+
+/**
+ * @brief Terminate the library and release all resources.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_terminate(void);
+
+/**
+ * @brief Process user input and do other important things.
+ */
+TQ_EXPORT TQ_API bool TQ_CALL tq_process(void);
+
+//------------------------------------------------------------------------------
+// Core
 
 /* Returns display (window) width. */
 TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_display_width(void);
@@ -272,9 +348,6 @@ TQ_EXPORT TQ_API unsigned int TQ_CALL tq_get_framerate(void);
 
 //----------------------------------------------------------
 // Colors
-
-/* 32-bit color value. */
-typedef uint32_t tq_color_t;
 
 /* Get single color value from RGB values. */
 static inline tq_color_t tq_rgb(uint8_t r, uint8_t g, uint8_t b)
@@ -451,8 +524,6 @@ TQ_EXPORT TQ_API void TQ_CALL tq_set_fill_color(tq_color_t fill_color);
 //--------------------------------------
 // Textures
 
-#define TQ_TEXTURE_LIMIT        256
-
 /* Load texture from a file. */
 TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_load_texture_from_file(char const *path);
 
@@ -506,32 +577,205 @@ TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_v(
 //------------------------------------------------------------------------------
 // Audio
 
-#define TQ_MUSIC_LIMIT              32
-#define TQ_SOUND_LIMIT              256
-#define TQ_WAVE_LIMIT               16
-#define TQ_SOUND_STREAM_LIMIT       16
+/**
+ * @brief Decode and load sound to memory from a file.
+ */
+TQ_EXPORT TQ_API int32_t TQ_CALL tq_load_sound_from_file(char const *path);
 
-typedef enum tq_wave_state
+/**
+ * @brief Decode sound from a memory buffer.
+ */
+TQ_EXPORT TQ_API int32_t TQ_CALL tq_load_sound_from_memory(uint8_t const *buffer, size_t length);
+
+/**
+ * @brief Delete sound from memory.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_delete_sound(int32_t sound_id);
+
+/**
+ * @brief Play sound and get id of a channel.
+ */
+TQ_EXPORT TQ_API int32_t TQ_CALL tq_play_sound(int32_t sound_id, int loop);
+
+/**
+ * @brief Open music stream from a file.
+ */
+TQ_EXPORT TQ_API int32_t TQ_CALL tq_open_music_from_file(char const *path);
+
+/**
+ * @brief Open music stream from memory buffer.
+ */
+TQ_EXPORT TQ_API int32_t TQ_CALL tq_open_music_from_memory(uint8_t const *buffer, size_t length);
+
+/**
+ * @brief Close music stream.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_close_music(int32_t music_id);
+
+/**
+ * @brief Play music and get id of a channel.
+ */
+TQ_EXPORT TQ_API int32_t TQ_CALL tq_play_music(int32_t music_id, int loop);
+
+/**
+ * @brief Get current state of the audio channel.
+ */
+TQ_EXPORT TQ_API tq_channel_state_t TQ_CALL tq_get_channel_state(int32_t channel_id);
+
+/**
+ * @brief Pause the audio channel.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_pause_channel(int32_t channel_id);
+
+/**
+ * @brief Continue playback of the audio channel.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_unpause_channel(int32_t channel_id);
+
+/**
+ * @brief Stop the audio channel and mark it inactive.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_stop_channel(int32_t channel_id);
+
+//------------------------------------------------------------------------------
+// Math
+
+/**
+ * @brief Get smallest value.
+ */
+#define TQ_MIN(a, b)                (((a) < (b)) ? (a) : (b))
+
+/**
+ * @brief Get largest value.
+ */
+#define TQ_MAX(a, b)                (((a) > (b)) ? (a) : (b))
+
+/**
+ * @brief Converts degrees to radians.
+ */
+#define TQ_DEG2RAD(deg)             ((deg) * (TQ_PI / 180.0))
+
+/**
+ * @brief Converts radians to degrees.
+ */
+#define TQ_RAD2DEG(rad)             ((rad) * (180.0 / TQ_PI))
+
+/**
+ * @brief Cast 2-component integer vector to floating-point vector.
+ */
+static inline tq_vec2f_t tq_vec2i_cast(tq_vec2i_t ivec)
 {
-    TQ_WAVE_STATE_INACTIVE,
-    TQ_WAVE_STATE_PAUSED,
-    TQ_WAVE_STATE_PLAYING,
-} tq_wave_state_t;
+    return (tq_vec2f_t) {
+        .x = (float) ivec.x,
+        .y = (float) ivec.y,
+    };
+}
 
-TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_load_sound_from_file(char const *path);
-TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_load_sound_from_memory(uint8_t const *buffer, size_t length);
-TQ_EXPORT TQ_API void TQ_CALL tq_delete_sound(tq_handle_t sound_handle);
-TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_play_sound(tq_handle_t sound_handle, float left_volume, float right_volume, int loop);
+/**
+ * @brief Cast 2-component unsigned integer vector to floating-point vector.
+ */
+static inline tq_vec2f_t tq_vec2u_cast(tq_vec2u_t uvec)
+{
+    return (tq_vec2f_t) {
+        .x = (float) uvec.x,
+        .y = (float) uvec.y,
+    };
+}
 
-TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_open_music_from_file(char const *path);
-TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_open_music_from_memory(uint8_t const *buffer, size_t length);
-TQ_EXPORT TQ_API void TQ_CALL tq_close_music(tq_handle_t music_handle);
-TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_play_music(tq_handle_t music_handle, int loop);
+/**
+ * @brief Construct 2-component floating-point vector.
+ */
+static inline tq_vec2f_t tq_vec2f(float x, float y)
+{
+    return (tq_vec2f_t) {
+        .x = x,
+        .y = y,
+    };
+}
 
-TQ_EXPORT TQ_API tq_wave_state_t TQ_CALL tq_get_wave_state(tq_handle_t wave_handle);
-TQ_EXPORT TQ_API void TQ_CALL tq_pause_wave(tq_handle_t wave_handle);
-TQ_EXPORT TQ_API void TQ_CALL tq_unpause_wave(tq_handle_t wave_handle);
-TQ_EXPORT TQ_API void TQ_CALL tq_stop_wave(tq_handle_t wave_handle);
+/**
+ * @brief Add two floating-point 2D vectors.
+ */
+static inline tq_vec2f_t tq_vec2f_add(tq_vec2f_t v0, tq_vec2f_t v1)
+{
+    return (tq_vec2f_t) {
+        .x = v0.x + v1.x,
+        .y = v0.y + v1.y,
+    };
+}
+
+/**
+ * @brief Subtract two floating-point 2D vectors.
+ */
+static inline tq_vec2f_t tq_vec2f_subtract(tq_vec2f_t v0, tq_vec2f_t v1)
+{
+    return (tq_vec2f_t) {
+        .x = v0.x - v1.x,
+        .y = v0.y - v1.y,
+    };
+}
+
+/**
+ * @brief Multiply two floating-point 2D vectors.
+ */
+static inline tq_vec2f_t tq_vec2f_multiply(tq_vec2f_t v0, tq_vec2f_t v1)
+{
+    return (tq_vec2f_t) {
+        .x = v0.x * v1.x,
+        .y = v0.y * v1.y,
+    };
+}
+
+/**
+ * @brief Scale a floating-point 2D vector.
+ */
+static inline tq_vec2f_t tq_vec2f_scale(tq_vec2f_t vec, float f)
+{
+    return (tq_vec2f_t) {
+        .x = vec.x * f,
+        .y = vec.y * f,
+    };
+}
+
+/**
+ * @brief Get length of a floating-point 2D vector.
+ */
+static inline float tq_vec2f_length(tq_vec2f_t vec)
+{
+    return sqrtf((vec.x * vec.x) + (vec.y * vec.y));
+}
+
+/**
+ * @brief Normalize a floating-point 2D vector.
+ */
+static inline tq_vec2f_t tq_vec2f_normalize(tq_vec2f_t vec)
+{
+    float const length = tq_vec2f_length(vec);
+
+    return (tq_vec2f_t) {
+        .x = vec.x / length,
+        .y = vec.y / length,
+    };
+}
+
+/**
+ * @brief Calculate the distance between two vectors.
+ */
+static inline float tq_vec2f_distance(tq_vec2f_t v0, tq_vec2f_t v1)
+{
+    return sqrtf(((v1.y - v0.y) * (v1.y - v0.y)) + ((v1.x - v0.x) * (v1.x - v0.x)));
+}
+
+/**
+ * @brief Calculate an angle needed to aim to the target.
+ */
+static inline float tq_vec2f_look_at(tq_vec2f_t observer, tq_vec2f_t target)
+{
+    float const u = target.x - observer.x;
+    float const v = target.y - observer.y;
+
+    return TQ_RAD2DEG(atan2f(v, u));
+}
 
 //------------------------------------------------------------------------------
 

@@ -21,98 +21,98 @@ void audio_terminate(void)
     mixer->terminate();
 }
 
-tq_handle_t audio_load_sound_from_file(char const *path)
+int32_t audio_load_sound_from_file(char const *path)
 {
     uint8_t *buffer;
     size_t length;
 
     if (file_load(path, &length, &buffer) >= 0) {
-        tq_handle_t sound_handle = mixer->load_sound(buffer, length);
+        int32_t sound_id = mixer->load_sound(buffer, length);
         free(buffer);
 
-        return sound_handle;
+        return sound_id;
     }
 
-    return TQ_INVALID_HANDLE;
+    return -1;
 }
 
-tq_handle_t audio_load_sound_from_memory(uint8_t const *buffer, size_t length)
+int32_t audio_load_sound_from_memory(uint8_t const *buffer, size_t length)
 {
     return mixer->load_sound(buffer, length);
 }
 
-void audio_delete_sound(tq_handle_t sound_handle)
+void audio_delete_sound(int32_t sound_id)
 {
-    mixer->delete_sound(sound_handle);
+    mixer->delete_sound(sound_id);
 }
 
-tq_handle_t audio_play_sound(tq_handle_t sound_handle, float left_volume, float right_volume, int loop)
+int32_t audio_play_sound(int32_t sound_id, int loop)
 {
-    return mixer->play_sound(sound_handle, left_volume, right_volume, loop);
+    return mixer->play_sound(sound_id, loop);
 }
 
-tq_handle_t audio_open_music_from_file(char const *path)
+int32_t audio_open_music_from_file(char const *path)
 {
     stream_t stream;
 
     if (file_stream_open(&stream, path) == -1) {
-        return TQ_INVALID_HANDLE;
+        return -1;
     }
 
-    tq_handle_t music_handle = mixer->open_music(&stream);
+    int32_t music_id = mixer->open_music(&stream);
 
-    if (music_handle == TQ_INVALID_HANDLE) {
+    if (music_id == -1) {
         stream.close(stream.data);
     }
 
-    return music_handle;
+    return music_id;
 }
 
-tq_handle_t audio_open_music_from_memory(uint8_t const *buffer, size_t length)
+int32_t audio_open_music_from_memory(uint8_t const *buffer, size_t length)
 {
     stream_t stream;
 
     if (memory_stream_open(&stream, buffer, length) == -1) {
-        return TQ_INVALID_HANDLE;
+        return -1;
     }
 
-    tq_handle_t music_handle = mixer->open_music(&stream);
+    int32_t music_id = mixer->open_music(&stream);
 
-    if (music_handle == TQ_INVALID_HANDLE) {
+    if (music_id == -1) {
         stream.close(stream.data);
     }
 
-    return music_handle;
+    return music_id;
 }
 
-void audio_close_music(tq_handle_t music_handle)
+void audio_close_music(int32_t music_id)
 {
-    mixer->close_music(music_handle);
+    mixer->close_music(music_id);
 }
 
-tq_handle_t audio_play_music(tq_handle_t music_handle, int loop)
+int32_t audio_play_music(int32_t music_id, int loop)
 {
-    return mixer->play_music(music_handle, loop);
+    return mixer->play_music(music_id, loop);
 }
 
-tq_wave_state_t audio_get_wave_state(tq_handle_t wave_handle)
+tq_channel_state_t audio_get_channel_state(int32_t channel_id)
 {
-    return mixer->get_wave_state(wave_handle);
+    return mixer->get_channel_state(channel_id);
 }
 
-void audio_pause_wave(tq_handle_t wave_handle)
+void audio_pause_channel(int32_t channel_id)
 {
-    mixer->pause_wave(wave_handle);
+    mixer->pause_channel(channel_id);
 }
 
-void audio_unpause_wave(tq_handle_t wave_handle)
+void audio_unpause_channel(int32_t channel_id)
 {
-    mixer->unpause_wave(wave_handle);
+    mixer->unpause_channel(channel_id);
 }
 
-void audio_stop_wave(tq_handle_t wave_handle)
+void audio_stop_channel(int32_t channel_id)
 {
-    mixer->stop_wave(wave_handle);
+    mixer->stop_channel(channel_id);
 }
 
 //------------------------------------------------------------------------------
