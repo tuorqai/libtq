@@ -38,6 +38,16 @@ void tq_set_title(char const *title)
     core_set_title(title);
 }
 
+bool tq_is_key_autorepeat_enabled(void)
+{
+    return tq_core_is_key_autorepeat_enabled();
+}
+
+void tq_set_key_autorepeat_enabled(bool enabled)
+{
+    tq_core_set_key_autorepeat_enabled(enabled);
+}
+
 bool tq_is_key_pressed(tq_key_t key)
 {
     return core_is_key_pressed(key);
@@ -62,6 +72,31 @@ void tq_get_mouse_cursor_position(int32_t *x, int32_t *y)
 {
     *x = core_get_mouse_cursor_x();
     *y = core_get_mouse_cursor_y();
+}
+
+void tq_on_key_pressed(tq_key_callback_t callback)
+{
+    tq_core_set_key_press_callback(callback);
+}
+
+void tq_on_key_released(tq_key_callback_t callback)
+{
+    tq_core_set_key_release_callback(callback);
+}
+
+void tq_on_mouse_button_pressed(tq_mouse_button_callback_t callback)
+{
+    tq_core_set_mouse_button_press_callback(callback);
+}
+
+void tq_on_mouse_button_released(tq_mouse_button_callback_t callback)
+{
+    tq_core_set_mouse_button_release_callback(callback);
+}
+
+void tq_on_mouse_cursor_moved(tq_mouse_cursor_callback_t callback)
+{
+    tq_core_set_mouse_cursor_move_callback(callback);
 }
 
 float tq_get_time_mediump(void)

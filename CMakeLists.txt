@@ -103,7 +103,7 @@ endif()
 # Examples
 
 if(BUILD_EXAMPLES)
-    set(EXAMPLES "hello" "defense" "jestan")
+    set(EXAMPLES "hello" "defense" "jestan" "callbacks")
 
     foreach(EXAMPLE ${EXAMPLES})
         add_executable(${EXAMPLE} "examples/${EXAMPLE}.c")

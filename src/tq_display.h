@@ -16,6 +16,7 @@ struct display
     bool (*process_events)(void);
     void (*set_size)(uint32_t, uint32_t);
     void (*set_title)(char const *);
+    void (*set_key_autorepeat_enabled)(bool enabled);
 };
 
 //------------------------------------------------------------------------------

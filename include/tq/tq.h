@@ -244,6 +244,21 @@ typedef enum tq_channel_state
 typedef uint32_t tq_color_t;
 
 /**
+ * @brief Keyboard event callback.
+ */
+typedef void (*tq_key_callback_t)(tq_key_t key);
+
+/**
+ * @brief Mouse button event callback.
+ */
+typedef void (*tq_mouse_button_callback_t)(tq_mouse_button_t mouse_button, int32_t x, int32_t y);
+
+/**
+ * @brief Mouse cursor event callback.
+ */
+typedef void (*tq_mouse_cursor_callback_t)(int32_t x, int32_t y);
+
+/**
  * @brief Two-dimensional vector of integer numbers.
  */
 typedef struct tq_vec2i
@@ -316,6 +331,18 @@ TQ_EXPORT TQ_API char const * TQ_CALL tq_get_title(void);
 /* Changes or sets the application title. Can be called before initialization. */
 TQ_EXPORT TQ_API void TQ_CALL tq_set_title(char const *title);
 
+/**
+ * Check if keyboard auto-repeat feature is enabled.
+ */
+TQ_EXPORT TQ_API bool TQ_CALL tq_is_key_autorepeat_enabled(void);
+
+/**
+ * Set keyboard auto-repeat feature. If enabled, your key-press callback
+ * will be called repeatedly when a key is hold. This feature is enabled by
+ * default.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_set_key_autorepeat_enabled(bool enabled);
+
 /* Checks if a key is pressed. */
 TQ_EXPORT TQ_API bool TQ_CALL tq_is_key_pressed(tq_key_t key);
 
@@ -330,6 +357,31 @@ TQ_EXPORT TQ_API int32_t TQ_CALL tq_get_mouse_cursor_y(void);
 
 /* Returns mouse cursor position to the given arguments. Both should be valid pointers. */
 TQ_EXPORT TQ_API void TQ_CALL tq_get_mouse_cursor_position(int32_t *x, int32_t *y);
+
+/**
+ * @brief Set callback function that will be called when a key is pressed.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_on_key_pressed(tq_key_callback_t callback);
+
+/**
+ * @brief Set callback function that will be called when a key is released.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_on_key_released(tq_key_callback_t callback);
+
+/**
+ * @brief Set callback function that will be called when a mouse button is pressed.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_on_mouse_button_pressed(tq_mouse_button_callback_t callback);
+
+/**
+ * @brief Set callback function that will be called when a mouse button is released.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_on_mouse_button_released(tq_mouse_button_callback_t callback);
+
+/**
+ * @brief Set callback function that will be called when a mouse cursor is moved.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_on_mouse_cursor_moved(tq_mouse_cursor_callback_t callback);
 
 /* Returns how many seconds passed since the library initialization (millisecond precision). */
 TQ_EXPORT TQ_API float TQ_CALL tq_get_time_mediump(void);

@@ -27,6 +27,9 @@ void core_set_display_size(uint32_t width, uint32_t height);
 char const *core_get_title(void);
 void core_set_title(char const *title);
 
+bool tq_core_is_key_autorepeat_enabled(void);
+void tq_core_set_key_autorepeat_enabled(bool enabled);
+
 bool core_is_key_pressed(tq_key_t key);
 bool core_is_mouse_button_pressed(tq_mouse_button_t mouse_button);
 
@@ -47,6 +50,12 @@ void core_on_mouse_button_released(tq_mouse_button_t mouse_button);
 void core_on_mouse_cursor_moved(int32_t x, int32_t y);
 
 void tq_core_on_display_resized(uint32_t width, uint32_t height);
+
+void tq_core_set_key_press_callback(tq_key_callback_t callback);
+void tq_core_set_key_release_callback(tq_key_callback_t callback);
+void tq_core_set_mouse_button_press_callback(tq_mouse_button_callback_t callback);
+void tq_core_set_mouse_button_release_callback(tq_mouse_button_callback_t callback);
+void tq_core_set_mouse_cursor_move_callback(tq_mouse_cursor_callback_t callback);
 
 //------------------------------------------------------------------------------
 

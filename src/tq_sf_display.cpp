@@ -203,7 +203,7 @@ namespace
 
         window->setActive();
 
-        window->setKeyRepeatEnabled(false);
+        window->setKeyRepeatEnabled(tq_core_is_key_autorepeat_enabled());
         window->setVerticalSyncEnabled(true);
 
         center_window(window);
@@ -263,6 +263,11 @@ namespace
     {
         window->setTitle(title);
     }
+
+    void set_key_autorepeat_enabled(bool enabled)
+    {
+        window->setKeyRepeatEnabled(enabled);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -275,6 +280,7 @@ void construct_sf_display(struct display *display)
     display->process_events = ::process_events;
     display->set_size       = ::set_size;
     display->set_title      = ::set_title;
+    display->set_key_autorepeat_enabled = ::set_key_autorepeat_enabled;
 }
 
 //------------------------------------------------------------------------------

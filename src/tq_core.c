@@ -14,6 +14,7 @@ static struct display   const *display;
 static uint32_t     display_width;
 static uint32_t     display_height;
 static char         title[256];
+static int          key_autorepeat; /* -1: false, 0: undefined, 1: true */
 
 static double       prev_time;
 static double       current_time;
@@ -23,6 +24,12 @@ static uint8_t      key_state[32];
 static uint8_t      mouse_button_state;
 static int32_t      mouse_cursor_x;
 static int32_t      mouse_cursor_y;
+
+static tq_key_callback_t            key_press_callback;
+static tq_key_callback_t            key_release_callback;
+static tq_mouse_button_callback_t   mouse_button_press_callback;
+static tq_mouse_button_callback_t   mouse_button_release_callback;
+static tq_mouse_cursor_callback_t   mouse_cursor_move_callback;
 
 static unsigned int framerate;
 static unsigned int framerate_counter;
@@ -67,11 +74,21 @@ void core_initialize(struct clock const *clock_, struct display const *display_)
     if (!title[0]) {
         strcpy(title, "tq library application");
     }
-    
+
+    if (!key_autorepeat) {
+        key_autorepeat = 1;
+    }
+
     display->initialize(display_width, display_height, title);
 
     current_time = clock->get_time_highp();
     delta_time = 0.0;
+
+    key_press_callback = NULL;
+    key_release_callback = NULL;
+    mouse_button_press_callback = NULL;
+    mouse_button_release_callback = NULL;
+    mouse_cursor_move_callback = NULL;
 
     framerate = 60;
     framerate_counter = 0;
@@ -149,6 +166,20 @@ void core_set_title(char const *title_)
     }
 }
 
+bool tq_core_is_key_autorepeat_enabled(void)
+{
+    return (key_autorepeat == 1);
+}
+
+void tq_core_set_key_autorepeat_enabled(bool enabled)
+{
+    key_autorepeat = (enabled) ? 1 : -1;
+
+    if (display) {
+        display->set_key_autorepeat_enabled(enabled);
+    }
+}
+
 bool core_is_key_pressed(tq_key_t key)
 {
     return get_key_state(key);
@@ -192,27 +223,47 @@ unsigned int core_get_framerate(void)
 void core_on_key_pressed(tq_key_t key)
 {
     set_key_state(key, true);
+
+    if (key_press_callback) {
+        key_press_callback(key);
+    }
 }
 
 void core_on_key_released(tq_key_t key)
 {
     set_key_state(key, false);
+
+    if (key_release_callback) {
+        key_release_callback(key);
+    }
 }
 
 void core_on_mouse_button_pressed(tq_mouse_button_t mouse_button)
 {
     mouse_button_state |= (1 << mouse_button);
+
+    if (mouse_button_press_callback) {
+        mouse_button_press_callback(mouse_button, mouse_cursor_x, mouse_cursor_y);
+    }
 }
 
 void core_on_mouse_button_released(tq_mouse_button_t mouse_button)
 {
     mouse_button_state &= ~(1 << mouse_button);
+
+    if (mouse_button_release_callback) {
+        mouse_button_release_callback(mouse_button, mouse_cursor_x, mouse_cursor_y);
+    }
 }
 
 void core_on_mouse_cursor_moved(int32_t x, int32_t y)
 {
     mouse_cursor_x = x;
     mouse_cursor_y = y;
+
+    if (mouse_cursor_move_callback) {
+        mouse_cursor_move_callback(x, y);
+    }
 }
 
 void tq_core_on_display_resized(uint32_t width, uint32_t height)
@@ -221,6 +272,31 @@ void tq_core_on_display_resized(uint32_t width, uint32_t height)
     display_height = height;
 
     tq_graphics_on_display_resized(width, height);
+}
+
+void tq_core_set_key_press_callback(tq_key_callback_t callback)
+{
+    key_press_callback = callback;
+}
+
+void tq_core_set_key_release_callback(tq_key_callback_t callback)
+{
+    key_release_callback = callback;
+}
+
+void tq_core_set_mouse_button_press_callback(tq_mouse_button_callback_t callback)
+{
+    mouse_button_press_callback = callback;
+}
+
+void tq_core_set_mouse_button_release_callback(tq_mouse_button_callback_t callback)
+{
+    mouse_button_release_callback = callback;
+}
+
+void tq_core_set_mouse_cursor_move_callback(tq_mouse_cursor_callback_t callback)
+{
+    mouse_cursor_move_callback = callback;
 }
 
 //------------------------------------------------------------------------------
