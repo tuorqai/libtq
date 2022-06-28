@@ -240,6 +240,11 @@ namespace
             case sf::Event::MouseMoved:
                 core_on_mouse_cursor_moved(event.mouseMove.x, event.mouseMove.y);
                 break;
+            case sf::Event::MouseWheelScrolled:
+                tq_core_on_mouse_wheel_scrolled(event.mouseWheelScroll.delta,
+                    event.mouseWheelScroll.x,
+                    event.mouseWheelScroll.y);
+                break;
             case sf::Event::Resized:
                 tq_core_on_display_resized(event.size.width, event.size.height);
                 break;

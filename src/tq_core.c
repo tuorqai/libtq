@@ -30,6 +30,7 @@ static tq_key_callback_t            key_release_callback;
 static tq_mouse_button_callback_t   mouse_button_press_callback;
 static tq_mouse_button_callback_t   mouse_button_release_callback;
 static tq_mouse_cursor_callback_t   mouse_cursor_move_callback;
+static tq_mouse_wheel_callback_t    mouse_wheel_scroll_callback;
 
 static unsigned int framerate;
 static unsigned int framerate_counter;
@@ -89,6 +90,7 @@ void core_initialize(struct clock const *clock_, struct display const *display_)
     mouse_button_press_callback = NULL;
     mouse_button_release_callback = NULL;
     mouse_cursor_move_callback = NULL;
+    mouse_wheel_scroll_callback = NULL;
 
     framerate = 60;
     framerate_counter = 0;
@@ -266,6 +268,13 @@ void core_on_mouse_cursor_moved(int32_t x, int32_t y)
     }
 }
 
+void tq_core_on_mouse_wheel_scrolled(float delta, int32_t x, int32_t y)
+{
+    if (mouse_wheel_scroll_callback) {
+        mouse_wheel_scroll_callback(delta, x, y);
+    }
+}
+
 void tq_core_on_display_resized(uint32_t width, uint32_t height)
 {
     display_width = width;
@@ -297,6 +306,11 @@ void tq_core_set_mouse_button_release_callback(tq_mouse_button_callback_t callba
 void tq_core_set_mouse_cursor_move_callback(tq_mouse_cursor_callback_t callback)
 {
     mouse_cursor_move_callback = callback;
+}
+
+void tq_core_set_mouse_wheel_scroll_callback(tq_mouse_wheel_callback_t callback)
+{
+    mouse_wheel_scroll_callback = callback;
 }
 
 //------------------------------------------------------------------------------

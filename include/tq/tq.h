@@ -259,6 +259,11 @@ typedef void (*tq_mouse_button_callback_t)(tq_mouse_button_t mouse_button, int32
 typedef void (*tq_mouse_cursor_callback_t)(int32_t x, int32_t y);
 
 /**
+ * @brief Mouse wheel event callback.
+ */
+typedef void (*tq_mouse_wheel_callback_t)(float delta, int32_t x, int32_t y);
+
+/**
  * @brief Two-dimensional vector of integer numbers.
  */
 typedef struct tq_vec2i
@@ -382,6 +387,11 @@ TQ_EXPORT TQ_API void TQ_CALL tq_on_mouse_button_released(tq_mouse_button_callba
  * @brief Set callback function that will be called when a mouse cursor is moved.
  */
 TQ_EXPORT TQ_API void TQ_CALL tq_on_mouse_cursor_moved(tq_mouse_cursor_callback_t callback);
+
+/**
+ * Register a function that will be called when a mouse wheel is scrolled.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback_t callback);
 
 /* Returns how many seconds passed since the library initialization (millisecond precision). */
 TQ_EXPORT TQ_API float TQ_CALL tq_get_time_mediump(void);

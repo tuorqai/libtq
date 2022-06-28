@@ -48,6 +48,7 @@ void core_on_key_released(tq_key_t key);
 void core_on_mouse_button_pressed(tq_mouse_button_t mouse_button);
 void core_on_mouse_button_released(tq_mouse_button_t mouse_button);
 void core_on_mouse_cursor_moved(int32_t x, int32_t y);
+void tq_core_on_mouse_wheel_scrolled(float delta, int32_t x, int32_t y);
 
 void tq_core_on_display_resized(uint32_t width, uint32_t height);
 
@@ -56,6 +57,7 @@ void tq_core_set_key_release_callback(tq_key_callback_t callback);
 void tq_core_set_mouse_button_press_callback(tq_mouse_button_callback_t callback);
 void tq_core_set_mouse_button_release_callback(tq_mouse_button_callback_t callback);
 void tq_core_set_mouse_cursor_move_callback(tq_mouse_cursor_callback_t callback);
+void tq_core_set_mouse_wheel_scroll_callback(tq_mouse_wheel_callback_t callback);
 
 //------------------------------------------------------------------------------
 

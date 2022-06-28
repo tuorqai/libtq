@@ -11,6 +11,7 @@ static tq_color_t colors[NUM_COLORS] = {
 
 static float position_x = 256.0f;
 static float position_y = 256.0f;
+static float size = 128.0f;
 static int current_color = 0;
 
 void on_key_pressed(tq_key_t key)
@@ -40,7 +41,23 @@ void on_mouse_button_pressed(tq_mouse_button_t mouse_button, int32_t x, int32_t 
     } else if (mouse_button == TQ_MOUSE_BUTTON_RIGHT) {
         position_x = 256.0f;
         position_y = 256.0f;
+        size = 128.0f;
     }
+}
+
+void on_mouse_wheel_scrolled(float delta, int32_t x, int32_t y)
+{
+    size += delta * 16.0f;
+
+    if (size < 16.0f) {
+        size = 16.0f;
+    }
+
+    if (size > 256.0f) {
+        size = 256.0f;
+    }
+
+    printf("on_mouse_wheel_scrolled(): %f, %d, %d\n", delta, x, y);
 }
 
 int main(int argc, char *argv[])
@@ -54,6 +71,7 @@ int main(int argc, char *argv[])
 
     tq_on_key_pressed(on_key_pressed);
     tq_on_mouse_button_pressed(on_mouse_button_pressed);
+    tq_on_mouse_wheel_scrolled(on_mouse_wheel_scrolled);
 
     while (tq_process()) {
         float const t = tq_get_time_mediump();
@@ -63,7 +81,7 @@ int main(int argc, char *argv[])
         tq_set_outline_color(colors[current_color]);
         tq_translate_matrix_f(position_x, position_y);
         tq_rotate_matrix(t * 45.0f);
-        tq_outline_rectangle_f(-64.0f, -64.0f, 128.0f, 128.0f);
+        tq_outline_rectangle_f(-size / 2.0f, -size / 2.0f, size, size);
     }
 
     tq_terminate();

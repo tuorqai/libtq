@@ -99,6 +99,11 @@ void tq_on_mouse_cursor_moved(tq_mouse_cursor_callback_t callback)
     tq_core_set_mouse_cursor_move_callback(callback);
 }
 
+void tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback_t callback)
+{
+    tq_core_set_mouse_wheel_scroll_callback(callback);
+}
+
 float tq_get_time_mediump(void)
 {
     return core_get_time_mediump();
