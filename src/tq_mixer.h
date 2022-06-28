@@ -15,7 +15,7 @@ struct mixer
     void        (*initialize)(void);
     void        (*terminate)(void);
 
-    int32_t     (*load_sound)(uint8_t const *buffer, size_t length);
+    int32_t     (*load_sound)(stream_t const *stream);
     void        (*delete_sound)(int32_t sound_id);
     int32_t     (*play_sound)(int32_t sound_id, int loop);
 
@@ -31,7 +31,11 @@ struct mixer
 
 //------------------------------------------------------------------------------
 
-#if defined(TQ_USE_SFML)
+#if defined(TQ_USE_OPENAL)
+    void tq_construct_al_mixer(struct mixer *mixer);
+#endif
+
+#if defined(TQ_USE_SFML) && !defined(TQ_USE_OPENAL)
     void construct_sf_mixer(struct mixer *mixer);
 #endif
 

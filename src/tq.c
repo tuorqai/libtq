@@ -45,7 +45,11 @@ void tq_initialize(void)
         tq_construct_gl_renderer(&tq.renderer);
     #endif
 
-    construct_sf_mixer(&tq.mixer);
+    #if defined(TQ_USE_OPENAL)
+        tq_construct_al_mixer(&tq.mixer);
+    #else
+        construct_sf_mixer(&tq.mixer);
+    #endif
 #endif
 
     //----------------------------------

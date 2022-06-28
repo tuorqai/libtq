@@ -7,6 +7,7 @@ project(tq)
 #---------------------------------------
 
 add_library(tq
+    "src/tq_al_mixer.c"
     "src/tq_api.c"
     "src/tq_audio.c"
     "src/tq_core.c"
@@ -20,6 +21,7 @@ add_library(tq
     "src/tq_sf_display.cpp"
     "src/tq_sf_clock.cpp"
     "src/tq_sf_mixer.cpp"
+    "src/tq_sound_loader.c"
     "src/tq_stream.c"
     "src/tq.c")
 
@@ -76,12 +78,15 @@ elseif(USE_PLATFORM_LINUX)
     find_package(SFML 2.5 REQUIRED COMPONENTS audio window)
     find_package(OpenGL REQUIRED)
     find_package(GLEW REQUIRED)
+    find_package(OpenAL REQUIRED)
 
-    target_link_libraries(tq sfml-audio sfml-window GLEW::GLEW OpenGL::GL m)
+    target_include_directories(tq PRIVATE ${OPENAL_INCLUDE_DIR})
+    target_link_libraries(tq sfml-audio sfml-window GLEW::GLEW OpenGL::GL ${OPENAL_LIBRARY} m)
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_LINUX
         TQ_USE_SFML
-        TQ_USE_OPENGL)
+        TQ_USE_OPENGL
+        TQ_USE_OPENAL)
 
     include(GNUInstallDirs)
     install(TARGETS tq DESTINATION ${CMAKE_INSTALL_LIBDIR})

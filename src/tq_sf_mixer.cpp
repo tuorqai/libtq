@@ -1,6 +1,10 @@
 
 //------------------------------------------------------------------------------
 
+#if defined(TQ_USE_SFML) && !defined(TQ_USE_OPENAL)
+
+//------------------------------------------------------------------------------
+
 #include <cstring>
 
 #include <SFML/Audio/Music.hpp>
@@ -125,7 +129,7 @@ namespace
         log_info("SFML-based audio mixer is terminated.\n");
     }
 
-    int32_t load_sound(uint8_t const *buffer, size_t length)
+    int32_t load_sound(stream_t const *stream)
     {
         int32_t index = get_sound_index();
 
@@ -139,7 +143,10 @@ namespace
             return -1;
         }
 
-        if (!sound->loadFromMemory(buffer, length)) {
+        uint8_t const *buffer = (uint8_t const *) stream->buffer(stream->data);
+        size_t size = stream->get_size(stream->data);
+
+        if (!sound->loadFromMemory(buffer, size)) {
             delete sound;
             return -1;
         }
@@ -331,3 +338,5 @@ void construct_sf_mixer(struct mixer *mixer)
 }
 
 //------------------------------------------------------------------------------
+
+#endif // defined(TQ_USE_SFML) && !defined(TQ_USE_OPENAL)

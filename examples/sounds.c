@@ -25,6 +25,24 @@ void draw_button(int index, float x, float y)
     tq_pop_matrix();
 }
 
+void on_key_pressed(tq_key_t key)
+{
+    switch (key) {
+    case TQ_KEY_1:
+        tq_play_sound(sounds[0], 0);
+        break;
+    case TQ_KEY_2:
+        tq_play_sound(sounds[1], 0);
+        break;
+    case TQ_KEY_3:
+        tq_play_sound(sounds[2], 0);
+        break;
+    case TQ_KEY_4:
+        tq_play_sound(sounds[3], 0);
+        break;
+    }
+}
+
 void on_mouse_button_pressed(tq_mouse_button_t button, int32_t x, int32_t y)
 {
     if (button == TQ_MOUSE_BUTTON_LEFT) {
@@ -65,6 +83,7 @@ int main(int argc, char *argv[])
     sounds[2] = tq_load_sound_from_file("assets/smb_powerup_appears.wav");
     sounds[3] = tq_load_sound_from_file("assets/smb_kick.wav");
 
+    tq_on_key_pressed(on_key_pressed);
     tq_on_mouse_button_pressed(on_mouse_button_pressed);
     tq_on_mouse_cursor_moved(on_mouse_cursor_moved);
 

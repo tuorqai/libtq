@@ -23,22 +23,30 @@ void audio_terminate(void)
 
 int32_t audio_load_sound_from_file(char const *path)
 {
-    uint8_t *buffer;
-    size_t length;
+    stream_t stream;
 
-    if (file_load(path, &length, &buffer) >= 0) {
-        int32_t sound_id = mixer->load_sound(buffer, length);
-        free(buffer);
-
-        return sound_id;
+    if (file_stream_open(&stream, path) == -1) {
+        return -1;
     }
 
-    return -1;
+    int32_t sound_id = mixer->load_sound(&stream);
+    stream.close(stream.data);
+
+    return sound_id;
 }
 
 int32_t audio_load_sound_from_memory(uint8_t const *buffer, size_t length)
 {
-    return mixer->load_sound(buffer, length);
+    stream_t stream;
+
+    if (memory_stream_open(&stream, buffer, length) == -1) {
+        return -1;
+    }
+
+    int32_t sound_id = mixer->load_sound(&stream);
+    stream.close(stream.data);
+
+    return sound_id;
 }
 
 void audio_delete_sound(int32_t sound_id)
