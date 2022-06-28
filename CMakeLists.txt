@@ -17,11 +17,11 @@ add_library(tq
     "src/tq_image_loader.c"
     "src/tq_log.c"
     "src/tq_math.c"
-    "src/tq_meta.c"
     "src/tq_sf_display.cpp"
     "src/tq_sf_clock.cpp"
     "src/tq_sf_mixer.cpp"
-    "src/tq_stream.c")
+    "src/tq_stream.c"
+    "src/tq.c")
 
 target_include_directories(tq PUBLIC "include")
 target_include_directories(tq PRIVATE "third-party")
@@ -46,53 +46,56 @@ option(BUILD_EXAMPLES "Build examples" NO)
 # Platform-specific
 #---------------------------------------
 
-function(USE_SFML)
-    find_package(SFML 2.5 REQUIRED COMPONENTS audio window)
-    target_compile_definitions(tq PRIVATE TQ_USE_SFML)
-    target_link_libraries(tq sfml-audio sfml-window)
-endfunction()
+if(WIN32)
+    set(USE_PLATFORM_WINDOWS TRUE)
+    message("Platform is: Windows")
+elseif(UNIX)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(USE_PLATFORM_LINUX TRUE)
+        message("Platform is: Linux")
+    elseif(ANDROID)
+        set(USE_PLATFORM_ANDROID TRUE)
+        message("Platform is: Android")
+    endif()
+endif()
 
-function(USE_OPENGL)
+if(USE_PLATFORM_WINDOWS)
+    find_package(SFML 2.5 REQUIRED COMPONENTS audio window)
     find_package(OpenGL REQUIRED)
     find_package(GLEW REQUIRED)
-    target_compile_definitions(tq PRIVATE TQ_USE_OPENGL)
-    target_link_libraries(tq GLEW::GLEW OpenGL::GL)
-endfunction()
 
-function(USE_OPENGL_ES)
-    find_library(GLESv2_LIBRARY "GLESv2" REQUIRED)
-    target_compile_definitions(tq PRIVATE TQ_USE_OPENGL TQ_USE_OPENGL_ES)
-    target_link_libraries(tq ${GLESv2_LIBRARY})
-endfunction()
-
-if(WIN32)
-    #-----------------------------------
-    # Windows
-
-    use_sfml()
-    use_opengl()
+    target_link_libraries(tq sfml-audio sfml-window GLEW::GLEW OpenGL::GL)
+    target_compile_definitions(tq PRIVATE
+        TQ_PLATFORM_WINDOWS
+        TQ_USE_SFML
+        TQ_USE_OPENGL)
 
     install(TARGETS tq DESTINATION "lib")
-    install(FILES
-        "include/tq/tq.h"
-        "include/tq/tq.hpp"
-        DESTINATION "include")
-elseif(UNIX AND NOT APPLE)
-    #-----------------------------------
-    # Linux
+    install(FILES "include/tq/tq.h" DESTINATION "include")
+elseif(USE_PLATFORM_LINUX)
+    find_package(SFML 2.5 REQUIRED COMPONENTS audio window)
+    find_package(OpenGL REQUIRED)
+    find_package(GLEW REQUIRED)
 
-    use_sfml()
-    use_opengl()
-    target_link_libraries(tq m)
+    target_link_libraries(tq sfml-audio sfml-window GLEW::GLEW OpenGL::GL m)
+    target_compile_definitions(tq PRIVATE
+        TQ_PLATFORM_LINUX
+        TQ_USE_SFML
+        TQ_USE_OPENGL)
 
     include(GNUInstallDirs)
     install(TARGETS tq DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    install(FILES
-        "include/tq/tq.h"
-        "include/tq/tq.hpp"
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    install(FILES "include/tq/tq.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+elseif(USE_PLATFORM_ANDROID)
+    add_library(native_app_glue STATIC
+        "${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c")
+
+    target_link_libraries(tq android log native_app_glue GLESv2 EGL)
+    target_compile_definitions(tq PRIVATE
+        TQ_PLATFORM_ANDROID
+        TQ_USE_OPENGL
+        TQ_USE_OPENGL_ES)
 else()
-    # Unsupported OS
     message(FATAL_ERROR "Sorry, but your OS is not supported :(")
 endif()
 

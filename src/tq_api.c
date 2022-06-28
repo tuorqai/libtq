@@ -4,25 +4,6 @@
 #include "tq_audio.h"
 #include "tq_core.h"
 #include "tq_graphics.h"
-#include "tq_meta.h"
-
-//------------------------------------------------------------------------------
-// Meta
-
-void tq_initialize(void)
-{
-    meta_initialize();
-}
-
-void tq_terminate(void)
-{
-    meta_terminate();
-}
-
-bool tq_process(void)
-{
-    return meta_process();
-}
 
 //------------------------------------------------------------------------------
 // Core
