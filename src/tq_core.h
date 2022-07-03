@@ -59,6 +59,8 @@ void tq_core_set_mouse_button_release_callback(tq_mouse_button_callback_t callba
 void tq_core_set_mouse_cursor_move_callback(tq_mouse_cursor_callback_t callback);
 void tq_core_set_mouse_wheel_scroll_callback(tq_mouse_wheel_callback_t callback);
 
+void tq_core_show_message_box(char const *title, char const *message);
+
 //------------------------------------------------------------------------------
 
 #endif // TQ_CORE_H_INC

@@ -10,6 +10,7 @@
 #include <al.h>
 #include <alc.h>
 
+#include "tq_error.h"
 #include "tq_log.h"
 #include "tq_mixer.h"
 #include "tq_sound_loader.h"
@@ -135,25 +136,22 @@ static void initialize(void)
     al.device = alcOpenDevice(NULL);
 
     if (al.device == NULL) {
-        log_error("OpenAL: failed to open audio device.\n");
-        return;
+        tq_error("OpenAL: failed to open audio device.");
     }
 
     al.context = alcCreateContext(al.device, NULL);
 
     if (al.context == NULL) {
-        log_error("OpenAL: failed to create context.\n");
-        return;
+        tq_error("OpenAL: failed to create context.");
     }
 
     if (!alcMakeContextCurrent(al.context)) {
-        log_error("OpenAL: failed to activate context.\n");
-        return;
+        tq_error("OpenAL: failed to activate context.");
     }
 
     CHECK_AL(alGenSources(TQ_CHANNEL_LIMIT, al.sources));
 
-    log_info("OpenAL audio module is initialized.\n");
+    log_info("OpenAL audio module is initialized.");
 }
 
 static void terminate(void)

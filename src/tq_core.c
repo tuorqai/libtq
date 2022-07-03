@@ -313,4 +313,9 @@ void tq_core_set_mouse_wheel_scroll_callback(tq_mouse_wheel_callback_t callback)
     mouse_wheel_scroll_callback = callback;
 }
 
+void tq_core_show_message_box(char const *title, char const *message)
+{
+    display->show_message_box(title, message);
+}
+
 //------------------------------------------------------------------------------

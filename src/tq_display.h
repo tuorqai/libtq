@@ -17,6 +17,7 @@ struct display
     void (*set_size)(uint32_t, uint32_t);
     void (*set_title)(char const *);
     void (*set_key_autorepeat_enabled)(bool enabled);
+    void (*show_message_box)(char const *title, char const *message);
 };
 
 //------------------------------------------------------------------------------

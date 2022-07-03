@@ -11,6 +11,7 @@ add_library(tq
     "src/tq_api.c"
     "src/tq_audio.c"
     "src/tq_core.c"
+    "src/tq_error.c"
     "src/tq_gl_renderer.c"
     "src/tq_graphics.c"
     "src/tq_file.c"

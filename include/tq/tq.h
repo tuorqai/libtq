@@ -43,6 +43,7 @@
 #if defined(__GNUC__)
 #   define TQ_API       __attribute__((visibility("default")))
 #   define TQ_CALL
+#   define TQ_NO_RET    __attribute__((__noreturn__))
 #elif defined(_MSC_VER)
 #   if defined(TQ_BUILD)
 #       define TQ_API   __declspec(dllexport)
@@ -50,9 +51,11 @@
 #       define TQ_API   __declspec(dllimport)
 #   endif
 #   define TQ_CALL      __cdecl
+#   define TQ_NO_RET    __declspec(noreturn)
 #else
 #   define TQ_API
 #   define TQ_CALL
+#   define TQ_NO_RET
 #endif
 
 //------------------------------------------------------------------------------

@@ -15,6 +15,7 @@
 extern "C" {
     #include "tq_core.h"
     #include "tq_display.h"
+    #include "tq_error.h"
     #include "tq_log.h"
     #include "tq_renderer.h"
 }
@@ -201,7 +202,13 @@ namespace
             0, 0, 4, 2, 1
         ));
 
-        window->setActive();
+        if (window == nullptr) {
+            tq_error("Failed to create SFML window.");
+        }
+
+        if (!window->setActive()) {
+            tq_error("Failed to activate OpenGL context.");
+        }
 
         window->setKeyRepeatEnabled(tq_core_is_key_autorepeat_enabled());
         window->setVerticalSyncEnabled(true);
@@ -273,6 +280,10 @@ namespace
     {
         window->setKeyRepeatEnabled(enabled);
     }
+
+    void show_message_box(char const *title, char const *message)
+    {
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -286,6 +297,7 @@ void construct_sf_display(struct display *display)
     display->set_size       = ::set_size;
     display->set_title      = ::set_title;
     display->set_key_autorepeat_enabled = ::set_key_autorepeat_enabled;
+    display->show_message_box           = ::show_message_box;
 }
 
 //------------------------------------------------------------------------------
