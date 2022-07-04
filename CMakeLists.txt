@@ -14,7 +14,6 @@ add_library(tq
     "src/tq_error.c"
     "src/tq_gl_renderer.c"
     "src/tq_graphics.c"
-    "src/tq_file.c"
     "src/tq_handle_list.c"
     "src/tq_image_loader.c"
     "src/tq_log.c"

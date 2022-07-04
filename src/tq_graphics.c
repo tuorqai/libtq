@@ -6,7 +6,6 @@
 
 #include "tq_core.h"
 #include "tq_graphics.h"
-#include "tq_file.h"
 #include "tq_math.h"
 #include "tq_stream.h"
 
