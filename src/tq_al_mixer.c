@@ -231,6 +231,10 @@ static void delete_sound(int32_t sound_id)
 
 static int32_t play_sound(int32_t sound_id, int loop)
 {
+    if (sound_id < 0 || sound_id >= TQ_SOUND_LIMIT) {
+        return -1;
+    }
+
     int32_t index = get_source_index();
 
     if (index == -1) {

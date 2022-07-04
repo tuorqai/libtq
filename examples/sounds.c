@@ -8,7 +8,8 @@
 static int selected_index = -1;
 
 static int32_t texture;
-static int32_t sounds[4];
+static int32_t sounds[5];
+static int32_t music_channel = -1;
 
 //------------------------------------------------------------------------------
 
@@ -39,6 +40,17 @@ void on_key_pressed(tq_key_t key)
         break;
     case TQ_KEY_4:
         tq_play_sound(sounds[3], 0);
+        break;
+    case TQ_KEY_SPACE:
+        if (music_channel == -1) {
+            music_channel = tq_play_sound(sounds[4], -1);
+        } else {
+            if (tq_get_channel_state(music_channel) == TQ_CHANNEL_STATE_PLAYING) {
+                tq_pause_channel(music_channel);
+            } else if (tq_get_channel_state(music_channel) == TQ_CHANNEL_STATE_PAUSED) {
+                tq_unpause_channel(music_channel);
+            }
+        }
         break;
     }
 }
@@ -82,6 +94,7 @@ int main(int argc, char *argv[])
     sounds[1] = tq_load_sound_from_file("assets/smb_breakblock.wav");
     sounds[2] = tq_load_sound_from_file("assets/smb_powerup_appears.wav");
     sounds[3] = tq_load_sound_from_file("assets/smb_kick.wav");
+    sounds[4] = tq_load_sound_from_file("assets/smw_athletic.oga");
 
     tq_on_key_pressed(on_key_pressed);
     tq_on_mouse_button_pressed(on_mouse_button_pressed);

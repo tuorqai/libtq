@@ -66,7 +66,18 @@ if(USE_PLATFORM_WINDOWS)
     find_package(GLEW REQUIRED)
     find_package(OpenAL REQUIRED)
 
-    target_link_libraries(tq sfml-window GLEW::GLEW OpenGL::GL)
+    find_library(OGG_LIBRARY ogg REQUIRED)
+    find_library(VORBIS_LIBRARY vorbis REQUIRED)
+    find_library(VORBISFILE_LIBRARY vorbisfile REQUIRED)
+
+    target_link_libraries(tq
+        sfml-window
+        GLEW::GLEW
+        OpenGL::GL
+        ${OGG_LIBRARY}
+        ${VORBIS_LIBRARY}
+        ${VORBISFILE_LIBRARY})
+
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_WINDOWS
         TQ_USE_SFML
@@ -81,8 +92,22 @@ elseif(USE_PLATFORM_LINUX)
     find_package(GLEW REQUIRED)
     find_package(OpenAL REQUIRED)
 
+    find_library(OGG_LIBRARY ogg REQUIRED)
+    find_library(VORBIS_LIBRARY vorbis REQUIRED)
+    find_library(VORBISFILE_LIBRARY vorbisfile REQUIRED)
+
     target_include_directories(tq PRIVATE ${OPENAL_INCLUDE_DIR})
-    target_link_libraries(tq sfml-window GLEW::GLEW OpenGL::GL ${OPENAL_LIBRARY} m)
+
+    target_link_libraries(tq
+        sfml-window
+        GLEW::GLEW
+        OpenGL::GL
+        ${OPENAL_LIBRARY}
+        ${OGG_LIBRARY}
+        ${VORBIS_LIBRARY}
+        ${VORBISFILE_LIBRARY}
+        m)
+
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_LINUX
         TQ_USE_SFML
