@@ -16,7 +16,7 @@
 
 void tq_log_generic(int log_level, char const *fmt, ...)
 {
-    float t = core_get_time_mediump();
+    float t = tq_core_get_time_mediump();
 
     char buffer[TQ_LOG_BUFFER_SIZE];
     va_list vp;

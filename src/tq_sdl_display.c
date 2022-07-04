@@ -6,7 +6,6 @@
 #include <SDL.h>
 
 #include "tq_core.h"
-#include "tq_display.h"
 #include "tq_error.h"
 #include "tq_log.h"
 #include "tq_mem.h"
@@ -184,11 +183,11 @@ static void initialize(uint32_t a0, uint32_t a1, char const *a2)
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, versions[n].flags);
 
         sdl.window = SDL_CreateWindow(
-            core_get_title(),
+            tq_core_get_title(),
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
-            core_get_display_width(),
-            core_get_display_height(),
+            tq_core_get_display_width(),
+            tq_core_get_display_height(),
             SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
         );
 
@@ -246,22 +245,24 @@ static bool process_events(void)
             if (event.key.repeat && !sdl.key_autorepeat) {
                 break;
             }
-            core_on_key_pressed(key_conv(&event.key.keysym));
+            tq_core_on_key_pressed(key_conv(&event.key.keysym));
             break;
         case SDL_KEYUP:
-            core_on_key_released(key_conv(&event.key.keysym));
+            tq_core_on_key_released(key_conv(&event.key.keysym));
             break;
         case SDL_MOUSEBUTTONDOWN:
-            core_on_mouse_button_pressed(mouse_button_conv(event.button.button));
+            tq_core_on_mouse_button_pressed(mouse_button_conv(event.button.button));
             break;
         case SDL_MOUSEBUTTONUP:
-            core_on_mouse_button_released(mouse_button_conv(event.button.button));
+            tq_core_on_mouse_button_released(mouse_button_conv(event.button.button));
             break;
         case SDL_MOUSEMOTION:
-            core_on_mouse_cursor_moved(event.button.x, event.button.y);
+            tq_core_on_mouse_cursor_moved(event.button.x, event.button.y);
             break;
         case SDL_MOUSEWHEEL:
-            tq_core_on_mouse_wheel_scrolled((float) event.wheel.y, -1, -1);
+            if (event.wheel.y) {
+                tq_core_on_mouse_wheel_scrolled((float) event.wheel.y, -1, -1);
+            }
             break;
         case SDL_WINDOWEVENT:
             switch (event.window.event) {
@@ -301,7 +302,7 @@ static void show_message_box(char const *title, char const *message)
 
 //------------------------------------------------------------------------------
 
-void construct_sdl_display(tq_display_t *display)
+void tq_construct_sdl_display(tq_display_t *display)
 {
     display->initialize             = initialize;
     display->terminate              = terminate;

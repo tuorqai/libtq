@@ -10,32 +10,32 @@
 
 uint32_t tq_get_display_width(void)
 {
-    return core_get_display_width();
+    return tq_core_get_display_width();
 }
 
 uint32_t tq_get_display_height(void)
 {
-    return core_get_display_height();
+    return tq_core_get_display_height();
 }
 
 void tq_get_display_size(uint32_t *width, uint32_t *height)
 {
-    core_get_display_size(width, height);
+    tq_core_get_display_size(width, height);
 }
 
 void tq_set_display_size(uint32_t width, uint32_t height)
 {
-    core_set_display_size(width, height);
+    tq_core_set_display_size(width, height);
 }
 
 char const *tq_get_title(void)
 {
-    return core_get_title();
+    return tq_core_get_title();
 }
 
 void tq_set_title(char const *title)
 {
-    core_set_title(title);
+    tq_core_set_title(title);
 }
 
 bool tq_is_key_autorepeat_enabled(void)
@@ -50,28 +50,28 @@ void tq_set_key_autorepeat_enabled(bool enabled)
 
 bool tq_is_key_pressed(tq_key_t key)
 {
-    return core_is_key_pressed(key);
+    return tq_core_is_key_pressed(key);
 }
 
 bool tq_is_mouse_button_pressed(tq_mouse_button_t mouse_button)
 {
-    return core_is_mouse_button_pressed(mouse_button);
+    return tq_core_is_mouse_button_pressed(mouse_button);
 }
 
 int32_t tq_get_mouse_cursor_x(void)
 {
-    return core_get_mouse_cursor_x();
+    return tq_core_get_mouse_cursor_x();
 }
 
 int32_t tq_get_mouse_cursor_y(void)
 {
-    return core_get_mouse_cursor_y();
+    return tq_core_get_mouse_cursor_y();
 }
 
 void tq_get_mouse_cursor_position(int32_t *x, int32_t *y)
 {
-    *x = core_get_mouse_cursor_x();
-    *y = core_get_mouse_cursor_y();
+    *x = tq_core_get_mouse_cursor_x();
+    *y = tq_core_get_mouse_cursor_y();
 }
 
 void tq_on_key_pressed(tq_key_callback_t callback)
@@ -106,22 +106,22 @@ void tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback_t callback)
 
 float tq_get_time_mediump(void)
 {
-    return core_get_time_mediump();
+    return tq_core_get_time_mediump();
 }
 
 double tq_get_time_highp(void)
 {
-    return core_get_time_highp();
+    return tq_core_get_time_highp();
 }
 
 double tq_get_delta_time(void)
 {
-    return core_get_delta_time();
+    return tq_core_get_delta_time();
 }
 
 unsigned int tq_get_framerate(void)
 {
-    return core_get_framerate();
+    return tq_core_get_framerate();
 }
 
 //------------------------------------------------------------------------------

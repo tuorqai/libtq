@@ -15,10 +15,10 @@
 #endif
 
 #include "tq_core.h"
+#include "tq_graphics.h"
 #include "tq_image_loader.h"
 #include "tq_log.h"
 #include "tq_math.h"
-#include "tq_renderer.h"
 
 //------------------------------------------------------------------------------
 // OpenGL debug stuff

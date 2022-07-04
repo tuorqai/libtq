@@ -5,7 +5,7 @@
 
 #include <SDL.h>
 
-#include "tq_clock.h"
+#include "tq_core.h"
 #include "tq_error.h"
 
 //------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ static double get_time_highp(void)
 
 //------------------------------------------------------------------------------
 
-void construct_sdl_clock(struct clock *clock)
+void tq_construct_sdl_clock(tq_clock_t *clock)
 {
     clock->initialize       = initialize;
     clock->terminate        = terminate;
