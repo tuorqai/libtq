@@ -316,29 +316,30 @@ void graphics_set_fill_color(tq_color_t fill_color)
 
 tq_handle_t graphics_load_texture_from_file(char const *path)
 {
-    stream_t stream;
+    int32_t stream_id = tq_open_file_istream(path);
 
-    if (file_stream_open(&stream, path) == -1) {
-        return TQ_INVALID_HANDLE;
+    if (stream_id == -1) {
+        return -1;
     }
 
-    tq_handle_t texture_id = graphics.renderer->load_texture(&stream);
+    int32_t texture_id = graphics.renderer->load_texture(stream_id);
 
-    stream.close(stream.data);
+    tq_istream_close(stream_id);
+
     return texture_id;
 }
 
-tq_handle_t graphics_load_texture_from_memory(uint8_t const *buffer, size_t length)
+tq_handle_t graphics_load_texture_from_memory(uint8_t const *buffer, size_t size)
 {
-    stream_t stream;
+    int32_t stream_id = tq_open_memory_istream(buffer, size);
 
-    if (memory_stream_open(&stream, buffer, length) == -1) {
-        return TQ_INVALID_HANDLE;
+    if (stream_id == -1) {
+        return -1;
     }
 
-    tq_handle_t texture_id = graphics.renderer->load_texture(&stream);
+    int32_t texture_id = graphics.renderer->load_texture(stream_id);
 
-    stream.close(stream.data);
+    tq_istream_close(stream_id);
     return texture_id;
 }
 

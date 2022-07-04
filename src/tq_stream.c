@@ -4,70 +4,105 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "tq_log.h"
 #include "tq_stream.h"
 
 //------------------------------------------------------------------------------
-// File streams
 
-struct file_stream_info
+#define TQ_STREAM_NAME_LENGTH       (256)
+
+typedef struct tq_file_istream_data
 {
-    FILE *handle;
-    size_t size;
-    uint8_t *buffer;
-    char path[256];
-};
+    FILE            *handle;
+    uint8_t         *buffer;
+    size_t          size;
+    char            path[TQ_STREAM_NAME_LENGTH];
+} tq_file_istream_data_t;
 
-static char const *file_stream_identifier(void *data)
+typedef struct tq_memory_istream_data
 {
-    struct file_stream_info *info = (struct file_stream_info *) data;
-    return info->path;
-}
+    uint8_t const   *buffer;
+    size_t          size;
+    size_t          position;
+    char            repr[TQ_STREAM_NAME_LENGTH];
+} tq_memory_istream_data_t;
 
-static int64_t file_stream_read(void *data, void *dst, int64_t size)
+typedef union tq_istream_data
 {
-    struct file_stream_info *info = (struct file_stream_info *) data;
-    return (int64_t) fread(dst, 1, size, info->handle);
-}
+    tq_file_istream_data_t      file;
+    tq_memory_istream_data_t    memory;
+} tq_istream_data_t;
 
-static int64_t file_stream_seek(void *data, int64_t position)
+typedef struct tq_istream
 {
-    struct file_stream_info *info = (struct file_stream_info *) data;
+    int64_t     (*read)(tq_istream_data_t *data, void *dst, int64_t size);
+    int64_t     (*seek)(tq_istream_data_t *data, int64_t position);
+    int64_t     (*tell)(tq_istream_data_t *data);
+    int64_t     (*size)(tq_istream_data_t *data);
+    void const  *(*buffer)(tq_istream_data_t *data);
+    int64_t     (*close)(tq_istream_data_t *data);
+    char const  *(*repr)(tq_istream_data_t *data);
 
-    if (fseek(info->handle, position, SEEK_SET) == 0) {
-        return (int64_t) ftell(info->handle);
+    tq_istream_data_t data;
+} tq_istream_t;
+
+//------------------------------------------------------------------------------
+
+static tq_istream_t    *istream_array[TQ_INPUT_STREAM_LIMIT];
+
+//------------------------------------------------------------------------------
+
+int32_t get_istream_id(void)
+{
+    for (int32_t id = 0; id < TQ_INPUT_STREAM_LIMIT; id++) {
+        if (istream_array[id] == NULL) {
+            return id;
+        }
     }
 
     return -1;
 }
 
-static int64_t file_stream_tell(void *data)
+//------------------------------------------------------------------------------
+// File streams
+
+static int64_t file_istream_read(tq_istream_data_t *data, void *dst, int64_t size)
 {
-    struct file_stream_info *info = (struct file_stream_info *) data;
-    return (int64_t) ftell(info->handle);
+    return (int64_t) fread(dst, 1, size, data->file.handle);
 }
 
-static int64_t file_stream_get_size(void *data)
+static int64_t file_istream_seek(tq_istream_data_t *data, int64_t position)
 {
-    struct file_stream_info *info = (struct file_stream_info *) data;
-
-    if (info->size == -1) {
-        int64_t prev_position = (int64_t) ftell(info->handle);
-
-        fseek(info->handle, 0, SEEK_END);
-        info->size = (int64_t) ftell(info->handle);
-
-        fseek(info->handle, prev_position, SEEK_SET);
+    if (fseek(data->file.handle, position, SEEK_SET) == 0) {
+        return (int64_t) ftell(data->file.handle);
     }
 
-    return info->size;
+    return -1;
 }
 
-static void const *file_stream_buffer(void *data)
+static int64_t file_istream_tell(tq_istream_data_t *data)
 {
-    struct file_stream_info *info = (struct file_stream_info *) data;
+    return (int64_t) ftell(data->file.handle);
+}
 
-    if (info->buffer == NULL) {
-        size_t size = file_stream_get_size(data);
+static int64_t file_istream_size(tq_istream_data_t *data)
+{
+    if (data->file.size == (size_t) -1) {
+        int64_t prev_position = (int64_t) ftell(data->file.handle);
+
+        fseek(data->file.handle, 0, SEEK_END);
+        data->file.size = (int64_t) ftell(data->file.handle);
+
+        fseek(data->file.handle, prev_position, SEEK_SET);
+    }
+
+    return data->file.size;
+}
+
+static void const *file_istream_buffer(tq_istream_data_t *data)
+{
+    if (data->file.buffer == NULL) {
+        size_t size = file_istream_size(data);
 
         uint8_t *buffer = malloc(size);
 
@@ -75,158 +110,255 @@ static void const *file_stream_buffer(void *data)
             return NULL;
         }
 
-        int64_t prev_position = (int64_t) ftell(info->handle);
+        int64_t prev_position = (int64_t) ftell(data->file.handle);
 
-        fseek(info->handle, 0, SEEK_SET);
-        size_t read = fread(buffer, size, 1, info->handle);
+        fseek(data->file.handle, 0, SEEK_SET);
+        size_t read = fread(buffer, size, 1, data->file.handle);
 
         if (read == 1) {
-            info->buffer = buffer;
+            data->file.buffer = buffer;
         } else {
             free(buffer);
         }
 
-        fseek(info->handle, prev_position, SEEK_SET);
+        fseek(data->file.handle, prev_position, SEEK_SET);
     }
 
-    return info->buffer;
+    return data->file.buffer;
 }
 
-static void file_stream_close(void *data)
+static int64_t file_istream_close(tq_istream_data_t *data)
 {
-    struct file_stream_info *info = (struct file_stream_info *) data;
+    fclose(data->file.handle);
+    free(data->file.buffer);
 
-    fclose(info->handle);
-    free(info->buffer);
+    return 0;
 }
 
-int64_t file_stream_open(stream_t *stream, char const *path)
+static char const *file_istream_repr(tq_istream_data_t *data)
 {
-    struct file_stream_info *info = calloc(1, sizeof(struct file_stream_info));
-
-    if (info) {
-        info->handle = fopen(path, "rb");
-
-        if (info->handle) {
-            info->buffer = NULL;
-            info->size = -1;
-            strncpy(info->path, path, sizeof(info->path));
-
-            *stream = (stream_t) {
-                .data = info,
-                .identifier = file_stream_identifier,
-                .read = file_stream_read,
-                .seek = file_stream_seek,
-                .tell = file_stream_tell,
-                .get_size = file_stream_get_size,
-                .buffer = file_stream_buffer,
-                .close = file_stream_close,
-            };
-
-            return 0;
-        }
-
-        free(info);
-    }
-
-    return -1;
+    return data->file.path;
 }
 
 //------------------------------------------------------------------------------
 // Memory streams
 
-struct memory_stream_info
+static int64_t memory_istream_read(tq_istream_data_t *data, void *dst, int64_t size)
 {
-    uint8_t const *buffer;
-    size_t length;
-    size_t position;
-    char identifier[32];
-};
-
-static char const *memory_stream_identifier(void *data)
-{
-    struct memory_stream_info *info = (struct memory_stream_info *) data;
-    return info->identifier;
-}
-
-static int64_t memory_stream_read(void *data, void *dst, int64_t size)
-{
-    struct memory_stream_info *info = (struct memory_stream_info *) data;
-
-    if (info->position > info->length) {
+    if (data->memory.position > data->memory.size) {
         return -1;
     }
 
-    size_t bytes_left = info->length - info->position;
+    size_t bytes_left = data->memory.size - data->memory.position;
     size_t bytes_to_copy = (bytes_left < size) ? bytes_left : size;
 
-    memcpy(dst, info->buffer + info->position, bytes_to_copy);
-    info->position += bytes_to_copy;
+    memcpy(dst, data->memory.buffer + data->memory.position, bytes_to_copy);
+    data->memory.position += bytes_to_copy;
     return bytes_to_copy;
 }
 
-static int64_t memory_stream_seek(void *data, int64_t position)
+static int64_t memory_istream_seek(tq_istream_data_t *data, int64_t position)
 {
-    struct memory_stream_info *info = (struct memory_stream_info *) data;
-
     if (position < 0) {
-        info->position = 0;
-    } else if (position >= info->length) {
-        info->position = info->length;
+        data->memory.position = 0;
+    } else if (position >= data->memory.size) {
+        data->memory.position = data->memory.size;
     } else {
-        info->position = position;
+        data->memory.position = position;
     }
 
-    return info->position;
+    return data->memory.position;
 }
 
-static int64_t memory_stream_tell(void *data)
+static int64_t memory_istream_tell(tq_istream_data_t *data)
 {
-    struct memory_stream_info *info = (struct memory_stream_info *) data;
-    return info->position;
+    return data->memory.position;
 }
 
-static int64_t memory_stream_get_size(void *data)
+static int64_t memory_istream_size(tq_istream_data_t *data)
 {
-    struct memory_stream_info *info = (struct memory_stream_info *) data;
-    return info->length;
+    return data->memory.size;
 }
 
-static void const *memory_stream_buffer(void *data)
+static void const *memory_istream_buffer(tq_istream_data_t *data)
 {
-    struct memory_stream_info *info = (struct memory_stream_info *) data;
-    return info->buffer;
+    return data->memory.buffer;
 }
 
-static void memory_stream_close(void *data)
+static int64_t memory_istream_close(tq_istream_data_t *data)
 {
-    free(data);
+    return 0;
 }
 
-int64_t memory_stream_open(stream_t *stream, uint8_t const *buffer, size_t length)
+static char const *memory_istream_repr(tq_istream_data_t *data)
 {
-    struct memory_stream_info *info = calloc(1, sizeof(struct memory_stream_info));
+    return data->memory.repr;
+}
 
-    if (info) {
-        info->buffer = buffer;
-        info->length = length;
-        info->position = 0;
-        sprintf("%p", info->identifier, (void *) buffer);
+//------------------------------------------------------------------------------
 
-        *stream = (stream_t) {
-            .data = info,
-            .read = memory_stream_read,
-            .seek = memory_stream_seek,
-            .tell = memory_stream_tell,
-            .get_size = memory_stream_get_size,
-            .buffer = memory_stream_buffer,
-            .close = memory_stream_close,
-        };
+int64_t tq_istream_read(int32_t istream_id, void *dst, size_t size)
+{
+    tq_istream_t *istream = istream_array[istream_id];
 
-        return 0;
+    if (istream == NULL) {
+        tq_log_warning("tq_istream_read(): istream is NULL.\n");
+        return -1;
     }
 
-    return -1;
+    return istream->read(&istream->data, dst, size);
+}
+
+int64_t tq_istream_seek(int32_t istream_id, int64_t position)
+{
+    tq_istream_t *istream = istream_array[istream_id];
+
+    if (istream == NULL) {
+        tq_log_warning("tq_istream_seek(): istream is NULL.\n");
+        return -1;
+    }
+
+    return istream->seek(&istream->data, position);
+}
+
+int64_t tq_istream_tell(int32_t istream_id)
+{
+    tq_istream_t *istream = istream_array[istream_id];
+
+    if (istream == NULL) {
+        tq_log_warning("tq_istream_tell(): istream is NULL.\n");
+        return -1;
+    }
+
+    return istream->tell(&istream->data);
+}
+
+int64_t tq_istream_size(int32_t istream_id)
+{
+    tq_istream_t *istream = istream_array[istream_id];
+
+    if (istream == NULL) {
+        tq_log_warning("tq_istream_size(): istream is NULL.\n");
+        return -1;
+    }
+
+    return istream->size(&istream->data);
+}
+
+void const *tq_istream_buffer(int32_t istream_id)
+{
+    tq_istream_t *istream = istream_array[istream_id];
+
+    if (istream == NULL) {
+        tq_log_warning("tq_istream_buffer(): istream is NULL.\n");
+        return NULL;
+    }
+
+    return istream->buffer(&istream->data);
+}
+
+int64_t tq_istream_close(int32_t istream_id)
+{
+    tq_istream_t *istream = istream_array[istream_id];
+
+    if (istream == NULL) {
+        tq_log_warning("tq_istream_close(): istream is NULL.\n");
+        return -1;
+    }
+
+    tq_log_debug("Closing i-stream: %s...\n", istream->repr(&istream->data));
+
+    int64_t status = istream->close(&istream->data);
+
+    free(istream);
+    istream_array[istream_id] = NULL;
+
+    return status;
+}
+
+char const *tq_istream_repr(int32_t istream_id)
+{
+    tq_istream_t *istream = istream_array[istream_id];
+
+    if (istream == NULL) {
+        return NULL;
+    }
+
+    return istream->repr(&istream->data);
+}
+
+//------------------------------------------------------------------------------
+
+int32_t tq_open_file_istream(char const *path)
+{
+    int32_t id = get_istream_id();
+
+    if (id == -1) {
+        return -1;
+    }
+
+    FILE *handle = fopen(path, "rb");
+
+    if (handle == NULL) {
+        return -1;
+    }
+
+    tq_istream_t *istream = malloc(sizeof(tq_istream_t));
+
+    if (istream == NULL) {
+        return -1;
+    }
+
+    istream->read = file_istream_read;
+    istream->seek = file_istream_seek;
+    istream->tell = file_istream_tell;
+    istream->size = file_istream_size;
+    istream->buffer = file_istream_buffer;
+    istream->close = file_istream_close;
+    istream->repr = file_istream_repr;
+
+    istream->data.file.handle = handle;
+    istream->data.file.buffer = NULL;
+    istream->data.file.size = (size_t) -1;
+    strncpy(istream->data.file.path, path, TQ_STREAM_NAME_LENGTH);
+
+    tq_log_debug("Opened file i-stream: %s\n", istream->repr(&istream->data));
+
+    istream_array[id] = istream;
+    return id;
+}
+
+int32_t tq_open_memory_istream(uint8_t const *buffer, size_t size)
+{
+    int32_t id = get_istream_id();
+
+    if (id == -1) {
+        return -1;
+    }
+
+    tq_istream_t *istream = malloc(sizeof(tq_istream_t));
+
+    if (istream == NULL) {
+        return -1;
+    }
+
+    istream->read = memory_istream_read;
+    istream->seek = memory_istream_seek;
+    istream->tell = memory_istream_tell;
+    istream->size = memory_istream_size;
+    istream->buffer = memory_istream_buffer;
+    istream->close = memory_istream_close;
+    istream->repr = memory_istream_repr;
+
+    istream->data.memory.buffer = buffer;
+    istream->data.memory.size = size;
+    istream->data.memory.position = 0;
+    snprintf("%p", TQ_STREAM_NAME_LENGTH, istream->data.memory.repr, (void *) buffer);
+
+    tq_log_debug("Opened memory i-stream: %s\n", istream->repr(&istream->data));
+
+    istream_array[id] = istream;
+    return id;
 }
 
 //------------------------------------------------------------------------------

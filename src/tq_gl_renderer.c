@@ -751,28 +751,27 @@ static void set_fill_color(tq_color_t fill_color)
 //--------------------------------------
 // Load a texture from an abstract stream.
 //--------------------------------------
-static int32_t load_texture(stream_t const *stream)
+static int32_t load_texture(int32_t stream_id)
 {
-    image_t image = { 0 };
-    int32_t status = image_load(&image, stream);
+    tq_image_t *image = tq_image_load(stream_id);
 
-    if (status < 0) {
-        return TQ_INVALID_HANDLE;
+    if (image == NULL) {
+        return -1;
     }
 
     GLenum format;
 
-    switch (image.pixel_format) {
-    case PIXEL_FORMAT_GRAYSCALE:
+    switch (image->pixel_format) {
+    case TQ_PIXEL_FORMAT_GRAYSCALE:
         format = GL_LUMINANCE;
         break;
-    case PIXEL_FORMAT_GRAYSCALE_ALPHA:
+    case TQ_PIXEL_FORMAT_GRAYSCALE_ALPHA:
         format = GL_LUMINANCE_ALPHA;
         break;
-    case PIXEL_FORMAT_RGB:
+    case TQ_PIXEL_FORMAT_RGB:
         format = GL_RGB;
         break;
-    case PIXEL_FORMAT_RGBA:
+    case TQ_PIXEL_FORMAT_RGBA:
         format = GL_RGBA;
         break;
     default:
@@ -795,17 +794,18 @@ static int32_t load_texture(stream_t const *stream)
     CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
 
     CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, format,
-        image.width, image.height, 0, format,
-        GL_UNSIGNED_BYTE, image.pixels));
+        image->width, image->height, 0, format,
+        GL_UNSIGNED_BYTE, image->pixels));
 
     int32_t index = get_texture_index();
 
     gl.textures[index] = malloc(sizeof(gl_texture_t));
     gl.textures[index]->id = id;
-    gl.textures[index]->width = image.width;
-    gl.textures[index]->height = image.height;
+    gl.textures[index]->width = image->width;
+    gl.textures[index]->height = image->height;
 
-    image_free(&image);
+    tq_image_destroy(image);
+
     return index;
 }
 

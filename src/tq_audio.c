@@ -23,29 +23,29 @@ void audio_terminate(void)
 
 int32_t audio_load_sound_from_file(char const *path)
 {
-    stream_t stream;
+    int32_t stream_id = tq_open_file_istream(path);
 
-    if (file_stream_open(&stream, path) == -1) {
+    if (stream_id == -1) {
         return -1;
     }
 
-    int32_t sound_id = mixer->load_sound(&stream);
-    stream.close(stream.data);
+    int32_t sound_id = mixer->load_sound(stream_id);
 
+    tq_istream_close(stream_id);
     return sound_id;
 }
 
-int32_t audio_load_sound_from_memory(uint8_t const *buffer, size_t length)
+int32_t audio_load_sound_from_memory(uint8_t const *buffer, size_t size)
 {
-    stream_t stream;
+    int32_t stream_id = tq_open_memory_istream(buffer, size);
 
-    if (memory_stream_open(&stream, buffer, length) == -1) {
+    if (stream_id == -1) {
         return -1;
     }
 
-    int32_t sound_id = mixer->load_sound(&stream);
-    stream.close(stream.data);
+    int32_t sound_id = mixer->load_sound(stream_id);
 
+    tq_istream_close(stream_id);
     return sound_id;
 }
 
@@ -61,33 +61,33 @@ int32_t audio_play_sound(int32_t sound_id, int loop)
 
 int32_t audio_open_music_from_file(char const *path)
 {
-    stream_t stream;
+    int32_t stream_id = tq_open_file_istream(path);
 
-    if (file_stream_open(&stream, path) == -1) {
+    if (stream_id == -1) {
         return -1;
     }
 
-    int32_t music_id = mixer->open_music(&stream);
+    int32_t music_id = mixer->open_music(stream_id);
 
     if (music_id == -1) {
-        stream.close(stream.data);
+        tq_istream_close(stream_id);
     }
 
     return music_id;
 }
 
-int32_t audio_open_music_from_memory(uint8_t const *buffer, size_t length)
+int32_t audio_open_music_from_memory(uint8_t const *buffer, size_t size)
 {
-    stream_t stream;
+    int32_t stream_id = tq_open_memory_istream(buffer, size);
 
-    if (memory_stream_open(&stream, buffer, length) == -1) {
+    if (stream_id == -1) {
         return -1;
     }
 
-    int32_t music_id = mixer->open_music(&stream);
+    int32_t music_id = mixer->open_music(stream_id);
 
     if (music_id == -1) {
-        stream.close(stream.data);
+        tq_istream_close(stream_id);
     }
 
     return music_id;

@@ -15,11 +15,11 @@ struct mixer
     void        (*initialize)(void);
     void        (*terminate)(void);
 
-    int32_t     (*load_sound)(stream_t const *stream);
+    int32_t     (*load_sound)(int32_t stream_id);
     void        (*delete_sound)(int32_t sound_id);
     int32_t     (*play_sound)(int32_t sound_id, int loop);
 
-    int32_t     (*open_music)(stream_t const *stream);
+    int32_t     (*open_music)(int32_t stream_id);
     void        (*close_music)(int32_t music_id);
     int32_t     (*play_music)(int32_t music_id, int loop);
 

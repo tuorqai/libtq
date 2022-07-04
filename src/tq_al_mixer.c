@@ -151,7 +151,7 @@ static void initialize(void)
 
     CHECK_AL(alGenSources(TQ_CHANNEL_LIMIT, al.sources));
 
-    log_info("OpenAL audio module is initialized.");
+    log_info("OpenAL audio module is initialized.\n");
 }
 
 static void terminate(void)
@@ -166,7 +166,7 @@ static void terminate(void)
     log_info("OpenAL audio module is terminated.\n");
 }
 
-static int32_t load_sound(stream_t const *stream)
+static int32_t load_sound(int32_t stream_id)
 {
     int32_t index = get_buffer_index();
 
@@ -174,26 +174,26 @@ static int32_t load_sound(stream_t const *stream)
         return -1;
     }
 
-    tq_sound_t sound;
+    tq_sound_t *sound = tq_sound_load(stream_id);
 
-    if (tq_sound_load(&sound, stream) == -1) {
+    if (sound == NULL) {
         return -1;
     }
 
-    ALenum format = choose_format(&sound);
+    ALenum format = choose_format(sound);
 
     if (format == AL_INVALID_ENUM) {
-        tq_sound_free(&sound);
+        tq_sound_destroy(sound);
         return -1;
     }
 
     CHECK_AL(alGenBuffers(1, &al.buffers[index]));
 
     CHECK_AL(alBufferData(al.buffers[index], format,
-        sound.samples, sound.num_samples * sound.bytes_per_sample,
-        sound.sample_rate));
+        sound->samples, sound->num_samples * sound->bytes_per_sample,
+        sound->sample_rate));
 
-    tq_sound_free(&sound);
+    tq_sound_destroy(sound);
 
     return index;
 }
@@ -245,7 +245,7 @@ static int32_t play_sound(int32_t sound_id, int loop)
     return index;
 }
 
-static int32_t open_music(stream_t const *stream)
+static int32_t open_music(int32_t stream_id)
 {
     return 0;
 }

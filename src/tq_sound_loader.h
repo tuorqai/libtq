@@ -21,8 +21,15 @@ typedef struct tq_sound
 
 //------------------------------------------------------------------------------
 
-int32_t tq_sound_load(tq_sound_t *sound, stream_t const *stream);
-void tq_sound_free(tq_sound_t *sound);
+/**
+ * Load sound from an input stream.
+ */
+tq_sound_t *tq_sound_load(int32_t stream_id);
+
+/**
+ * Destroy previously loaded sound.
+ */
+void tq_sound_destroy(tq_sound_t *sound);
 
 //------------------------------------------------------------------------------
 
