@@ -73,11 +73,7 @@ static int64_t file_istream_read(tq_istream_data_t *data, void *dst, int64_t siz
 
 static int64_t file_istream_seek(tq_istream_data_t *data, int64_t position)
 {
-    if (fseek(data->file.handle, position, SEEK_SET) == 0) {
-        return (int64_t) ftell(data->file.handle);
-    }
-
-    return -1;
+    return (int64_t) fseek(data->file.handle, position, SEEK_SET);
 }
 
 static int64_t file_istream_tell(tq_istream_data_t *data)
@@ -159,15 +155,12 @@ static int64_t memory_istream_read(tq_istream_data_t *data, void *dst, int64_t s
 
 static int64_t memory_istream_seek(tq_istream_data_t *data, int64_t position)
 {
-    if (position < 0) {
-        data->memory.position = 0;
-    } else if (position >= data->memory.size) {
-        data->memory.position = data->memory.size;
-    } else {
+    if (position >= 0 && position <= data->memory.size) {
         data->memory.position = position;
+        return 0;
     }
 
-    return data->memory.position;
+    return -1;
 }
 
 static int64_t memory_istream_tell(tq_istream_data_t *data)
