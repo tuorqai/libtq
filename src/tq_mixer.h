@@ -34,10 +34,6 @@ struct mixer
     void tq_construct_al_mixer(struct mixer *mixer);
 #endif
 
-#if defined(TQ_USE_SFML) && !defined(TQ_USE_OPENAL)
-    void construct_sf_mixer(struct mixer *mixer);
-#endif
-
 //------------------------------------------------------------------------------
 
 #endif // TQ_MIXER_H_INC

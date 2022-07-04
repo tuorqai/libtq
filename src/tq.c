@@ -35,11 +35,10 @@ void tq_initialize(void)
 
     //----------------------------------
     // Construct platform-dependent modules
-    // (Only SFML-based dummy module is used by now)
 
-#if defined(TQ_USE_SFML)
-    construct_sf_clock(&tq.clock);
-    construct_sf_display(&tq.display);
+#if defined(TQ_USE_SDL)
+    construct_sdl_clock(&tq.clock);
+    construct_sdl_display(&tq.display);
 
     #if defined(TQ_USE_OPENGL)
         tq_construct_gl_renderer(&tq.renderer);
@@ -47,8 +46,6 @@ void tq_initialize(void)
 
     #if defined(TQ_USE_OPENAL)
         tq_construct_al_mixer(&tq.mixer);
-    #else
-        construct_sf_mixer(&tq.mixer);
     #endif
 #endif
 

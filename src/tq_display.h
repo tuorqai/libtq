@@ -8,7 +8,7 @@
 
 //------------------------------------------------------------------------------
 
-struct display
+typedef struct display
 {
     void (*initialize)(uint32_t, uint32_t, char const *);
     void (*terminate)(void);
@@ -18,12 +18,12 @@ struct display
     void (*set_title)(char const *);
     void (*set_key_autorepeat_enabled)(bool enabled);
     void (*show_message_box)(char const *title, char const *message);
-};
+} tq_display_t;
 
 //------------------------------------------------------------------------------
 
-#if defined(TQ_USE_SFML)
-    void construct_sf_display(struct display *display);
+#if defined(TQ_USE_SDL)
+    void construct_sdl_display(tq_display_t *display);
 #endif
 
 //------------------------------------------------------------------------------

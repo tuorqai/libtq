@@ -20,8 +20,8 @@ struct clock
 
 //------------------------------------------------------------------------------
 
-#if defined(TQ_USE_SFML)
-    void construct_sf_clock(struct clock *clock);
+#if defined(TQ_USE_SDL)
+    void construct_sdl_clock(struct clock *clock);
 #endif
 
 //------------------------------------------------------------------------------

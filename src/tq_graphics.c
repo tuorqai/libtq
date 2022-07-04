@@ -78,11 +78,12 @@ static float *make_circle(float x, float y, float radius, unsigned int *length)
 
 void graphics_initialize(tq_renderer_t const *renderer)
 {
+    uint32_t width = core_get_display_width();
+    uint32_t height = core_get_display_height();
+
     graphics.renderer = renderer;
 
-    make_default_projection(graphics.default_projection,
-        core_get_display_width(),
-        core_get_display_height());
+    make_default_projection(graphics.default_projection, width, height);
 
     for (int index = 0; index < MAX_MATRICES; index++) {
         mat3_identity(graphics.model_view[index]);
@@ -98,7 +99,7 @@ void graphics_initialize(tq_renderer_t const *renderer)
 
     graphics.renderer->initialize();
 
-    graphics.renderer->update_viewport(0, 0, 200, 200);
+    graphics.renderer->update_viewport(0, 0, width, height);
     graphics.renderer->update_projection(graphics.default_projection);
     graphics.renderer->update_model_view(graphics.model_view[0]);
 

@@ -18,8 +18,8 @@ add_library(tq
     "src/tq_image_loader.c"
     "src/tq_log.c"
     "src/tq_math.c"
-    "src/tq_sf_display.cpp"
-    "src/tq_sf_clock.cpp"
+    "src/tq_sdl_clock.c"
+    "src/tq_sdl_display.c"
     "src/tq_sound_loader.c"
     "src/tq_stream.c"
     "src/tq.c")
@@ -61,7 +61,7 @@ elseif(UNIX)
 endif()
 
 if(USE_PLATFORM_WINDOWS)
-    find_package(SFML 2.5 REQUIRED COMPONENTS window)
+    find_package(SDL2 REQUIRED)
     find_package(OpenGL REQUIRED)
     find_package(GLEW REQUIRED)
     find_package(OpenAL REQUIRED)
@@ -71,7 +71,7 @@ if(USE_PLATFORM_WINDOWS)
     find_library(VORBISFILE_LIBRARY vorbisfile REQUIRED)
 
     target_link_libraries(tq
-        sfml-window
+        SDL2::SDL2
         GLEW::GLEW
         OpenGL::GL
         ${OGG_LIBRARY}
@@ -80,14 +80,14 @@ if(USE_PLATFORM_WINDOWS)
 
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_WINDOWS
-        TQ_USE_SFML
+        TQ_USE_SDL
         TQ_USE_OPENGL
         TQ_USE_OPENAL)
 
     install(TARGETS tq DESTINATION "lib")
     install(FILES "include/tq/tq.h" DESTINATION "include")
 elseif(USE_PLATFORM_LINUX)
-    find_package(SFML 2.5 REQUIRED COMPONENTS window)
+    find_package(SDL2 REQUIRED)
     find_package(OpenGL REQUIRED)
     find_package(GLEW REQUIRED)
     find_package(OpenAL REQUIRED)
@@ -99,7 +99,7 @@ elseif(USE_PLATFORM_LINUX)
     target_include_directories(tq PRIVATE ${OPENAL_INCLUDE_DIR})
 
     target_link_libraries(tq
-        sfml-window
+        SDL2::SDL2
         GLEW::GLEW
         OpenGL::GL
         ${OPENAL_LIBRARY}
@@ -110,7 +110,7 @@ elseif(USE_PLATFORM_LINUX)
 
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_LINUX
-        TQ_USE_SFML
+        TQ_USE_SDL
         TQ_USE_OPENGL
         TQ_USE_OPENAL)
 
