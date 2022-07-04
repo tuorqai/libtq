@@ -10,9 +10,9 @@
 #include <al.h>
 #include <alc.h>
 
+#include "tq_audio.h"
 #include "tq_error.h"
 #include "tq_log.h"
-#include "tq_mixer.h"
 #include "tq_sound_loader.h"
 
 //------------------------------------------------------------------------------
@@ -332,22 +332,20 @@ static void stop_channel(int32_t channel_id)
 //------------------------------------------------------------------------------
 // Constructor
 
-void tq_construct_al_mixer(struct mixer *mixer)
+void tq_construct_al_audio(tq_audio_impl_t *impl)
 {
-    *mixer = (struct mixer) {
-        .initialize             = initialize,
-        .terminate              = terminate,
-        .load_sound             = load_sound,
-        .delete_sound           = delete_sound,
-        .play_sound             = play_sound,
-        .open_music             = open_music,
-        .close_music            = close_music,
-        .play_music             = play_music,
-        .get_channel_state      = get_channel_state,
-        .pause_channel          = pause_channel,
-        .unpause_channel        = unpause_channel,
-        .stop_channel           = stop_channel,
-    };
+    impl->initialize            = initialize;
+    impl->terminate             = terminate;
+    impl->load_sound            = load_sound;
+    impl->delete_sound          = delete_sound;
+    impl->play_sound            = play_sound;
+    impl->open_music            = open_music;
+    impl->close_music           = close_music;
+    impl->play_music            = play_music;
+    impl->get_channel_state     = get_channel_state;
+    impl->pause_channel         = pause_channel;
+    impl->unpause_channel       = unpause_channel;
+    impl->stop_channel          = stop_channel;
 }
 
 //------------------------------------------------------------------------------

@@ -410,62 +410,62 @@ void tq_draw_texture_fragment_v(tq_handle_t texture_handle,
 
 int32_t tq_load_sound_from_file(char const *path)
 {
-    audio_load_sound_from_file(path);
+    tq_audio_load_sound_from_file(path);
 }
 
 int32_t tq_load_sound_from_memory(uint8_t const *buffer, size_t length)
 {
-    audio_load_sound_from_memory(buffer, length);
+    tq_audio_load_sound_from_memory(buffer, length);
 }
 
 void tq_delete_sound(int32_t sound_id)
 {
-    audio_delete_sound(sound_id);
+    tq_audio_delete_sound(sound_id);
 }
 
 int32_t tq_play_sound(int32_t sound_id, int loop)
 {
-    return audio_play_sound(sound_id, loop);
+    return tq_audio_play_sound(sound_id, loop);
 }
 
 int32_t tq_open_music_from_file(char const *path)
 {
-    return audio_open_music_from_file(path);
+    return tq_audio_open_music_from_file(path);
 }
 
 int32_t tq_open_music_from_memory(uint8_t const *buffer, size_t length)
 {
-    return audio_open_music_from_memory(buffer, length);
+    return tq_audio_open_music_from_memory(buffer, length);
 }
 
 void tq_close_music(int32_t music_id)
 {
-    audio_close_music(music_id);
+    tq_audio_close_music(music_id);
 }
 
 int32_t tq_play_music(int32_t music_id, int loop)
 {
-    return audio_play_music(music_id, loop);
+    return tq_audio_play_music(music_id, loop);
 }
 
 tq_channel_state_t tq_get_channel_state(int32_t channel_id)
 {
-    return audio_get_channel_state(channel_id);
+    return tq_audio_get_channel_state(channel_id);
 }
 
 void tq_pause_channel(int32_t channel_id)
 {
-    audio_pause_channel(channel_id);
+    tq_audio_pause_channel(channel_id);
 }
 
 void tq_unpause_channel(int32_t channel_id)
 {
-    audio_unpause_channel(channel_id);
+    tq_audio_unpause_channel(channel_id);
 }
 
 void tq_stop_channel(int32_t channel_id)
 {
-    audio_stop_channel(channel_id);
+    tq_audio_stop_channel(channel_id);
 }
 
 //------------------------------------------------------------------------------

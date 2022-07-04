@@ -15,7 +15,6 @@ typedef struct tq_priv
     struct clock        clock;
     struct display      display;
     tq_renderer_t       renderer;
-    struct mixer        mixer;
 } tq_priv_t;
 
 //------------------------------------------------------------------------------
@@ -43,10 +42,6 @@ void tq_initialize(void)
     #if defined(TQ_USE_OPENGL)
         tq_construct_gl_renderer(&tq.renderer);
     #endif
-
-    #if defined(TQ_USE_OPENAL)
-        tq_construct_al_mixer(&tq.mixer);
-    #endif
 #endif
 
     //----------------------------------
@@ -54,12 +49,12 @@ void tq_initialize(void)
 
     core_initialize(&tq.clock, &tq.display);
     graphics_initialize(&tq.renderer);
-    audio_initialize(&tq.mixer);
+    tq_audio_initialize();
 }
 
 void tq_terminate(void)
 {
-    audio_terminate();
+    tq_audio_terminate();
     graphics_terminate();
     core_terminate();
 }

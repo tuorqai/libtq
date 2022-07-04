@@ -7,7 +7,7 @@ project(tq)
 #---------------------------------------
 
 add_library(tq
-    "src/tq_al_mixer.c"
+    "src/tq_al_audio.c"
     "src/tq_api.c"
     "src/tq_audio.c"
     "src/tq_core.c"
