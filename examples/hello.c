@@ -34,9 +34,9 @@ int main(int argc, char *argv[])
     tq_handle_t moon = tq_load_texture_from_file("assets/moon.png");
     tq_handle_t ostrich = tq_open_music_from_file("assets/ostrich.ogg");
 
-    tq_set_clear_color(tq_rgb(237, 199, 229));
-    tq_set_outline_color(tq_rgb(40, 112, 106));
-    tq_set_fill_color(tq_rgb(213, 237, 199));
+    tq_set_clear_color(TQ_COLOR24(237, 199, 229));
+    tq_set_outline_color(TQ_COLOR24(40, 112, 106));
+    tq_set_fill_color(TQ_COLOR24(213, 237, 199));
 
     tq_handle_t ostrich_wave = tq_play_music(ostrich, -1);
 

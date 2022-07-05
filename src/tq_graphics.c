@@ -95,11 +95,11 @@ void tq_graphics_initialize(void)
     
     graphics.model_view_index = 0;
 
-    graphics.clear_color = tq_rgb(29, 43, 83);
-    graphics.point_color = tq_rgb(255, 241, 232);
-    graphics.line_color = tq_rgb(255, 236, 39);
-    graphics.outline_color = tq_rgb(255, 204, 170);
-    graphics.fill_color = tq_rgb(126, 37, 83);
+    graphics.clear_color = TQ_COLOR24(29, 43, 83);
+    graphics.point_color = TQ_COLOR24(255, 241, 232);
+    graphics.line_color = TQ_COLOR24(255, 236, 39);
+    graphics.outline_color = TQ_COLOR24(255, 204, 170);
+    graphics.fill_color = TQ_COLOR24(126, 37, 83);
 
     graphics.renderer.initialize();
 

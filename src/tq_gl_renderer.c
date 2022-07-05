@@ -236,9 +236,9 @@ static gl_renderer_priv_t gl;
 //--------------------------------------
 static void decode_rgb(GLclampf *dst, tq_color_t src)
 {
-    dst[0] = ((src >> 24) & 255) / 255.0f;
-    dst[1] = ((src >> 16) & 255) / 255.0f;
-    dst[2] = ((src >> 8) & 255) / 255.0f;
+    dst[0] = TQ_EXTRACT_R(src) / 255.0f;
+    dst[1] = TQ_EXTRACT_G(src) / 255.0f;
+    dst[2] = TQ_EXTRACT_B(src) / 255.0f;
 }
 
 //--------------------------------------
@@ -246,10 +246,10 @@ static void decode_rgb(GLclampf *dst, tq_color_t src)
 //--------------------------------------
 static void decode_rgba(GLclampf *dst, tq_color_t src)
 {
-    dst[0] = ((src >> 24) & 255) / 255.0f;
-    dst[1] = ((src >> 16) & 255) / 255.0f;
-    dst[2] = ((src >> 8) & 255) / 255.0f;
-    dst[3] = ((src >> 0) & 255) / 255.0f;
+    dst[0] = TQ_EXTRACT_R(src) / 255.0f;
+    dst[1] = TQ_EXTRACT_G(src) / 255.0f;
+    dst[2] = TQ_EXTRACT_B(src) / 255.0f;
+    dst[3] = TQ_EXTRACT_A(src) / 255.0f;
 }
 
 //--------------------------------------

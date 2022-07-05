@@ -66,8 +66,8 @@ int main(int argc, char *argv[])
 
     tq_initialize();
 
-    tq_set_clear_color(tq_rgb(20, 20, 64));
-    tq_set_outline_color(tq_rgb(224, 224, 224));
+    tq_set_clear_color(TQ_COLOR24(20, 20, 64));
+    tq_set_outline_color(TQ_COLOR24(224, 224, 224));
 
     tq_on_key_pressed(on_key_pressed);
     tq_on_mouse_button_pressed(on_mouse_button_pressed);

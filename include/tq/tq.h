@@ -414,17 +414,41 @@ TQ_EXPORT TQ_API unsigned int TQ_CALL tq_get_framerate(void);
 //----------------------------------------------------------
 // Colors
 
-/* Get single color value from RGB values. */
-static inline tq_color_t tq_rgb(uint8_t r, uint8_t g, uint8_t b)
-{
-    return (r << 24) | (g << 16) | (b << 8) | (255);
-}
+/**
+ * Get single color value from red, green and blue values.
+ */
+#define TQ_COLOR24(r, g, b) \
+    ((tq_color_t) ((r) << 24) | ((g) << 16) | ((b) << 8) | (255))
 
-/* Get single color value from RGBA values. */
-static inline tq_color_t tq_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-    return (r << 24) | (g << 16) | (b << 8) | (a << 0);
-}
+/**
+ * Get single color value from red, green, blue and alpha values.
+ */
+#define TQ_COLOR32(r, g, b, a) \
+    ((tq_color_t) ((r) << 24) | ((g) << 16) | ((b) << 8) | (a))
+
+/**
+ * Extract RED channel from a color value.
+ */
+#define TQ_EXTRACT_R(c) \
+    (((c) >> 24) & 255)
+
+/**
+ * Extract GREEN channel from a color value.
+ */
+#define TQ_EXTRACT_G(c) \
+    (((c) >> 16) & 255)
+
+/**
+ * Extract BLUE channel from a color value.
+ */
+#define TQ_EXTRACT_B(c) \
+    (((c) >> 8) & 255)
+
+/**
+ * Extract ALPHA channel from a color value.
+ */
+#define TQ_EXTRACT_A(c) \
+    (((c) >> 0) & 255)
 
 //----------------------------------------------------------
 // Background
@@ -726,6 +750,21 @@ TQ_EXPORT TQ_API void TQ_CALL tq_stop_channel(int32_t channel_id);
 #define TQ_RAD2DEG(rad)             ((rad) * (180.0 / TQ_PI))
 
 /**
+ * Construct 2-component integer vector.
+ */
+#define TQ_VEC2I(x, y)              ((tq_vec2i_t) { (x), (y) })
+
+/**
+ * Construct 2-component unsigned integer vector.
+ */
+#define TQ_VEC2U(x, y)              ((tq_vec2u_t) { (x), (y) })
+
+/**
+ * Construct 2-component floating-point vector.
+ */
+#define TQ_VEC2F(x, y)              ((tq_vec2f_t) { (x), (y) })
+
+/**
  * @brief Cast 2-component integer vector to floating-point vector.
  */
 static inline tq_vec2f_t tq_vec2i_cast(tq_vec2i_t ivec)
@@ -744,17 +783,6 @@ static inline tq_vec2f_t tq_vec2u_cast(tq_vec2u_t uvec)
     return (tq_vec2f_t) {
         .x = (float) uvec.x,
         .y = (float) uvec.y,
-    };
-}
-
-/**
- * @brief Construct 2-component floating-point vector.
- */
-static inline tq_vec2f_t tq_vec2f(float x, float y)
-{
-    return (tq_vec2f_t) {
-        .x = x,
-        .y = y,
     };
 }
 

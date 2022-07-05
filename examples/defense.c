@@ -167,12 +167,12 @@ void draw_string(float x, float y, float sx, float sy, int align, char const *fm
 
 float distance(float ax, float ay, float bx, float by)
 {
-    return tq_vec2f_distance(tq_vec2f(ax, ay), tq_vec2f(bx, by));
+    return tq_vec2f_distance(TQ_VEC2F(ax, ay), TQ_VEC2F(bx, by));
 }
 
 float look_at(float x, float y, float target_x, float target_y)
 {
-    return tq_vec2f_look_at(tq_vec2f(x, y), tq_vec2f(target_x, target_y));
+    return tq_vec2f_look_at(TQ_VEC2F(x, y), TQ_VEC2F(target_x, target_y));
 }
 
 void move(float *value, float ideal_value, float shrink_rate, float grow_rate, float dt)
@@ -854,7 +854,7 @@ void set_color_theme(tq_color_t background, tq_color_t foreground)
 void spawn_world(struct world *world)
 {
     // set_color_theme(tq_rgb(40, 40, 40), tq_rgb(192, 192, 192));
-    set_color_theme(tq_rgb(28, 28, 40), tq_rgb(192, 160, 192));
+    set_color_theme(TQ_COLOR24(28, 28, 40), TQ_COLOR24(192, 160, 192));
 
     world->turrets.fire_sound = tq_load_sound_from_file("assets/defense/turret_attack.ogg");
 

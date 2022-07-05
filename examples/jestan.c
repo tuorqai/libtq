@@ -455,8 +455,8 @@ void draw_world(world_t const *world)
         }
     }
 
-    tq_set_line_color(tq_rgb(255, 255, 255));
-    tq_set_outline_color(tq_rgb(255, 255, 255));
+    tq_set_line_color(TQ_COLOR24(255, 255, 255));
+    tq_set_outline_color(TQ_COLOR24(255, 255, 255));
 
     draw_stage(&world->stage);
     draw_objects(&world->objects);
@@ -475,8 +475,8 @@ int main(int argc, char *argv[])
 
     tq_initialize();
 
-    tq_set_clear_color(tq_rgb(0, 0, 0));
-    tq_set_fill_color(tq_rgb(130, 170, 40));
+    tq_set_clear_color(TQ_COLOR24(0, 0, 0));
+    tq_set_fill_color(TQ_COLOR24(130, 170, 40));
 
     world_t *world = malloc(sizeof(world_t));
 
