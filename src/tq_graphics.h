@@ -104,24 +104,24 @@ tq_color_t graphics_get_fill_color(void);
 void graphics_set_fill_color(tq_color_t fill_color);
 
 // [tq::graphics::load_texture_from_file]
-tq_handle_t graphics_load_texture_from_file(char const *path);
+int32_t graphics_load_texture_from_file(char const *path);
 
 // [tq::graphics::load_texture_from_memory]
-tq_handle_t graphics_load_texture_from_memory(uint8_t const *buffer, size_t length);
+int32_t graphics_load_texture_from_memory(uint8_t const *buffer, size_t length);
 
 // [tq::graphics::delete_texture]
-void graphics_delete_texture(tq_handle_t texture_id);
+void graphics_delete_texture(int32_t texture_id);
 
 // [tq::graphics::get_texture_size]
-void graphics_get_texture_size(tq_handle_t texture_id, uint32_t *width, uint32_t *height);
+void graphics_get_texture_size(int32_t texture_id, uint32_t *width, uint32_t *height);
 
 // [tq::graphics::draw_texture]
-void graphics_draw_texture(tq_handle_t texture_id,
+void graphics_draw_texture(int32_t texture_id,
     float x, float y,
     float w, float h);
 
 // [tq::graphics::draw_texture_fragment]
-void graphics_draw_texture_fragment(tq_handle_t texture_id,
+void graphics_draw_texture_fragment(int32_t texture_id,
     float x, float y,
     float w, float h,
     float fx, float fy,

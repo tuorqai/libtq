@@ -8,7 +8,7 @@
 
 //------------------------------------------------------------------------------
 
-static tq_handle_t map_node(handle_list_t *handle_list, handle_list_node_t *node)
+static int32_t map_node(handle_list_t *handle_list, handle_list_node_t *node)
 {
     if (handle_list->map_used == handle_list->map_size) {
         size_t next_size = handle_list->map_size + (handle_list->map_size / 2);
@@ -18,14 +18,14 @@ static tq_handle_t map_node(handle_list_t *handle_list, handle_list_node_t *node
 
         handle_list_node_t **next_map = realloc(handle_list->map, sizeof(handle_list_node_t *) * next_size);
         if (!next_map) {
-            return TQ_INVALID_HANDLE;
+            return -1;
         }
 
         handle_list->map_size = next_size;
         handle_list->map = next_map;
     }
 
-    tq_handle_t handle = handle_list->map_used++;
+    int32_t handle = handle_list->map_used++;
     handle_list->map[handle] = node;
 
     return handle;
@@ -61,18 +61,18 @@ void handle_list_destroy(handle_list_t *handle_list)
     free(handle_list);
 }
 
-tq_handle_t handle_list_append(handle_list_t *handle_list, void *item)
+int32_t handle_list_append(handle_list_t *handle_list, void *item)
 {
     handle_list_node_t *node = malloc(sizeof(handle_list_node_t) + handle_list->item_size);
 
     if (!node) {
         // log_error("handle_list_append(): Failed to allocate list node.\n");
-        return TQ_INVALID_HANDLE;
+        return -1;
     }
 
-    tq_handle_t handle = map_node(handle_list, node);
+    int32_t handle = map_node(handle_list, node);
 
-    if (handle == TQ_INVALID_HANDLE) {
+    if (handle == -1) {
         // log_error("handle_list_append(): Failed to map list node.\n");
 
         if (handle_list->item_dtor) {
@@ -80,7 +80,7 @@ tq_handle_t handle_list_append(handle_list_t *handle_list, void *item)
         }
 
         free(node);
-        return TQ_INVALID_HANDLE;
+        return -1;
     }
 
     node->prev = NULL;
@@ -97,7 +97,7 @@ tq_handle_t handle_list_append(handle_list_t *handle_list, void *item)
     return handle;
 }
 
-void handle_list_erase(handle_list_t *handle_list, tq_handle_t handle)
+void handle_list_erase(handle_list_t *handle_list, int32_t handle)
 {
     if (handle < 0 || handle >= handle_list->map_used) {
         // log_warning("handle_list_erase(): Handle is out of bounds.\n");
@@ -131,7 +131,7 @@ void handle_list_erase(handle_list_t *handle_list, tq_handle_t handle)
     handle_list->map[handle] = NULL;
 }
 
-void *handle_list_get(handle_list_t *handle_list, tq_handle_t handle)
+void *handle_list_get(handle_list_t *handle_list, int32_t handle)
 {
     if (handle < 0 || handle >= handle_list->map_used) {
         // log_error("handle_list_get(): Handle is out of bounds.\n");

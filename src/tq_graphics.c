@@ -318,7 +318,7 @@ void graphics_set_fill_color(tq_color_t fill_color)
     graphics.renderer.set_fill_color(graphics.fill_color);
 }
 
-tq_handle_t graphics_load_texture_from_file(char const *path)
+int32_t graphics_load_texture_from_file(char const *path)
 {
     int32_t stream_id = tq_open_file_istream(path);
 
@@ -333,7 +333,7 @@ tq_handle_t graphics_load_texture_from_file(char const *path)
     return texture_id;
 }
 
-tq_handle_t graphics_load_texture_from_memory(uint8_t const *buffer, size_t size)
+int32_t graphics_load_texture_from_memory(uint8_t const *buffer, size_t size)
 {
     int32_t stream_id = tq_open_memory_istream(buffer, size);
 
@@ -347,17 +347,17 @@ tq_handle_t graphics_load_texture_from_memory(uint8_t const *buffer, size_t size
     return texture_id;
 }
 
-void graphics_delete_texture(tq_handle_t texture_handle)
+void graphics_delete_texture(int32_t texture_handle)
 {
     graphics.renderer.delete_texture(texture_handle);
 }
 
-void graphics_get_texture_size(tq_handle_t texture_handle, uint32_t *width, uint32_t *height)
+void graphics_get_texture_size(int32_t texture_handle, uint32_t *width, uint32_t *height)
 {
     graphics.renderer.get_texture_size(texture_handle, width, height);
 }
 
-void graphics_draw_texture(tq_handle_t texture_id,
+void graphics_draw_texture(int32_t texture_id,
     float x, float y,
     float w, float h)
 {
@@ -374,7 +374,7 @@ void graphics_draw_texture(tq_handle_t texture_id,
     graphics.renderer.draw_texture(texture_id, data, 4);
 }
 
-void graphics_draw_texture_fragment(tq_handle_t texture_id,
+void graphics_draw_texture_fragment(int32_t texture_id,
     float x, float y,
     float w, float h,
     float fx, float fy,

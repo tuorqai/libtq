@@ -294,14 +294,6 @@ typedef struct tq_vec2f
 } tq_vec2f_t;
 
 //------------------------------------------------------------------------------
-// Deprecated values
-
-#define TQ_INVALID_HANDLE           (-1)
-
-typedef tq_vec2f_t                  tq_vec2_t;
-typedef int32_t                     tq_handle_t;
-
-//------------------------------------------------------------------------------
 
 /**
  * @brief Initialize the library.
@@ -488,8 +480,8 @@ TQ_EXPORT TQ_API void TQ_CALL tq_view(
  * @param rotation  Rotation of the view, in degrees.
  */
 TQ_EXPORT TQ_API void TQ_CALL tq_view_v(
-    tq_vec2_t center,
-    tq_vec2_t size,
+    tq_vec2f_t center,
+    tq_vec2f_t size,
     float rotation
 );
 
@@ -506,13 +498,13 @@ TQ_EXPORT TQ_API void TQ_CALL tq_pop_matrix(void);
 TQ_EXPORT TQ_API void TQ_CALL tq_translate_matrix_f(float x, float y);
 
 /* Translate current transformation matrix. */
-TQ_EXPORT TQ_API void TQ_CALL tq_translate_matrix_v(tq_vec2_t v);
+TQ_EXPORT TQ_API void TQ_CALL tq_translate_matrix_v(tq_vec2f_t v);
 
 /* Scale current transformation matrix. */
 TQ_EXPORT TQ_API void TQ_CALL tq_scale_matrix_f(float x, float y);
 
 /* Scale current transformation matrix. */
-TQ_EXPORT TQ_API void TQ_CALL tq_scale_matrix_v(tq_vec2_t v);
+TQ_EXPORT TQ_API void TQ_CALL tq_scale_matrix_v(tq_vec2f_t v);
 
 /* Rotate current transformation matrix. */
 TQ_EXPORT TQ_API void TQ_CALL tq_rotate_matrix(float degrees);
@@ -524,67 +516,67 @@ TQ_EXPORT TQ_API void TQ_CALL tq_rotate_matrix(float degrees);
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_point_f(float x, float y);
 
 /* Draw a point (vector arguments). */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_point_v(tq_vec2_t position);
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_point_v(tq_vec2f_t position);
 
 /* Draws a line. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_line_f(float ax, float ay, float bx, float by);
 
 /* Draws a line. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_line_v(tq_vec2_t a, tq_vec2_t b);
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_line_v(tq_vec2f_t a, tq_vec2f_t b);
 
 /* Fills and outlines a triangle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_triangle_f(float ax, float ay, float bx, float by, float cx, float cy);
 
 /* Fills and outlines a triangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_triangle_v(tq_vec2_t a, tq_vec2_t b, tq_vec2_t c);
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c);
 
 /* Fills and outlines a rectangle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_rectangle_f(float x, float y, float w, float h);
 
 /* Fills and outlines a rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_rectangle_v(tq_vec2_t position, tq_vec2_t size);
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_rectangle_v(tq_vec2f_t position, tq_vec2f_t size);
 
 /* Fills and outlines a circle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_circle_f(float x, float y, float radius);
 
 /* Fills and outlines a circle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_circle_v(tq_vec2_t position, float radius);
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_circle_v(tq_vec2f_t position, float radius);
 
 /* Outlines a triangle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_outline_triangle_f(float ax, float ay, float bx, float by, float cx, float cy);
 
 /* Outlines a triangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_triangle_v(tq_vec2_t a, tq_vec2_t b, tq_vec2_t c);
+TQ_EXPORT TQ_API void TQ_CALL tq_outline_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c);
 
 /* Outlines a rectangle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_outline_rectangle_f(float x, float y, float w, float h);
 
 /* Outlines a rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_rectangle_v(tq_vec2_t position, tq_vec2_t size);
+TQ_EXPORT TQ_API void TQ_CALL tq_outline_rectangle_v(tq_vec2f_t position, tq_vec2f_t size);
 
 /* Outlines a circle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_outline_circle_f(float x, float y, float radius);
 
 /* Outlines a circle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_circle_v(tq_vec2_t position, float radius);
+TQ_EXPORT TQ_API void TQ_CALL tq_outline_circle_v(tq_vec2f_t position, float radius);
 
 /* Fills a triangle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_fill_triangle_f(float ax, float ay, float bx, float by, float cx, float cy);
 
 /* Fills a triangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_triangle_v(tq_vec2_t a, tq_vec2_t b, tq_vec2_t c);
+TQ_EXPORT TQ_API void TQ_CALL tq_fill_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c);
 
 /* Fills a rectangle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_fill_rectangle_f(float x, float y, float w, float h);
 
 /* Fills a rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_rectangle_v(tq_vec2_t position, tq_vec2_t size);
+TQ_EXPORT TQ_API void TQ_CALL tq_fill_rectangle_v(tq_vec2f_t position, tq_vec2f_t size);
 
 /* Fills a circle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_fill_circle_f(float x, float y, float radius);
 
 /* Fills a circle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_circle_v(tq_vec2_t position, float radius);
+TQ_EXPORT TQ_API void TQ_CALL tq_fill_circle_v(tq_vec2f_t position, float radius);
 
 /* Returns current point color (used by draw_point). */
 TQ_EXPORT TQ_API tq_color_t TQ_CALL tq_get_point_color(void);
@@ -614,40 +606,40 @@ TQ_EXPORT TQ_API void TQ_CALL tq_set_fill_color(tq_color_t fill_color);
 // Textures
 
 /* Load texture from a file. */
-TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_load_texture_from_file(char const *path);
+TQ_EXPORT TQ_API int32_t TQ_CALL tq_load_texture_from_file(char const *path);
 
 /* Load texture from a memory buffer. */
-TQ_EXPORT TQ_API tq_handle_t TQ_CALL tq_load_texture_from_memory(uint8_t const *buffer, size_t length);
+TQ_EXPORT TQ_API int32_t TQ_CALL tq_load_texture_from_memory(uint8_t const *buffer, size_t length);
 
 /* Delete a texture from video memory. */
-TQ_EXPORT TQ_API void TQ_CALL tq_delete_texture(tq_handle_t texture_handle);
+TQ_EXPORT TQ_API void TQ_CALL tq_delete_texture(int32_t texture_handle);
 
 /* Get the width of a texture. */
-TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_texture_width(tq_handle_t texture_handle);
+TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_texture_width(int32_t texture_handle);
 
 /* Get the height of a texture. */
-TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_texture_height(tq_handle_t texture_handle);
+TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_texture_height(int32_t texture_handle);
 
 /* Get both width and height of a texture. Both pointers should be valid. */
-TQ_EXPORT TQ_API void TQ_CALL tq_get_texture_size(tq_handle_t texture_handle, uint32_t *width, uint32_t *height);
+TQ_EXPORT TQ_API void TQ_CALL tq_get_texture_size(int32_t texture_handle, uint32_t *width, uint32_t *height);
 
 /* Draw the texture inside a rectangle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_f(
-    tq_handle_t texture_handle,
+    int32_t texture_handle,
     float x, float y,
     float w, float h
 );
 
 /* Draw the texture inside a rectangle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_v(
-    tq_handle_t texture_handle,
-    tq_vec2_t position,
-    tq_vec2_t size
+    int32_t texture_handle,
+    tq_vec2f_t position,
+    tq_vec2f_t size
 );
 
 /* Draw a part of the texture inside a rectangle. Texture coordinates should be in pixel space. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_f(
-    tq_handle_t texture_handle,
+    int32_t texture_handle,
     float x, float y,
     float w, float h,
     float fx, float fy,
@@ -656,11 +648,11 @@ TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_f(
 
 /* Draw a part of the texture inside a rectangle. Texture coordinates should be in pixel space. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_v(
-    tq_handle_t texture_handle,
-    tq_vec2_t position,
-    tq_vec2_t size,
-    tq_vec2_t fragment_position,
-    tq_vec2_t fragment_size
+    int32_t texture_handle,
+    tq_vec2f_t position,
+    tq_vec2f_t size,
+    tq_vec2f_t fragment_position,
+    tq_vec2f_t fragment_size
 );
 
 //------------------------------------------------------------------------------

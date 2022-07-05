@@ -147,7 +147,7 @@ void tq_view(float x, float y, float width, float height, float angle)
     tq_graphics_view(x, y, width, height, angle);
 }
 
-void tq_view_v(tq_vec2_t position, tq_vec2_t size, float angle)
+void tq_view_v(tq_vec2f_t position, tq_vec2f_t size, float angle)
 {
     tq_graphics_view(position.x, position.y, size.x, size.y, angle);
 }
@@ -167,7 +167,7 @@ void tq_translate_matrix_f(float x, float y)
     graphics_translate_matrix(x, y);
 }
 
-void tq_translate_matrix_v(tq_vec2_t v)
+void tq_translate_matrix_v(tq_vec2f_t v)
 {
     graphics_translate_matrix(v.x, v.y);
 }
@@ -177,7 +177,7 @@ void tq_scale_matrix_f(float x, float y)
     graphics_scale_matrix(x, y);
 }
 
-void tq_scale_matrix_v(tq_vec2_t v)
+void tq_scale_matrix_v(tq_vec2f_t v)
 {
     graphics_scale_matrix(v.x, v.y);
 }
@@ -192,7 +192,7 @@ void tq_draw_point_f(float x, float y)
     graphics_draw_point(x, y);
 }
 
-void tq_draw_point_v(tq_vec2_t position)
+void tq_draw_point_v(tq_vec2f_t position)
 {
     graphics_draw_point(position.x, position.y);
 }
@@ -202,7 +202,7 @@ void tq_draw_line_f(float ax, float ay, float bx, float by)
     graphics_draw_line(ax, ay, bx, by);
 }
 
-void tq_draw_line_v(tq_vec2_t a, tq_vec2_t b)
+void tq_draw_line_v(tq_vec2f_t a, tq_vec2f_t b)
 {
     graphics_draw_line(a.x, a.y, b.x, b.y);
 }
@@ -212,7 +212,7 @@ void tq_draw_triangle_f(float ax, float ay, float bx, float by, float cx, float 
     graphics_draw_triangle(ax, ay, bx, by, cx, cy);
 }
 
-void tq_draw_triangle_v(tq_vec2_t a, tq_vec2_t b, tq_vec2_t c)
+void tq_draw_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c)
 {
     graphics_draw_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
 }
@@ -222,7 +222,7 @@ void tq_draw_rectangle_f(float x, float y, float w, float h)
     graphics_draw_rectangle(x, y, w, h);
 }
 
-void tq_draw_rectangle_v(tq_vec2_t position, tq_vec2_t size)
+void tq_draw_rectangle_v(tq_vec2f_t position, tq_vec2f_t size)
 {
     graphics_draw_rectangle(position.x, position.y, size.x, size.y);
 }
@@ -232,7 +232,7 @@ void tq_draw_circle_f(float x, float y, float radius)
     graphics_draw_circle(x, y, radius);
 }
 
-void tq_draw_circle_v(tq_vec2_t position, float radius)
+void tq_draw_circle_v(tq_vec2f_t position, float radius)
 {
     graphics_draw_circle(position.x, position.y, radius);
 }
@@ -242,7 +242,7 @@ void tq_outline_triangle_f(float ax, float ay, float bx, float by, float cx, flo
     graphics_outline_triangle(ax, ay, bx, by, cx, cy);
 }
 
-void tq_outline_triangle_v(tq_vec2_t a, tq_vec2_t b, tq_vec2_t c)
+void tq_outline_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c)
 {
     graphics_outline_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
 }
@@ -252,7 +252,7 @@ void tq_outline_rectangle_f(float x, float y, float w, float h)
     graphics_outline_rectangle(x, y, w, h);
 }
 
-void tq_outline_rectangle_v(tq_vec2_t position, tq_vec2_t size)
+void tq_outline_rectangle_v(tq_vec2f_t position, tq_vec2f_t size)
 {
     graphics_outline_rectangle(position.x, position.y, size.x, size.y);
 }
@@ -262,7 +262,7 @@ void tq_outline_circle_f(float x, float y, float radius)
     graphics_outline_circle(x, y, radius);
 }
 
-void tq_outline_circle_v(tq_vec2_t position, float radius)
+void tq_outline_circle_v(tq_vec2f_t position, float radius)
 {
     graphics_outline_circle(position.x, position.y, radius);
 }
@@ -272,7 +272,7 @@ void tq_fill_triangle_f(float ax, float ay, float bx, float by, float cx, float 
     graphics_fill_triangle(ax, ay, bx, by, cx, cy);
 }
 
-void tq_fill_triangle_v(tq_vec2_t a, tq_vec2_t b, tq_vec2_t c)
+void tq_fill_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c)
 {
     graphics_fill_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
 }
@@ -282,7 +282,7 @@ void tq_fill_rectangle_f(float x, float y, float w, float h)
     graphics_fill_rectangle(x, y, w, h);
 }
 
-void tq_fill_rectangle_v(tq_vec2_t position, tq_vec2_t size)
+void tq_fill_rectangle_v(tq_vec2f_t position, tq_vec2f_t size)
 {
     graphics_fill_rectangle(position.x, position.y, size.x, size.y);
 }
@@ -292,7 +292,7 @@ void tq_fill_circle_f(float x, float y, float radius)
     graphics_fill_circle(x, y, radius);
 }
 
-void tq_fill_circle_v(tq_vec2_t position, float radius)
+void tq_fill_circle_v(tq_vec2f_t position, float radius)
 {
     graphics_fill_circle(position.x, position.y, radius);
 }
@@ -337,22 +337,22 @@ void tq_set_fill_color(tq_color_t fill_color)
     graphics_set_fill_color(fill_color);
 }
 
-tq_handle_t tq_load_texture_from_file(char const *path)
+int32_t tq_load_texture_from_file(char const *path)
 {
     return graphics_load_texture_from_file(path);
 }
 
-tq_handle_t tq_load_texture_from_memory(uint8_t const *buffer, size_t length)
+int32_t tq_load_texture_from_memory(uint8_t const *buffer, size_t length)
 {
     return graphics_load_texture_from_memory(buffer, length);
 }
 
-void tq_delete_texture(tq_handle_t texture_handle)
+void tq_delete_texture(int32_t texture_handle)
 {
     graphics_delete_texture(texture_handle);
 }
 
-uint32_t tq_get_texture_width(tq_handle_t texture_handle)
+uint32_t tq_get_texture_width(int32_t texture_handle)
 {
     uint32_t width, height;
     graphics_get_texture_size(texture_handle, &width, &height);
@@ -360,7 +360,7 @@ uint32_t tq_get_texture_width(tq_handle_t texture_handle)
     return width;
 }
 
-uint32_t tq_get_texture_height(tq_handle_t texture_handle)
+uint32_t tq_get_texture_height(int32_t texture_handle)
 {
     uint32_t width, height;
     graphics_get_texture_size(texture_handle, &width, &height);
@@ -368,22 +368,22 @@ uint32_t tq_get_texture_height(tq_handle_t texture_handle)
     return height;
 }
 
-void tq_get_texture_size(tq_handle_t texture_handle, uint32_t *width, uint32_t *height)
+void tq_get_texture_size(int32_t texture_handle, uint32_t *width, uint32_t *height)
 {
     graphics_get_texture_size(texture_handle, width, height);
 }
 
-void tq_draw_texture_f(tq_handle_t texture_handle, float x, float y, float w, float h)
+void tq_draw_texture_f(int32_t texture_handle, float x, float y, float w, float h)
 {
     graphics_draw_texture(texture_handle, x, y, w, h);
 }
 
-void tq_draw_texture_v(tq_handle_t texture_handle, tq_vec2_t position, tq_vec2_t size)
+void tq_draw_texture_v(int32_t texture_handle, tq_vec2f_t position, tq_vec2f_t size)
 {
     graphics_draw_texture(texture_handle, position.x, position.y, size.x, size.y);
 }
 
-void tq_draw_texture_fragment_f(tq_handle_t texture_handle,
+void tq_draw_texture_fragment_f(int32_t texture_handle,
     float x, float y,
     float w, float h,
     float fx, float fy,
@@ -392,11 +392,11 @@ void tq_draw_texture_fragment_f(tq_handle_t texture_handle,
     graphics_draw_texture_fragment(texture_handle, x, y, w, h, fx, fy, fw, fh);
 }
 
-void tq_draw_texture_fragment_v(tq_handle_t texture_handle,
-    tq_vec2_t position,
-    tq_vec2_t size,
-    tq_vec2_t fragment_position,
-    tq_vec2_t fragment_size)
+void tq_draw_texture_fragment_v(int32_t texture_handle,
+    tq_vec2f_t position,
+    tq_vec2f_t size,
+    tq_vec2f_t fragment_position,
+    tq_vec2f_t fragment_size)
 {
     graphics_draw_texture_fragment(texture_handle,
         position.x, position.y,

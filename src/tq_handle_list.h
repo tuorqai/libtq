@@ -33,9 +33,9 @@ typedef struct handle_list
 handle_list_t *handle_list_create(size_t item_size, handle_list_item_dtor item_dtor);
 void handle_list_destroy(handle_list_t *handle_list);
 
-tq_handle_t handle_list_append(handle_list_t *handle_list, void *item);
-void handle_list_erase(handle_list_t *handle_list, tq_handle_t handle);
-void *handle_list_get(handle_list_t *handle_list, tq_handle_t handle);
+int32_t handle_list_append(handle_list_t *handle_list, void *item);
+void handle_list_erase(handle_list_t *handle_list, int32_t handle);
+void *handle_list_get(handle_list_t *handle_list, int32_t handle);
 
 //------------------------------------------------------------------------------
 
