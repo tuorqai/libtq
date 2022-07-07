@@ -16,8 +16,8 @@ void tq_graphics_initialize(void);
 // [tq::graphics::terminate]
 void tq_graphics_terminate(void);
 
-// [tq::graphics::finish]
-void tq_graphics_finish(void);
+// [tq::graphics::process]
+void tq_graphics_process(void);
 
 // [tq::graphics::clear]
 void graphics_clear(void);
@@ -136,6 +136,7 @@ typedef struct tq_renderer
 {
     void        (*initialize)(void);
     void        (*terminate)(void);
+    void        (*process)(void);
 
     void        (*clear)(void);
     void        (*set_clear_color)(tq_color_t);
@@ -158,8 +159,6 @@ typedef struct tq_renderer
     void        (*delete_texture)(int32_t texture_id);
     void        (*get_texture_size)(int32_t texture_id, uint32_t *width, uint32_t *height);
     void        (*draw_texture)(int32_t texture_id, float const *data, uint32_t num_vertices);
-
-    void        (*flush)(void);
 } tq_renderer_t;
 
 //------------------------------------------------------------------------------

@@ -42,6 +42,11 @@ void tq_audio_terminate(void)
     audio.impl.terminate();
 }
 
+void tq_audio_process(void)
+{
+    audio.impl.process();
+}
+
 int32_t tq_audio_load_sound_from_file(char const *path)
 {
     int32_t stream_id = tq_open_file_istream(path);

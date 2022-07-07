@@ -5,6 +5,7 @@
 
 #include "tq_core.h"
 #include "tq_graphics.h"
+#include "tq_log.h"
 
 //------------------------------------------------------------------------------
 // Declarations
@@ -12,6 +13,7 @@
 typedef struct tq_core
 {
     tq_clock_t          clock;
+    tq_threads_impl_t   threads;
     tq_display_t        display;
 
     uint32_t            display_width;
@@ -71,14 +73,44 @@ static bool get_key_state(tq_key_t key)
 
 void tq_core_initialize(void)
 {
+    /**
+     * Construct clock implementation.
+     */
+
 #if defined(TQ_USE_SDL)
     tq_construct_sdl_clock(&core.clock);
+#else
+    #error Invalid configuration. Check your build settings.
+#endif
+
+    /**
+     * Construct threads implementation.
+     */
+
+#if defined(TQ_PLATFORM_WINDOWS)
+    tq_construct_win32_threads(&core.threads);
+#elif defined(TQ_PLATFORM_LINUX) || defined(TQ_PLATFORM_ANDROID)
+    tq_construct_posix_threads(&core.threads);
+#else
+    #error Invalid configuration. Check your build settings.
+#endif
+
+    /**
+     * Construct display implementation.
+     */
+
+#if defined(TQ_USE_SDL)
     tq_construct_sdl_display(&core.display);
 #else
     #error Invalid configuration. Check your build settings.
 #endif
 
+    /**
+     * Initialization begins here.
+     */
+
     core.clock.initialize();
+    core.threads.initialize();
 
     if (!core.display_width || !core.display_height) {
         core.display_width = 1280;
@@ -106,18 +138,16 @@ void tq_core_initialize(void)
 void tq_core_terminate(void)
 {
     core.display.terminate();
+    core.threads.terminate();
     core.clock.terminate();
 
     memset(&core, 0, sizeof(tq_core_t));
 }
 
-void tq_core_present(void)
+bool tq_core_process(void)
 {
     core.display.present();
-}
 
-void tq_core_keep_up(void)
-{
     core.prev_time = core.current_time;
     core.current_time = core.clock.get_time_highp();
     core.delta_time = core.current_time - core.prev_time;
@@ -129,10 +159,7 @@ void tq_core_keep_up(void)
     }
 
     core.framerate_counter++;
-}
 
-bool tq_core_process_events(void)
-{
     return core.display.process_events();
 }
 
@@ -326,6 +353,49 @@ void tq_core_set_mouse_wheel_scroll_callback(tq_mouse_wheel_callback_t callback)
 void tq_core_show_message_box(char const *title, char const *message)
 {
     core.display.show_message_box(title, message);
+}
+
+//------------------------------------------------------------------------------
+// Threads & mutexes
+
+void tq_core_sleep(double seconds)
+{
+    core.threads.sleep(seconds);
+}
+
+tq_thread_t tq_core_create_thread(char const *name, int (*func)(void *), void *data)
+{
+    return core.threads.create_thread(name, func, data);
+}
+
+void tq_core_detach_thread(tq_thread_t thread)
+{
+    core.threads.detach_thread(thread);
+}
+
+int tq_core_wait_thread(tq_thread_t thread)
+{
+    return core.threads.wait_thread(thread);
+}
+
+tq_mutex_t tq_core_create_mutex(void)
+{
+    return core.threads.create_mutex();
+}
+
+void tq_core_destroy_mutex(tq_mutex_t mutex)
+{
+    core.threads.destroy_mutex(mutex);
+}
+
+void tq_core_lock_mutex(tq_mutex_t mutex)
+{
+    core.threads.lock_mutex(mutex);
+}
+
+void tq_core_unlock_mutex(tq_mutex_t mutex)
+{
+    core.threads.unlock_mutex(mutex);
 }
 
 //------------------------------------------------------------------------------

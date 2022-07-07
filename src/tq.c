@@ -27,11 +27,10 @@ void tq_terminate(void)
 
 bool tq_process(void)
 {
-    tq_graphics_finish();
-    tq_core_present();
-    tq_core_keep_up();
+    tq_graphics_process();
+    tq_audio_process();
 
-    return tq_core_process_events();
+    return tq_core_process();
 }
 
 //------------------------------------------------------------------------------

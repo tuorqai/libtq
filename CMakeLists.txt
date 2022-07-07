@@ -18,10 +18,12 @@ add_library(tq
     "src/tq_image_loader.c"
     "src/tq_log.c"
     "src/tq_math.c"
+    "src/tq_posix_threads.c"
     "src/tq_sdl_clock.c"
     "src/tq_sdl_display.c"
     "src/tq_sound_loader.c"
     "src/tq_stream.c"
+    "src/tq_win32_threads.c"
     "src/tq.c")
 
 target_include_directories(tq PUBLIC "include")
@@ -60,6 +62,8 @@ elseif(UNIX)
     endif()
 endif()
 
+find_package(Threads REQUIRED)
+
 if(USE_PLATFORM_WINDOWS)
     find_package(SDL2 REQUIRED)
     find_package(OpenGL REQUIRED)
@@ -71,6 +75,7 @@ if(USE_PLATFORM_WINDOWS)
     find_library(VORBISFILE_LIBRARY vorbisfile REQUIRED)
 
     target_link_libraries(tq
+        Threads::Threads
         SDL2::SDL2
         GLEW::GLEW
         OpenGL::GL
@@ -99,6 +104,7 @@ elseif(USE_PLATFORM_LINUX)
     target_include_directories(tq PRIVATE ${OPENAL_INCLUDE_DIR})
 
     target_link_libraries(tq
+        Threads::Threads
         SDL2::SDL2
         GLEW::GLEW
         OpenGL::GL

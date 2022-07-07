@@ -12,6 +12,7 @@ typedef struct tq_audio_impl
 {
     void        (*initialize)(void);
     void        (*terminate)(void);
+    void        (*process)(void);
 
     int32_t     (*load_sound)(int32_t stream_id);
     void        (*delete_sound)(int32_t sound_id);
@@ -37,6 +38,7 @@ typedef struct tq_audio_impl
 
 void tq_audio_initialize(void);
 void tq_audio_terminate(void);
+void tq_audio_process(void);
 
 int32_t tq_audio_load_sound_from_file(char const *path);
 int32_t tq_audio_load_sound_from_memory(uint8_t const *buffer, size_t size);

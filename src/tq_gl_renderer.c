@@ -601,6 +601,15 @@ static void terminate(void)
 }
 
 //--------------------------------------
+// Called at the end of a frame.
+//--------------------------------------
+static void process(void)
+{
+    // Is it even needed?
+    CHECK_GL(glFlush());
+}
+
+//--------------------------------------
 // Clear background.
 //--------------------------------------
 static void clear(void)
@@ -841,15 +850,6 @@ static void draw_texture(int32_t texture_id, float const *data, uint32_t num_ver
     CHECK_GL(glDrawArrays(GL_TRIANGLE_FAN, 0, num_vertices));
 }
 
-//--------------------------------------
-// Called at the end of a frame.
-//--------------------------------------
-static void flush(void)
-{
-    // Is it even needed?
-    CHECK_GL(glFlush());
-}
-
 //------------------------------------------------------------------------------
 // Module constructor
 
@@ -861,6 +861,7 @@ void tq_construct_gl_renderer(tq_renderer_t *renderer)
     *renderer = (tq_renderer_t) {
         .initialize         = initialize,
         .terminate          = terminate,
+        .process            = process,
         
         .clear              = clear,
         .set_clear_color    = set_clear_color,
@@ -883,8 +884,6 @@ void tq_construct_gl_renderer(tq_renderer_t *renderer)
         .delete_texture     = delete_texture,
         .get_texture_size   = get_texture_size,
         .draw_texture       = draw_texture,
-
-        .flush              = flush,
     };
 }
 

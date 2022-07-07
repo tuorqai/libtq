@@ -11,6 +11,7 @@
 #include <alc.h>
 
 #include "tq_audio.h"
+#include "tq_core.h"
 #include "tq_error.h"
 #include "tq_log.h"
 #include "tq_sound_loader.h"
@@ -64,19 +65,19 @@ static void check_al_errors(char const *call, char const *file, unsigned int lin
 //------------------------------------------------------------------------------
 // Declarations
 
-typedef struct tq_al_mixer_priv
+typedef struct tq_al_audio
 {
     ALCdevice       *device;
     ALCcontext      *context;
 
     ALuint          buffers[TQ_SOUND_LIMIT];
     ALuint          sources[TQ_CHANNEL_LIMIT];
-} tq_al_mixer_priv_t;
+} tq_al_audio_t;
 
 //------------------------------------------------------------------------------
 // Definitions
 
-static tq_al_mixer_priv_t al;
+static tq_al_audio_t al;
 
 //------------------------------------------------------------------------------
 // Utility functions
@@ -131,7 +132,7 @@ static ALenum choose_format(tq_sound_t const *sound)
 
 static void initialize(void)
 {
-    memset(&al, 0, sizeof(tq_al_mixer_priv_t));
+    memset(&al, 0, sizeof(al));
 
     al.device = alcOpenDevice(NULL);
 
@@ -164,6 +165,10 @@ static void terminate(void)
     alcCloseDevice(al.device);
 
     log_info("OpenAL audio module is terminated.\n");
+}
+
+static void process(void)
+{
 }
 
 static int32_t load_sound(int32_t stream_id)
@@ -336,6 +341,7 @@ void tq_construct_al_audio(tq_audio_impl_t *impl)
 {
     impl->initialize            = initialize;
     impl->terminate             = terminate;
+    impl->process               = process;
     impl->load_sound            = load_sound;
     impl->delete_sound          = delete_sound;
     impl->play_sound            = play_sound;

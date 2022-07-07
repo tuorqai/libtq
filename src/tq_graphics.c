@@ -119,9 +119,9 @@ void tq_graphics_terminate(void)
     graphics.renderer.terminate();
 }
 
-void tq_graphics_finish(void)
+void tq_graphics_process(void)
 {
-    graphics.renderer.flush();
+    graphics.renderer.process();
 
     graphics.model_view_index = 0;
     mat3_identity(graphics.model_view[0]);
