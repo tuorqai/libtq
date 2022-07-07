@@ -2,7 +2,10 @@
 //------------------------------------------------------------------------------
 
 #include <string.h>
-#include <vorbis/vorbisfile.h>
+
+#if defined(TQ_USE_OGG)
+#   include <vorbis/vorbisfile.h>
+#endif
 
 #include "tq_log.h"
 #include "tq_mem.h"
@@ -82,6 +85,8 @@ static tq_sound_t *load_wav(int32_t stream_id)
 
 //------------------------------------------------------------------------------
 // OGG loader
+
+#if defined(TQ_USE_OGG)
 
 static char const *ogg_err(int status)
 {
@@ -220,6 +225,8 @@ static tq_sound_t *load_ogg(OggVorbis_File *vorbis)
     return sound;
 }
 
+#endif // defined(TQ_USE_OGG)
+
 //------------------------------------------------------------------------------
 
 tq_sound_t *tq_sound_load(int32_t stream_id)
@@ -234,6 +241,7 @@ tq_sound_t *tq_sound_load(int32_t stream_id)
     //
     // (2) Ogg Vorbis
 
+#if defined(TQ_USE_OGG)
     {
         OggVorbis_File vorbis;
 
@@ -241,6 +249,7 @@ tq_sound_t *tq_sound_load(int32_t stream_id)
             return load_ogg(&vorbis);
         }
     }
+#endif // defined(TQ_USE_OGG)
 
     return NULL;
 }

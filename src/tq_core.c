@@ -89,7 +89,7 @@ void tq_core_initialize(void)
 
 #if defined(TQ_PLATFORM_WINDOWS)
     tq_construct_win32_threads(&core.threads);
-#elif defined(TQ_PLATFORM_LINUX) || defined(TQ_PLATFORM_ANDROID)
+#elif defined(TQ_PLATFORM_UNIX)
     tq_construct_posix_threads(&core.threads);
 #else
     #error Invalid configuration. Check your build settings.

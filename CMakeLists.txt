@@ -51,82 +51,34 @@ option(BUILD_EXAMPLES "Build examples" NO)
 
 if(WIN32)
     set(USE_PLATFORM_WINDOWS TRUE)
+    set(USE_PLATFORM_DESKTOP TRUE)
     message("Platform is: Windows")
 elseif(UNIX)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         set(USE_PLATFORM_LINUX TRUE)
+        set(USE_PLATFORM_UNIX TRUE)
+        set(USE_PLATFORM_DESKTOP TRUE)
         message("Platform is: Linux")
     elseif(ANDROID)
         set(USE_PLATFORM_ANDROID TRUE)
+        set(USE_PLATFORM_UNIX TRUE)
         message("Platform is: Android")
     endif()
 endif()
 
-find_package(Threads REQUIRED)
-
 if(USE_PLATFORM_WINDOWS)
-    find_package(SDL2 REQUIRED)
-    find_package(OpenGL REQUIRED)
-    find_package(GLEW REQUIRED)
-    find_package(OpenAL REQUIRED)
-
-    find_library(OGG_LIBRARY ogg REQUIRED)
-    find_library(VORBIS_LIBRARY vorbis REQUIRED)
-    find_library(VORBISFILE_LIBRARY vorbisfile REQUIRED)
-
-    target_link_libraries(tq
-        Threads::Threads
-        SDL2::SDL2
-        GLEW::GLEW
-        OpenGL::GL
-        ${OGG_LIBRARY}
-        ${VORBIS_LIBRARY}
-        ${VORBISFILE_LIBRARY})
-
-    target_compile_definitions(tq PRIVATE
-        TQ_PLATFORM_WINDOWS
-        TQ_USE_SDL
-        TQ_USE_OPENGL
-        TQ_USE_OPENAL)
-
     install(TARGETS tq DESTINATION "lib")
     install(FILES "include/tq/tq.h" DESTINATION "include")
+    target_compile_definitions(tq PRIVATE TQ_PLATFORM_WINDOWS)
 elseif(USE_PLATFORM_LINUX)
-    find_package(SDL2 REQUIRED)
-    find_package(OpenGL REQUIRED)
-    find_package(GLEW REQUIRED)
-    find_package(OpenAL REQUIRED)
-
-    find_library(OGG_LIBRARY ogg REQUIRED)
-    find_library(VORBIS_LIBRARY vorbis REQUIRED)
-    find_library(VORBISFILE_LIBRARY vorbisfile REQUIRED)
-
-    target_include_directories(tq PRIVATE ${OPENAL_INCLUDE_DIR})
-
-    target_link_libraries(tq
-        Threads::Threads
-        SDL2::SDL2
-        GLEW::GLEW
-        OpenGL::GL
-        ${OPENAL_LIBRARY}
-        ${OGG_LIBRARY}
-        ${VORBIS_LIBRARY}
-        ${VORBISFILE_LIBRARY}
-        m)
-
-    target_compile_definitions(tq PRIVATE
-        TQ_PLATFORM_LINUX
-        TQ_USE_SDL
-        TQ_USE_OPENGL
-        TQ_USE_OPENAL)
-
     include(GNUInstallDirs)
     install(TARGETS tq DESTINATION ${CMAKE_INSTALL_LIBDIR})
     install(FILES "include/tq/tq.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    target_compile_definitions(tq PRIVATE TQ_PLATFORM_LINUX)
 elseif(USE_PLATFORM_ANDROID)
     add_library(native_app_glue STATIC
         "${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c")
-
+    
     target_link_libraries(tq android log native_app_glue GLESv2 EGL)
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_ANDROID
@@ -134,6 +86,39 @@ elseif(USE_PLATFORM_ANDROID)
         TQ_USE_OPENGL_ES)
 else()
     message(FATAL_ERROR "Sorry, but your OS is not supported :(")
+endif()
+
+if(USE_PLATFORM_DESKTOP)
+    find_package(SDL2 REQUIRED)
+    find_package(OpenGL REQUIRED)
+    find_package(GLEW REQUIRED)
+    find_package(OpenAL REQUIRED)
+
+    target_include_directories(tq PRIVATE ${OPENAL_INCLUDE_DIR})
+    target_link_libraries(tq SDL2::SDL2 GLEW::GLEW OpenGL::GL ${OPENAL_LIBRARY})
+    target_compile_definitions(tq PRIVATE TQ_USE_SDL TQ_USE_OPENGL TQ_USE_OPENAL)
+endif()
+
+if(USE_PLATFORM_UNIX)
+    find_library(M_LIBRARY m)
+
+    if(M_LIBRARY)
+        target_link_libraries(tq ${M_LIBRARY})
+    endif()
+
+    target_compile_definitions(tq PRIVATE TQ_PLATFORM_UNIX)
+endif()
+
+find_package(Threads REQUIRED)
+target_link_libraries(tq Threads::Threads)
+
+find_library(OGG_LIBRARY ogg)
+find_library(VORBIS_LIBRARY vorbis)
+find_library(VORBISFILE_LIBRARY vorbisfile)
+
+if(OGG_LIBRARY AND VORBIS_LIBRARY AND VORBISFILE_LIBRARY)
+    target_link_libraries(tq ${OGG_LIBRARY} ${VORBIS_LIBRARY} ${VORBISFILE_LIBRARY})
+    target_compile_definitions(tq PRIVATE TQ_USE_OGG)
 endif()
 
 #-------------------------------------------------------------------------------
