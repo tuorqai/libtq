@@ -410,12 +410,12 @@ void tq_draw_texture_fragment_v(int32_t texture_handle,
 
 int32_t tq_load_sound_from_file(char const *path)
 {
-    tq_audio_load_sound_from_file(path);
+    return tq_audio_load_sound_from_file(path);
 }
 
 int32_t tq_load_sound_from_memory(uint8_t const *buffer, size_t length)
 {
-    tq_audio_load_sound_from_memory(buffer, length);
+    return tq_audio_load_sound_from_memory(buffer, length);
 }
 
 void tq_delete_sound(int32_t sound_id)

@@ -99,7 +99,7 @@ int32_t handle_list_append(handle_list_t *handle_list, void *item)
 
 void handle_list_erase(handle_list_t *handle_list, int32_t handle)
 {
-    if (handle < 0 || handle >= handle_list->map_used) {
+    if (handle < 0 || handle >= (int64_t) handle_list->map_used) {
         // log_warning("handle_list_erase(): Handle is out of bounds.\n");
         return;
     }
@@ -133,7 +133,7 @@ void handle_list_erase(handle_list_t *handle_list, int32_t handle)
 
 void *handle_list_get(handle_list_t *handle_list, int32_t handle)
 {
-    if (handle < 0 || handle >= handle_list->map_used) {
+    if (handle < 0 || handle >= (int64_t) handle_list->map_used) {
         // log_error("handle_list_get(): Handle is out of bounds.\n");
         return NULL;
     }

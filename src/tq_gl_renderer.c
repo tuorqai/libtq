@@ -331,7 +331,7 @@ static GLuint make_shader(gl_vertex_shader_t vs, gl_fragment_shader_t fs)
 // Update current vertex format.
 // Doesn't do anything if the format is the same.
 //--------------------------------------
-static void refresh_attrib_bits(int attrib_bits)
+static void refresh_attrib_bits(uint32_t attrib_bits)
 {
     if (gl.attrib_bits == attrib_bits) {
         return;

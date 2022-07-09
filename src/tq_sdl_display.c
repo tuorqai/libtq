@@ -177,7 +177,7 @@ static void initialize(uint32_t a0, uint32_t a1, char const *a2)
         { 2, 1, 0 },
     };
 
-    for (int n = 0; n < sizeof(versions) / sizeof(versions[0]); n++) {
+    for (size_t n = 0; n < sizeof(versions) / sizeof(versions[0]); n++) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, versions[n].major);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, versions[n].minor);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, versions[n].flags);

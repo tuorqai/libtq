@@ -338,7 +338,7 @@ static void delete_sound(int32_t sound_id)
             ALint buffer;
             CHECK_AL(alGetSourcei(openal.channels.source[channel_id], AL_BUFFER, &buffer));
 
-            if (buffer == openal.sounds.buffer[sound_id]) {
+            if ((ALuint) buffer == openal.sounds.buffer[sound_id]) {
                 CHECK_AL(alSourceStop(openal.channels.source[channel_id]));
                 openal.channels.bits[channel_id] = 0;
             }
@@ -409,7 +409,7 @@ static int fill_buffer(ALuint buffer, ALenum format,
             samples_read = tq_sound_decoder_read(decoder_id, samples, MUSIC_BUFFER_LENGTH);
             
             if (*loops_left > 0) {
-                *loops_left--;
+                (*loops_left)--;
             }
         }
     }

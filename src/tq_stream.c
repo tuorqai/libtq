@@ -22,8 +22,8 @@ typedef struct tq_file_istream_data
 typedef struct tq_memory_istream_data
 {
     uint8_t const   *buffer;
-    size_t          size;
-    size_t          position;
+    int64_t         size;
+    int64_t         position;
     char            repr[TQ_STREAM_NAME_LENGTH];
 } tq_memory_istream_data_t;
 
@@ -145,8 +145,8 @@ static int64_t memory_istream_read(tq_istream_data_t *data, void *dst, int64_t s
         return -1;
     }
 
-    size_t bytes_left = data->memory.size - data->memory.position;
-    size_t bytes_to_copy = (bytes_left < size) ? bytes_left : size;
+    int64_t bytes_left = data->memory.size - data->memory.position;
+    int64_t bytes_to_copy = (bytes_left < size) ? bytes_left : size;
 
     memcpy(dst, data->memory.buffer + data->memory.position, bytes_to_copy);
     data->memory.position += bytes_to_copy;

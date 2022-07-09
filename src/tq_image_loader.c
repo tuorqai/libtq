@@ -59,15 +59,23 @@ tq_image_t *tq_image_load(int32_t stream_id)
 
     tq_image_t *image = tq_mem_alloc(sizeof(tq_image_t));
 
+    int width;
+    int height;
+    int components;
+
     image->stream_id = stream_id;
     image->pixels = stbi_load_from_callbacks(&callbacks, image,
-        &image->width, &image->height, &image->pixel_format, 0);
+        &width, &height, &components, 0);
 
     if (image->pixels == NULL) {
         tq_log_error("stbi image loader error: %s\n", stbi_failure_reason());
         tq_mem_free(image);
         return NULL;
     }
+
+    image->width = (unsigned int) width;
+    image->height = (unsigned int) height;
+    image->pixel_format = (unsigned int) components;
 
     return image;
 }
@@ -86,7 +94,7 @@ tq_image_t *tq_image_cut(tq_image_t *src, uint32_t x, uint32_t y, uint32_t w, ui
     image->stream_id = -1;
     image->pixels = tq_mem_alloc(w * h * n);
 
-    for (int r = 0; r < h; r++) {
+    for (uint32_t r = 0; r < h; r++) {
         memcpy(&image->pixels[r * w], &src->pixels[r * w + x], w * n);
     }
 

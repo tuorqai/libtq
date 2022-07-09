@@ -3,6 +3,21 @@ cmake_minimum_required(VERSION 3.13)
 project(tq)
 
 #---------------------------------------
+# Compiler settings
+#---------------------------------------
+
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(
+        -pedantic
+        -Wall
+        -Wextra
+        -Wno-switch
+        -Wno-switch-default
+        -Wno-unused-parameter
+        -Wno-unused-variable)
+endif()
+
+#---------------------------------------
 # Library target
 #---------------------------------------
 

@@ -98,7 +98,7 @@ static int open_wav(int32_t decoder_id)
         char format[4];
     } chunk;
 
-    if (tq_istream_read(stream_id, &chunk, sizeof(chunk)) < sizeof(chunk)) {
+    if (tq_istream_read(stream_id, &chunk, sizeof(chunk)) < (int64_t) sizeof(chunk)) {
         return -1;
     }
 
@@ -114,7 +114,7 @@ static int open_wav(int32_t decoder_id)
             uint32_t size;
         } subchunk;
 
-        if (tq_istream_read(stream_id, &subchunk, sizeof(subchunk)) < sizeof(subchunk)) {
+        if (tq_istream_read(stream_id, &subchunk, sizeof(subchunk)) < (int64_t) sizeof(subchunk)) {
             return -1;
         }
 
@@ -134,7 +134,7 @@ static int open_wav(int32_t decoder_id)
                 uint16_t bits_per_sample;
             } fmt;
 
-            if (tq_istream_read(stream_id, &fmt, sizeof(fmt)) < sizeof(fmt)) {
+            if (tq_istream_read(stream_id, &fmt, sizeof(fmt)) < (int64_t) sizeof(fmt)) {
                 return -1;
             }
 
@@ -197,7 +197,7 @@ static uint64_t read_wav(int32_t decoder_id, int16_t *samples, uint64_t max_samp
     int32_t stream_id = decoders.stream_id[decoder_id];
     uint16_t bytes_per_sample = decoders.info[decoder_id].wav.bytes_per_sample;
 
-    int samples_read = 0;
+    uint64_t samples_read = 0;
 
     while (samples_read < max_samples) {
         int64_t position = tq_istream_tell(stream_id);
