@@ -21,7 +21,7 @@ add_library(tq
     "src/tq_posix_threads.c"
     "src/tq_sdl_clock.c"
     "src/tq_sdl_display.c"
-    "src/tq_sound_loader.c"
+    "src/tq_sound_decoder.c"
     "src/tq_stream.c"
     "src/tq_win32_threads.c"
     "src/tq.c")

@@ -13,8 +13,9 @@
 #include "tq_audio.h"
 #include "tq_core.h"
 #include "tq_error.h"
+#include "tq_mem.h"
 #include "tq_log.h"
-#include "tq_sound_loader.h"
+#include "tq_sound_decoder.h"
 
 //------------------------------------------------------------------------------
 // OpenAL debug stuff
@@ -63,144 +64,258 @@ static void check_al_errors(char const *call, char const *file, unsigned int lin
 #endif // defined(NDEBUG)
 
 //------------------------------------------------------------------------------
-// Declarations
 
-typedef struct tq_al_audio
+enum {
+    SOUND_BIT_LOADED = (1 << 0),
+};
+
+enum {
+    MUSIC_BIT_OPEN = (1 << 0),
+};
+
+enum {
+    CHANNEL_BIT_USED = (1 << 0),
+    CHANNEL_BIT_STREAMING = (1 << 1),
+};
+
+struct openal_sounds
 {
-    ALCdevice       *device;
-    ALCcontext      *context;
+    uint8_t     bits[TQ_SOUND_LIMIT];
+    ALuint      buffer[TQ_SOUND_LIMIT];
+    int16_t     *samples[TQ_SOUND_LIMIT];
+};
 
-    ALuint          buffers[TQ_SOUND_LIMIT];
-    ALuint          sources[TQ_CHANNEL_LIMIT];
-} tq_al_audio_t;
+struct openal_music
+{
+    uint8_t     bits[TQ_MUSIC_LIMIT];
+    int32_t     stream_id[TQ_MUSIC_LIMIT];
+    int32_t     decoder_id[TQ_MUSIC_LIMIT];
+};
+
+struct openal_channels
+{
+    uint8_t     bits[TQ_CHANNEL_LIMIT];
+    ALuint      source[TQ_CHANNEL_LIMIT];
+    tq_thread_t thread[TQ_CHANNEL_LIMIT];
+
+    int32_t     stream_id[TQ_CHANNEL_LIMIT];
+    int32_t     decoder_id[TQ_MUSIC_LIMIT];
+    int         loop[TQ_CHANNEL_LIMIT];
+};
+
+struct openal
+{
+    ALCdevice *device;
+    ALCcontext *context;
+
+    tq_mutex_t mutex;
+    struct openal_sounds sounds;
+    struct openal_music music;
+    struct openal_channels channels;
+};
 
 //------------------------------------------------------------------------------
-// Definitions
 
-static tq_al_audio_t al;
+static struct openal openal;
 
 //------------------------------------------------------------------------------
 // Utility functions
 
-static int32_t get_buffer_index(void)
+/**
+ * Find free sound identifier.
+ */
+static int32_t get_sound_id(void)
 {
-    for (int32_t index = 0; index < TQ_SOUND_LIMIT; index++) {
-        if (al.buffers[index] == 0) {
-            return index;
+    for (int32_t sound_id = 0; sound_id < TQ_SOUND_LIMIT; sound_id++) {
+        if ((openal.sounds.bits[sound_id] & SOUND_BIT_LOADED) == 0) {
+            return sound_id;
         }
     }
 
     return -1;
 }
 
-static int32_t get_source_index(void)
+/**
+ * Find free music identifier.
+ */
+static int32_t get_music_id(void)
 {
-    for (int32_t index = 0; index < TQ_CHANNEL_LIMIT; index++) {
-        ALint state;
-        
-        CHECK_AL(alGetSourcei(al.sources[index], AL_SOURCE_STATE, &state));
-
-        if (state == AL_INITIAL || state == AL_STOPPED) {
-            return index;
+    for (int32_t music_id = 0; music_id < TQ_MUSIC_LIMIT; music_id++) {
+        if ((openal.music.bits[music_id] & MUSIC_BIT_OPEN) == 0) {
+            return music_id;
         }
     }
 
     return -1;
 }
 
-static ALenum choose_format(tq_sound_t const *sound)
+/**
+ * Find free channel identifier.
+ */
+static int32_t get_channel_id(void)
 {
-    if (sound->num_channels == 1) {
-        if (sound->bytes_per_sample == 1) {
-            return AL_FORMAT_MONO8;
-        } else if (sound->bytes_per_sample == 2) {
-            return AL_FORMAT_MONO16;
+    for (int32_t channel_id = 0; channel_id < TQ_CHANNEL_LIMIT; channel_id++) {
+        if ((openal.channels.bits[channel_id] & CHANNEL_BIT_USED) == 0) {
+            return channel_id;
         }
-    } else if (sound->num_channels == 2) {
-        if (sound->bytes_per_sample == 1) {
-            return AL_FORMAT_STEREO8;
-        } else if (sound->bytes_per_sample == 2) {
-            return AL_FORMAT_STEREO16;
+
+        if ((openal.channels.bits[channel_id] & CHANNEL_BIT_STREAMING) == 0) {
+            ALint state = 0;
+            CHECK_AL(alGetSourcei(openal.channels.source[channel_id], AL_SOURCE_STATE, &state));
+
+            if (state == AL_INITIAL || state == AL_STOPPED) {
+                return channel_id;
+            }
         }
+    }
+
+    return -1;
+}
+
+/**
+ * Choose appropriate audio format.
+ */
+static ALenum choose_format(int num_channels)
+{
+    switch (num_channels) {
+    case 1:
+        return AL_FORMAT_MONO16;
+    case 2:
+        return AL_FORMAT_STEREO16;
     }
 
     return AL_INVALID_ENUM;
 }
 
 //------------------------------------------------------------------------------
-// Implementation
 
 static void initialize(void)
 {
-    memset(&al, 0, sizeof(al));
+    memset(&openal, 0, sizeof(openal));
 
-    al.device = alcOpenDevice(NULL);
+    openal.device = alcOpenDevice(NULL);
 
-    if (al.device == NULL) {
+    if (openal.device == NULL) {
         tq_error("OpenAL: failed to open audio device.");
     }
 
-    al.context = alcCreateContext(al.device, NULL);
+    openal.context = alcCreateContext(openal.device, NULL);
 
-    if (al.context == NULL) {
+    if (openal.context == NULL) {
         tq_error("OpenAL: failed to create context.");
     }
 
-    if (!alcMakeContextCurrent(al.context)) {
+    if (!alcMakeContextCurrent(openal.context)) {
         tq_error("OpenAL: failed to activate context.");
     }
 
-    CHECK_AL(alGenSources(TQ_CHANNEL_LIMIT, al.sources));
+    CHECK_AL(alGenSources(TQ_CHANNEL_LIMIT, openal.channels.source));
 
-    log_info("OpenAL audio module is initialized.\n");
+    openal.mutex = tq_core_create_mutex();
+
+    tq_log_info("OpenAL audio module is initialized.\n");
 }
 
 static void terminate(void)
 {
-    CHECK_AL(alDeleteSources(TQ_CHANNEL_LIMIT, al.sources));
-    CHECK_AL(alDeleteBuffers(TQ_SOUND_LIMIT, al.buffers));
+    /**
+     * Stop sound channels.
+     */
+    for (int32_t channel_id = 0; channel_id < TQ_CHANNEL_LIMIT; channel_id++) {
+        if (openal.channels.bits[channel_id] & CHANNEL_BIT_USED) {
+            tq_core_lock_mutex(openal.mutex);
+            {
+                CHECK_AL(alSourceStop(openal.channels.source[channel_id]));
+            }
+            tq_core_unlock_mutex(openal.mutex);
+
+            if (openal.channels.bits[channel_id] & CHANNEL_BIT_STREAMING) {
+                tq_core_wait_thread(openal.channels.thread[channel_id]);
+            }
+        }
+    }
+
+    /**
+     * Delete sources (we need to do this before trying to delete buffers).
+     */
+    CHECK_AL(alDeleteSources(TQ_CHANNEL_LIMIT, openal.channels.source));
+
+    /**
+     * Close sound decoders and input streams opened by BGM.
+     */
+    for (int32_t music_id = 0; music_id < TQ_MUSIC_LIMIT; music_id++) {
+        if (openal.music.bits[music_id] & MUSIC_BIT_OPEN) {
+            tq_sound_decoder_close(openal.music.decoder_id[music_id]);
+            tq_istream_close(openal.music.stream_id[music_id]);
+        }
+    }
+
+    /**
+     * Delete remaining sound buffers.
+     */
+    for (int32_t sound_id = 0; sound_id < TQ_SOUND_LIMIT; sound_id++) {
+        if (openal.sounds.bits[sound_id] & SOUND_BIT_LOADED) {
+            CHECK_AL(alDeleteBuffers(1, &openal.sounds.buffer[sound_id]));
+            tq_mem_free(openal.sounds.samples[sound_id]);
+        }
+    }
+
+    tq_core_destroy_mutex(openal.mutex);
 
     alcMakeContextCurrent(NULL);
-    alcDestroyContext(al.context);
-    alcCloseDevice(al.device);
+    alcDestroyContext(openal.context);
+    alcCloseDevice(openal.device);
 
-    log_info("OpenAL audio module is terminated.\n");
+    tq_log_info("OpenAL audio module is terminated.\n");
 }
 
 static void process(void)
 {
 }
 
+//------------------------------------------------------------------------------
+// Sounds
+
 static int32_t load_sound(int32_t stream_id)
 {
-    int32_t index = get_buffer_index();
+    int32_t sound_id = get_sound_id();
 
-    if (index == -1) {
+    if (sound_id == -1) {
         return -1;
     }
 
-    tq_sound_t *sound = tq_sound_load(stream_id);
+    int32_t decoder_id = tq_sound_decoder_open(stream_id);
 
-    if (sound == NULL) {
+    if (decoder_id == -1) {
         return -1;
     }
 
-    ALenum format = choose_format(sound);
+    ALenum format = choose_format(tq_sound_decoder_get_num_channels(decoder_id));
 
     if (format == AL_INVALID_ENUM) {
-        tq_sound_destroy(sound);
+        tq_sound_decoder_close(decoder_id);
         return -1;
     }
 
-    CHECK_AL(alGenBuffers(1, &al.buffers[index]));
+    ALuint buffer = 0;
+    CHECK_AL(alGenBuffers(1, &buffer));
 
-    CHECK_AL(alBufferData(al.buffers[index], format,
-        sound->samples, sound->num_samples * sound->bytes_per_sample,
-        sound->sample_rate));
+    long num_samples = tq_sound_decoder_get_num_samples(decoder_id);
+    int16_t *samples = tq_mem_alloc(sizeof(int16_t) * num_samples);
 
-    tq_sound_destroy(sound);
+    tq_sound_decoder_read(decoder_id, samples, num_samples);
 
-    return index;
+    CHECK_AL(alBufferData(buffer, format,
+        samples, sizeof(int16_t) * num_samples,
+        tq_sound_decoder_get_sample_rate(decoder_id)));
+
+    tq_sound_decoder_close(decoder_id);
+
+    openal.sounds.bits[sound_id] = SOUND_BIT_LOADED;
+    openal.sounds.buffer[sound_id] = buffer;
+    openal.sounds.samples[sound_id] = samples;
+
+    return sound_id;
 }
 
 static void delete_sound(int32_t sound_id)
@@ -209,29 +324,33 @@ static void delete_sound(int32_t sound_id)
         return;
     }
 
-    int32_t const buffer_id = sound_id;
-
-    if (al.buffers[buffer_id] == 0) {
+    if ((openal.sounds.bits[sound_id] & SOUND_BIT_LOADED) == 0) {
         return;
     }
 
-    for (int32_t source_id = 0; source_id < TQ_CHANNEL_LIMIT; source_id++) {
-        if (al.sources[source_id] == 0) {
-            continue;
-        }
+    /**
+     * Find all channels which still play this sound and shut them down.
+     */
+    for (int32_t channel_id = 0; channel_id < TQ_CHANNEL_LIMIT; channel_id++) {
+        int bits = openal.channels.bits[channel_id];
 
-        ALint buffer;
-        CHECK_AL(alGetSourcei(al.sources[source_id], AL_BUFFER, &buffer));
+        if ((bits & CHANNEL_BIT_USED) && !(bits & CHANNEL_BIT_STREAMING)) {
+            ALint buffer;
+            CHECK_AL(alGetSourcei(openal.channels.source[channel_id], AL_BUFFER, &buffer));
 
-        if (al.buffers[buffer_id] == buffer) {
-            CHECK_AL(alDeleteSources(1, &al.sources[source_id]));
-            al.sources[source_id] = 0;
+            if (buffer == openal.sounds.buffer[sound_id]) {
+                CHECK_AL(alSourceStop(openal.channels.source[channel_id]));
+                openal.channels.bits[channel_id] = 0;
+            }
         }
     }
 
-    CHECK_AL(alDeleteBuffers(1, &al.buffers[sound_id]));
+    CHECK_AL(alDeleteBuffers(1, &openal.sounds.buffer[sound_id]));
+    tq_mem_free(openal.sounds.samples[sound_id]);
 
-    al.buffers[sound_id] = 0;
+    openal.sounds.bits[sound_id] = 0;
+    openal.sounds.buffer[sound_id] = 0;
+    openal.sounds.samples[sound_id] = NULL;
 }
 
 static int32_t play_sound(int32_t sound_id, int loop)
@@ -240,33 +359,284 @@ static int32_t play_sound(int32_t sound_id, int loop)
         return -1;
     }
 
-    int32_t index = get_source_index();
-
-    if (index == -1) {
+    if ((openal.sounds.bits[sound_id] & SOUND_BIT_LOADED) == 0) {
         return -1;
     }
 
-    CHECK_AL(alSourcei(al.sources[index], AL_BUFFER, al.buffers[sound_id]));
-    CHECK_AL(alSourcei(al.sources[index], AL_LOOPING, (loop == -1) ? AL_TRUE : AL_FALSE));
+    int32_t channel_id = get_channel_id();
 
-    CHECK_AL(alSourcePlay(al.sources[index]));
+    if (channel_id == -1) {
+        return -1;
+    }
 
-    return index;
+    openal.channels.bits[channel_id] = CHANNEL_BIT_USED;
+
+    CHECK_AL(alSourcei(openal.channels.source[channel_id], AL_BUFFER,
+        openal.sounds.buffer[sound_id]));
+
+    CHECK_AL(alSourcei(openal.channels.source[channel_id], AL_LOOPING,
+        (loop == -1) ? AL_TRUE : AL_FALSE));
+
+    CHECK_AL(alSourcePlay(openal.channels.source[channel_id]));
+
+    return channel_id;
 }
+
+//------------------------------------------------------------------------------
+// Music streaming thread
+
+/**
+ * Music streaming constants.
+ */
+enum {
+    MUSIC_BUFFER_COUNT = 4,
+    MUSIC_BUFFER_LENGTH = 8192,
+};
+
+/**
+ * Decode piece of music and fill the specified buffer.
+ * Called from music streaming thread.
+ */
+static int fill_buffer(ALuint buffer, ALenum format,
+    int16_t *samples, int sample_rate,
+    int32_t decoder_id, int *loops_left)
+{
+    uint64_t samples_read = tq_sound_decoder_read(decoder_id, samples, MUSIC_BUFFER_LENGTH);
+
+    if (samples_read == 0) {
+        if (*loops_left == -1 || *loops_left > 0) {
+            tq_sound_decoder_seek(decoder_id, 0);
+            samples_read = tq_sound_decoder_read(decoder_id, samples, MUSIC_BUFFER_LENGTH);
+            
+            if (*loops_left > 0) {
+                *loops_left--;
+            }
+        }
+    }
+
+    if (samples_read == 0) {
+        return -1;
+    }
+
+    CHECK_AL(alBufferData(buffer, format, samples, sizeof(int16_t) * samples_read, sample_rate));
+
+    return 0;
+}
+
+/**
+ * Clear buffer queue for the specified source.
+ * Called from music streaming thread.
+ */
+static void clear_buffer_queue(ALuint source)
+{
+    ALint buffers_queued;
+    CHECK_AL(alGetSourcei(source, AL_BUFFERS_QUEUED, &buffers_queued));
+
+    for (int n = 0; n < buffers_queued; n++) {
+        ALuint buffer;
+        CHECK_AL(alSourceUnqueueBuffers(source, 1, &buffer));
+    }
+}
+
+/**
+ * Main subroutine of music streaming thread.
+ */
+static int music_main(void *data)
+{
+    int32_t channel_id = (int32_t) ((intptr_t) data);
+    int32_t decoder_id = openal.channels.decoder_id[channel_id];
+    ALuint source = openal.channels.source[channel_id];
+
+    int16_t *samples = tq_mem_alloc(sizeof(int16_t) * MUSIC_BUFFER_LENGTH);
+    int sample_rate = tq_sound_decoder_get_sample_rate(decoder_id);
+    int num_channels = tq_sound_decoder_get_num_channels(decoder_id);
+
+    ALenum format = choose_format(num_channels);
+
+    if (format == AL_INVALID_ENUM) {
+        tq_core_lock_mutex(openal.mutex);
+        {
+            openal.channels.bits[channel_id] &= ~CHANNEL_BIT_STREAMING;
+        }
+        tq_core_unlock_mutex(openal.mutex);
+
+        return -1;
+    }
+
+    int loops_left = openal.channels.loop[channel_id];
+
+    CHECK_AL(alSourcei(source, AL_BUFFER, 0));
+    CHECK_AL(alSourcei(source, AL_LOOPING, AL_FALSE));
+
+    ALuint buffers[MUSIC_BUFFER_COUNT];
+    CHECK_AL(alGenBuffers(MUSIC_BUFFER_COUNT, buffers));
+
+    tq_sound_decoder_seek(decoder_id, 0);
+    clear_buffer_queue(source);
+
+    /**
+     * Fill the entire queue of buffers before we start streaming.
+     */
+    for (int n = 0; n < MUSIC_BUFFER_COUNT; n++) {
+        fill_buffer(buffers[n], format, samples, sample_rate, decoder_id, &loops_left);
+        CHECK_AL(alSourceQueueBuffers(source, 1, &buffers[n]));
+    }
+
+    CHECK_AL(alSourcePlay(source));
+
+    bool streaming = true;
+
+    while (true) {
+        bool paused = false;
+
+        tq_core_lock_mutex(openal.mutex);
+        {
+            ALint state;
+            CHECK_AL(alGetSourcei(source, AL_SOURCE_STATE, &state));
+
+            if (state == AL_PAUSED) {
+                paused = true;
+            } else if (state == AL_STOPPED) {
+                streaming = false;
+            }
+        }
+        tq_core_unlock_mutex(openal.mutex);
+
+        if (paused) {
+            continue;
+        }
+
+        if (!streaming) {
+            break;
+        }
+
+        ALint buffers_processed;
+        CHECK_AL(alGetSourcei(source, AL_BUFFERS_PROCESSED, &buffers_processed));
+
+        for (int n = 0; n < buffers_processed; n++) {
+            ALuint buffer;
+            CHECK_AL(alSourceUnqueueBuffers(source, 1, &buffer));
+
+            if (fill_buffer(buffer, format, samples, sample_rate, decoder_id, &loops_left) == -1) {
+                break;
+            }
+
+            CHECK_AL(alSourceQueueBuffers(source, 1, &buffer));
+        }
+
+        tq_core_sleep(0.1);
+    }
+
+    clear_buffer_queue(source);
+    CHECK_AL(alDeleteBuffers(MUSIC_BUFFER_COUNT, buffers));
+    tq_mem_free(samples);
+
+    tq_core_lock_mutex(openal.mutex);
+    {
+        openal.channels.bits[channel_id] &= ~CHANNEL_BIT_STREAMING;
+    }
+    tq_core_unlock_mutex(openal.mutex);
+
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+// Music
 
 static int32_t open_music(int32_t stream_id)
 {
-    return 0;
+    int32_t music_id = get_music_id();
+
+    if (music_id == -1) {
+        return -1;
+    }
+
+    int32_t decoder_id = tq_sound_decoder_open(stream_id);
+
+    if (decoder_id == -1) {
+        return -1;
+    }
+
+    openal.music.bits[music_id] = MUSIC_BIT_OPEN;
+    openal.music.stream_id[music_id] = stream_id;
+    openal.music.decoder_id[music_id] = decoder_id;
+
+    return music_id;
 }
 
 static void close_music(int32_t music_id)
 {
+    if (music_id < 0 || music_id >= TQ_SOUND_LIMIT) {
+        return;
+    }
+
+    if ((openal.music.bits[music_id] & MUSIC_BIT_OPEN) == 0) {
+        return;
+    }
+
+    for (int32_t channel_id = 0; channel_id < TQ_CHANNEL_LIMIT; channel_id++) {
+        if (openal.channels.bits[channel_id] & CHANNEL_BIT_STREAMING) {
+            if (openal.channels.stream_id[channel_id] == openal.music.stream_id[music_id]) {
+                tq_core_lock_mutex(openal.mutex);
+                {
+                    CHECK_AL(alSourceStop(openal.channels.source[channel_id]));
+                }
+                tq_core_unlock_mutex(openal.mutex);
+
+                tq_core_wait_thread(openal.channels.thread[channel_id]);
+            }
+        }
+    }
+
+    tq_sound_decoder_close(openal.music.decoder_id[music_id]);
+    tq_istream_close(openal.music.stream_id[music_id]);
+
+    openal.music.bits[music_id] = 0;
+    openal.music.stream_id[music_id] = -1;
+    openal.music.decoder_id[music_id] = -1;
 }
 
 static int32_t play_music(int32_t music_id, int loop)
 {
+    if (music_id < 0 || music_id >= TQ_SOUND_LIMIT) {
+        return -1;
+    }
+
+    if ((openal.music.bits[music_id] & MUSIC_BIT_OPEN) == 0) {
+        return -1;
+    }
+
+    /**
+     * You can't play the same music more than once at a time.
+     */
+    for (int32_t channel_id = 0; channel_id < TQ_CHANNEL_LIMIT; channel_id++) {
+        if (openal.channels.bits[channel_id] & CHANNEL_BIT_STREAMING) {
+            if (openal.channels.stream_id[channel_id] == openal.music.stream_id[music_id]) {
+                return -1;
+            }
+        }
+    }
+
+    int32_t channel_id = get_channel_id();
+
+    if (channel_id == -1) {
+        return -1;
+    }
+
+    openal.channels.bits[channel_id] = CHANNEL_BIT_USED | CHANNEL_BIT_STREAMING;
+
+    openal.channels.stream_id[channel_id] = openal.music.stream_id[music_id];
+    openal.channels.decoder_id[channel_id] = openal.music.decoder_id[music_id];
+    openal.channels.loop[channel_id] = loop;
+
+    openal.channels.thread[channel_id] = tq_core_create_thread("music",
+        music_main, (void *) ((intptr_t) channel_id));
+
     return 0;
 }
+
+//------------------------------------------------------------------------------
+// Channels
 
 static tq_channel_state_t get_channel_state(int32_t channel_id)
 {
@@ -274,20 +644,26 @@ static tq_channel_state_t get_channel_state(int32_t channel_id)
         return TQ_CHANNEL_STATE_INACTIVE;
     }
 
-    if (al.sources[channel_id] == 0) {
+    if ((openal.channels.bits[channel_id] & CHANNEL_BIT_USED) == 0) {
         return TQ_CHANNEL_STATE_INACTIVE;
     }
 
-    ALint state;
-    CHECK_AL(alGetSourcei(al.sources[channel_id], AL_SOURCE_STATE, &state));
+    tq_channel_state_t result = TQ_CHANNEL_STATE_INACTIVE;
 
-    if (state == AL_PLAYING) {
-        return TQ_CHANNEL_STATE_PLAYING;
-    } else if (state == AL_PAUSED) {
-        return TQ_CHANNEL_STATE_PAUSED;
+    tq_core_lock_mutex(openal.mutex);
+    {
+        ALint state;
+        CHECK_AL(alGetSourcei(openal.channels.source[channel_id], AL_SOURCE_STATE, &state));
+
+        if (state == AL_PLAYING) {
+            result = TQ_CHANNEL_STATE_PLAYING;
+        } else if (state == AL_PAUSED) {
+            result = TQ_CHANNEL_STATE_PAUSED;
+        }
     }
+    tq_core_unlock_mutex(openal.mutex);
 
-    return TQ_CHANNEL_STATE_INACTIVE;
+    return result;
 }
 
 static void pause_channel(int32_t channel_id)
@@ -296,11 +672,15 @@ static void pause_channel(int32_t channel_id)
         return;
     }
 
-    if (al.sources[channel_id] == 0) {
+    if ((openal.channels.bits[channel_id] & CHANNEL_BIT_USED) == 0) {
         return;
     }
 
-    CHECK_AL(alSourcePause(al.sources[channel_id]));
+    tq_core_lock_mutex(openal.mutex);
+    {
+        CHECK_AL(alSourcePause(openal.channels.source[channel_id]));
+    }
+    tq_core_unlock_mutex(openal.mutex);
 }
 
 static void unpause_channel(int32_t channel_id)
@@ -309,16 +689,20 @@ static void unpause_channel(int32_t channel_id)
         return;
     }
 
-    if (al.sources[channel_id] == 0) {
+    if ((openal.channels.bits[channel_id] & CHANNEL_BIT_USED) == 0) {
         return;
     }
 
-    ALint state;
-    CHECK_AL(alGetSourcei(al.sources[channel_id], AL_SOURCE_STATE, &state));
+    tq_core_lock_mutex(openal.mutex);
+    {
+        ALint state;
+        CHECK_AL(alGetSourcei(openal.channels.source[channel_id], AL_SOURCE_STATE, &state));
 
-    if (state == AL_PAUSED) {
-        CHECK_AL(alSourcePlay(al.sources[channel_id]));
+        if (state == AL_PAUSED) {
+            CHECK_AL(alSourcePlay(openal.channels.source[channel_id]));
+        }
     }
+    tq_core_unlock_mutex(openal.mutex);
 }
 
 static void stop_channel(int32_t channel_id)
@@ -327,11 +711,16 @@ static void stop_channel(int32_t channel_id)
         return;
     }
 
-    if (al.sources[channel_id] == 0) {
+    if ((openal.channels.bits[channel_id] & CHANNEL_BIT_USED) == 0) {
         return;
     }
 
-    CHECK_AL(alSourceStop(al.sources[channel_id]));
+    tq_core_lock_mutex(openal.mutex);
+    {
+        CHECK_AL(alSourceStop(openal.channels.source[channel_id]));
+        openal.channels.bits[channel_id] &= ~CHANNEL_BIT_USED;
+    }
+    tq_core_unlock_mutex(openal.mutex);
 }
 
 //------------------------------------------------------------------------------
