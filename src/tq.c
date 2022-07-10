@@ -389,68 +389,68 @@ void tq_set_fill_color(tq_color_t fill_color)
 //----------------------------------------------------------
 // Textures
 
-int32_t tq_load_texture_from_file(char const *path)
+tq_texture tq_load_texture_from_file(char const *path)
 {
-    return graphics_load_texture_from_file(path);
+    return (tq_texture) { .id = graphics_load_texture_from_file(path) };
 }
 
-int32_t tq_load_texture_from_memory(uint8_t const *buffer, size_t length)
+tq_texture tq_load_texture_from_memory(uint8_t const *buffer, size_t length)
 {
-    return graphics_load_texture_from_memory(buffer, length);
+    return (tq_texture) { .id = graphics_load_texture_from_memory(buffer, length) };
 }
 
-void tq_delete_texture(int32_t texture_handle)
+void tq_delete_texture(tq_texture texture)
 {
-    graphics_delete_texture(texture_handle);
+    graphics_delete_texture(texture.id);
 }
 
-uint32_t tq_get_texture_width(int32_t texture_handle)
+uint32_t tq_get_texture_width(tq_texture texture)
 {
     uint32_t width, height;
-    graphics_get_texture_size(texture_handle, &width, &height);
+    graphics_get_texture_size(texture.id, &width, &height);
 
     return width;
 }
 
-uint32_t tq_get_texture_height(int32_t texture_handle)
+uint32_t tq_get_texture_height(tq_texture texture)
 {
     uint32_t width, height;
-    graphics_get_texture_size(texture_handle, &width, &height);
+    graphics_get_texture_size(texture.id, &width, &height);
     
     return height;
 }
 
-void tq_get_texture_size(int32_t texture_handle, uint32_t *width, uint32_t *height)
+void tq_get_texture_size(tq_texture texture, uint32_t *width, uint32_t *height)
 {
-    graphics_get_texture_size(texture_handle, width, height);
+    graphics_get_texture_size(texture.id, width, height);
 }
 
-void tq_draw_texture_f(int32_t texture_handle, float x, float y, float w, float h)
+void tq_draw_texture_f(tq_texture texture, float x, float y, float w, float h)
 {
-    graphics_draw_texture(texture_handle, x, y, w, h);
+    graphics_draw_texture(texture.id, x, y, w, h);
 }
 
-void tq_draw_texture_v(int32_t texture_handle, tq_vec2f_t position, tq_vec2f_t size)
+void tq_draw_texture_v(tq_texture texture, tq_vec2f_t position, tq_vec2f_t size)
 {
-    graphics_draw_texture(texture_handle, position.x, position.y, size.x, size.y);
+    graphics_draw_texture(texture.id, position.x, position.y, size.x, size.y);
 }
 
-void tq_draw_texture_fragment_f(int32_t texture_handle,
+void tq_draw_texture_fragment_f(tq_texture texture,
     float x, float y,
     float w, float h,
     float fx, float fy,
     float fw, float fh)
 {
-    graphics_draw_texture_fragment(texture_handle, x, y, w, h, fx, fy, fw, fh);
+    graphics_draw_texture_fragment(texture.id, x, y, w, h, fx, fy, fw, fh);
 }
 
-void tq_draw_texture_fragment_v(int32_t texture_handle,
+void tq_draw_texture_fragment_v(tq_texture texture,
     tq_vec2f_t position,
     tq_vec2f_t size,
     tq_vec2f_t fragment_position,
     tq_vec2f_t fragment_size)
 {
-    graphics_draw_texture_fragment(texture_handle,
+    graphics_draw_texture_fragment(texture.id,
         position.x, position.y,
         size.x, size.y,
         fragment_position.x, fragment_position.y,
@@ -463,70 +463,70 @@ void tq_draw_texture_fragment_v(int32_t texture_handle,
 //----------------------------------------------------------
 // Sounds
 
-int32_t tq_load_sound_from_file(char const *path)
+tq_sound tq_load_sound_from_file(char const *path)
 {
-    return tq_audio_load_sound_from_file(path);
+    return (tq_sound) { .id = tq_audio_load_sound_from_file(path) };
 }
 
-int32_t tq_load_sound_from_memory(uint8_t const *buffer, size_t length)
+tq_sound tq_load_sound_from_memory(uint8_t const *buffer, size_t length)
 {
-    return tq_audio_load_sound_from_memory(buffer, length);
+    return (tq_sound) { .id = tq_audio_load_sound_from_memory(buffer, length) };
 }
 
-void tq_delete_sound(int32_t sound_id)
+void tq_delete_sound(tq_sound sound)
 {
-    tq_audio_delete_sound(sound_id);
+    tq_audio_delete_sound(sound.id);
 }
 
-int32_t tq_play_sound(int32_t sound_id, int loop)
+tq_channel tq_play_sound(tq_sound sound, int loop)
 {
-    return tq_audio_play_sound(sound_id, loop);
+    return (tq_channel) { .id = tq_audio_play_sound(sound.id, loop) };
 }
 
 //----------------------------------------------------------
 // Music
 
-int32_t tq_open_music_from_file(char const *path)
+tq_music tq_open_music_from_file(char const *path)
 {
-    return tq_audio_open_music_from_file(path);
+    return (tq_music) { .id = tq_audio_open_music_from_file(path) };
 }
 
-int32_t tq_open_music_from_memory(uint8_t const *buffer, size_t length)
+tq_music tq_open_music_from_memory(uint8_t const *buffer, size_t length)
 {
-    return tq_audio_open_music_from_memory(buffer, length);
+    return (tq_music) { .id = tq_audio_open_music_from_memory(buffer, length) };
 }
 
-void tq_close_music(int32_t music_id)
+void tq_close_music(tq_music music)
 {
-    tq_audio_close_music(music_id);
+    tq_audio_close_music(music.id);
 }
 
-int32_t tq_play_music(int32_t music_id, int loop)
+tq_channel tq_play_music(tq_music music, int loop)
 {
-    return tq_audio_play_music(music_id, loop);
+    return (tq_channel) { .id = tq_audio_play_music(music.id, loop) };
 }
 
 //----------------------------------------------------------
 // Channels
 
-tq_channel_state_t tq_get_channel_state(int32_t channel_id)
+tq_channel_state_t tq_get_channel_state(tq_channel channel)
 {
-    return tq_audio_get_channel_state(channel_id);
+    return tq_audio_get_channel_state(channel.id);
 }
 
-void tq_pause_channel(int32_t channel_id)
+void tq_pause_channel(tq_channel channel)
 {
-    tq_audio_pause_channel(channel_id);
+    tq_audio_pause_channel(channel.id);
 }
 
-void tq_unpause_channel(int32_t channel_id)
+void tq_unpause_channel(tq_channel channel)
 {
-    tq_audio_unpause_channel(channel_id);
+    tq_audio_unpause_channel(channel.id);
 }
 
-void tq_stop_channel(int32_t channel_id)
+void tq_stop_channel(tq_channel channel)
 {
-    tq_audio_stop_channel(channel_id);
+    tq_audio_stop_channel(channel.id);
 }
 
 //------------------------------------------------------------------------------

@@ -247,6 +247,26 @@ typedef enum tq_channel_state
 typedef uint32_t tq_color_t;
 
 /**
+ * Texture identifier.
+ */
+typedef struct { int32_t id; } tq_texture;
+
+/**
+ * Sound identifier.
+ */
+typedef struct { int32_t id; } tq_sound;
+
+/**
+ * Music identifier.
+ */
+typedef struct { int32_t id; } tq_music;
+
+/**
+ * Channel identifier.
+ */
+typedef struct { int32_t id; } tq_channel;
+
+/**
  * @brief Keyboard event callback.
  */
 typedef void (*tq_key_callback_t)(tq_key_t key);
@@ -267,7 +287,7 @@ typedef void (*tq_mouse_cursor_callback_t)(int32_t x, int32_t y);
 typedef void (*tq_mouse_wheel_callback_t)(float delta, int32_t x, int32_t y);
 
 /**
- * @brief Two-dimensional vector of integer numbers.
+ * Two-dimensional vector of integer numbers.
  */
 typedef struct tq_vec2i
 {
@@ -276,7 +296,7 @@ typedef struct tq_vec2i
 } tq_vec2i_t;
 
 /**
- * @brief Two-dimensional vector of unsigned integer numbers.
+ * Two-dimensional vector of unsigned integer numbers.
  */
 typedef struct tq_vec2u
 {
@@ -285,7 +305,7 @@ typedef struct tq_vec2u
 } tq_vec2u_t;
 
 /**
- * @brief Two-dimensional vector of real numbers.
+ * Two-dimensional vector of floating-point numbers.
  */
 typedef struct tq_vec2f
 {
@@ -606,40 +626,40 @@ TQ_EXPORT TQ_API void TQ_CALL tq_set_fill_color(tq_color_t fill_color);
 // Textures
 
 /* Load texture from a file. */
-TQ_EXPORT TQ_API int32_t TQ_CALL tq_load_texture_from_file(char const *path);
+TQ_EXPORT TQ_API tq_texture TQ_CALL tq_load_texture_from_file(char const *path);
 
 /* Load texture from a memory buffer. */
-TQ_EXPORT TQ_API int32_t TQ_CALL tq_load_texture_from_memory(uint8_t const *buffer, size_t length);
+TQ_EXPORT TQ_API tq_texture TQ_CALL tq_load_texture_from_memory(uint8_t const *buffer, size_t length);
 
 /* Delete a texture from video memory. */
-TQ_EXPORT TQ_API void TQ_CALL tq_delete_texture(int32_t texture_handle);
+TQ_EXPORT TQ_API void TQ_CALL tq_delete_texture(tq_texture texture);
 
 /* Get the width of a texture. */
-TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_texture_width(int32_t texture_handle);
+TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_texture_width(tq_texture texture);
 
 /* Get the height of a texture. */
-TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_texture_height(int32_t texture_handle);
+TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_texture_height(tq_texture texture);
 
 /* Get both width and height of a texture. Both pointers should be valid. */
-TQ_EXPORT TQ_API void TQ_CALL tq_get_texture_size(int32_t texture_handle, uint32_t *width, uint32_t *height);
+TQ_EXPORT TQ_API void TQ_CALL tq_get_texture_size(tq_texture texture, uint32_t *width, uint32_t *height);
 
 /* Draw the texture inside a rectangle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_f(
-    int32_t texture_handle,
+    tq_texture texture,
     float x, float y,
     float w, float h
 );
 
 /* Draw the texture inside a rectangle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_v(
-    int32_t texture_handle,
+    tq_texture texture,
     tq_vec2f_t position,
     tq_vec2f_t size
 );
 
 /* Draw a part of the texture inside a rectangle. Texture coordinates should be in pixel space. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_f(
-    int32_t texture_handle,
+    tq_texture texture,
     float x, float y,
     float w, float h,
     float fx, float fy,
@@ -648,7 +668,7 @@ TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_f(
 
 /* Draw a part of the texture inside a rectangle. Texture coordinates should be in pixel space. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_v(
-    int32_t texture_handle,
+    tq_texture texture,
     tq_vec2f_t position,
     tq_vec2f_t size,
     tq_vec2f_t fragment_position,
@@ -659,64 +679,64 @@ TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_v(
 // Audio
 
 /**
- * @brief Decode and load sound to memory from a file.
+ * Decode and load sound to memory from a file.
  */
-TQ_EXPORT TQ_API int32_t TQ_CALL tq_load_sound_from_file(char const *path);
+TQ_EXPORT TQ_API tq_sound TQ_CALL tq_load_sound_from_file(char const *path);
 
 /**
- * @brief Decode sound from a memory buffer.
+ * Decode sound from a memory buffer.
  */
-TQ_EXPORT TQ_API int32_t TQ_CALL tq_load_sound_from_memory(uint8_t const *buffer, size_t length);
+TQ_EXPORT TQ_API tq_sound TQ_CALL tq_load_sound_from_memory(uint8_t const *buffer, size_t length);
 
 /**
- * @brief Delete sound from memory.
+ * Delete sound from memory.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_delete_sound(int32_t sound_id);
+TQ_EXPORT TQ_API void TQ_CALL tq_delete_sound(tq_sound sound);
 
 /**
- * @brief Play sound and get id of a channel.
+ * Play sound.
  */
-TQ_EXPORT TQ_API int32_t TQ_CALL tq_play_sound(int32_t sound_id, int loop);
+TQ_EXPORT TQ_API tq_channel TQ_CALL tq_play_sound(tq_sound sound, int loop);
 
 /**
- * @brief Open music stream from a file.
+ * Open music stream from a file.
  */
-TQ_EXPORT TQ_API int32_t TQ_CALL tq_open_music_from_file(char const *path);
+TQ_EXPORT TQ_API tq_music TQ_CALL tq_open_music_from_file(char const *path);
 
 /**
- * @brief Open music stream from memory buffer.
+ * Open music stream from memory buffer.
  */
-TQ_EXPORT TQ_API int32_t TQ_CALL tq_open_music_from_memory(uint8_t const *buffer, size_t length);
+TQ_EXPORT TQ_API tq_music TQ_CALL tq_open_music_from_memory(uint8_t const *buffer, size_t length);
 
 /**
- * @brief Close music stream.
+ * Close music stream.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_close_music(int32_t music_id);
+TQ_EXPORT TQ_API void TQ_CALL tq_close_music(tq_music music);
 
 /**
- * @brief Play music and get id of a channel.
+ * Choose any unused channel and play music on it.
  */
-TQ_EXPORT TQ_API int32_t TQ_CALL tq_play_music(int32_t music_id, int loop);
+TQ_EXPORT TQ_API tq_channel TQ_CALL tq_play_music(tq_music music, int loop);
 
 /**
- * @brief Get current state of the audio channel.
+ * Get current state of the audio channel.
  */
-TQ_EXPORT TQ_API tq_channel_state_t TQ_CALL tq_get_channel_state(int32_t channel_id);
+TQ_EXPORT TQ_API tq_channel_state_t TQ_CALL tq_get_channel_state(tq_channel channel);
 
 /**
- * @brief Pause the audio channel.
+ * Pause the audio channel.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_pause_channel(int32_t channel_id);
+TQ_EXPORT TQ_API void TQ_CALL tq_pause_channel(tq_channel channel);
 
 /**
- * @brief Continue playback of the audio channel.
+ * Continue playback of the audio channel.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_unpause_channel(int32_t channel_id);
+TQ_EXPORT TQ_API void TQ_CALL tq_unpause_channel(tq_channel channel);
 
 /**
- * @brief Stop the audio channel and mark it inactive.
+ * Stop the audio channel and mark it inactive.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_stop_channel(int32_t channel_id);
+TQ_EXPORT TQ_API void TQ_CALL tq_stop_channel(tq_channel channel);
 
 //------------------------------------------------------------------------------
 // Math

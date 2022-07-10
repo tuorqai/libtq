@@ -44,7 +44,7 @@ struct turrets
     float       bob[TURRET_LIMIT];
 
     int         current;
-    int32_t     fire_sound;
+    tq_sound    fire_sound;
 };
 
 //------------------------------------------------------------------------------

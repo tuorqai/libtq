@@ -72,7 +72,7 @@ uint8_t stage_data[STAGE_VOLUME] = {
 typedef struct stage
 {
     uint8_t     tiles[STAGE_VOLUME];
-    int32_t     texture;
+    tq_texture  texture;
 } stage_t;
 
 typedef struct camera
@@ -93,7 +93,7 @@ typedef struct players
     float       animation_tick[MAX_PLAYERS];
     int         frame[MAX_PLAYERS];
 
-    int32_t     texture;
+    tq_texture  texture;
     int32_t     current;
 } players_t;
 
@@ -104,7 +104,7 @@ typedef struct objects
     float       y[MAX_OBJECTS];
     
     float       spawn_tick;
-    int32_t     texture;
+    tq_texture  texture;
     int32_t     current;
 } objects_t;
 

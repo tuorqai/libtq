@@ -7,10 +7,10 @@
 
 static int selected_index = -1;
 
-static int32_t texture;
-static int32_t sounds[4];
-static int32_t music;
-static int32_t music_channel = -1;
+static tq_texture   texture;
+static tq_sound     sounds[4];
+static tq_music     music;
+static tq_channel   music_channel = { -1 };
 
 //------------------------------------------------------------------------------
 
@@ -43,7 +43,7 @@ void on_key_pressed(tq_key_t key)
         tq_play_sound(sounds[3], 0);
         break;
     case TQ_KEY_SPACE:
-        if (music_channel == -1) {
+        if (music_channel.id == -1) {
             music_channel = tq_play_music(music, -1);
         } else {
             if (tq_get_channel_state(music_channel) == TQ_CHANNEL_STATE_PLAYING) {

@@ -31,14 +31,14 @@ int main(int argc, char *argv[])
 
     tq_initialize();
 
-    int32_t moon = tq_load_texture_from_file("assets/moon.png");
-    int32_t ostrich = tq_open_music_from_file("assets/ostrich.ogg");
+    tq_texture moon = tq_load_texture_from_file("assets/moon.png");
+    tq_music ostrich = tq_open_music_from_file("assets/ostrich.ogg");
 
     tq_set_clear_color(TQ_COLOR24(237, 199, 229));
     tq_set_outline_color(TQ_COLOR24(40, 112, 106));
     tq_set_fill_color(TQ_COLOR24(213, 237, 199));
 
-    int32_t ostrich_wave = tq_play_music(ostrich, -1);
+    tq_play_music(ostrich, -1);
 
     while (tq_process()) {
         if (tq_is_key_pressed(TQ_KEY_ESCAPE)) {
