@@ -22,8 +22,8 @@ endif()
 #---------------------------------------
 
 add_library(tq
+    "src/tq.c"
     "src/tq_al_audio.c"
-    "src/tq_api.c"
     "src/tq_audio.c"
     "src/tq_core.c"
     "src/tq_error.c"
@@ -38,8 +38,7 @@ add_library(tq
     "src/tq_sdl_display.c"
     "src/tq_sound_decoder.c"
     "src/tq_stream.c"
-    "src/tq_win32_threads.c"
-    "src/tq.c")
+    "src/tq_win32_threads.c")
 
 target_include_directories(tq PUBLIC "include")
 target_include_directories(tq PRIVATE "third-party")
