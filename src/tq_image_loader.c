@@ -41,6 +41,16 @@ static int stream_eof(void *user)
 
 //------------------------------------------------------------------------------
 
+struct image image_create(unsigned int width, unsigned int height, unsigned int channels)
+{
+    return (struct image) {
+        .pixels = mem_calloc(1, width * height * channels),
+        .width = width,
+        .height = height,
+        .channels = channels,
+    };
+}
+
 tq_image_t *tq_image_load(int32_t stream_id)
 {
     uint8_t const *buffer = tq_istream_buffer(stream_id);

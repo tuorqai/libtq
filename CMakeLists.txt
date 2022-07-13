@@ -126,6 +126,10 @@ endif()
 find_package(Threads REQUIRED)
 target_link_libraries(tq Threads::Threads)
 
+find_package(Freetype REQUIRED)
+find_package(harfbuzz REQUIRED)
+target_link_libraries(tq Freetype::Freetype harfbuzz::harfbuzz)
+
 find_library(OGG_LIBRARY ogg)
 find_library(VORBIS_LIBRARY vorbis)
 find_library(VORBISFILE_LIBRARY vorbisfile)
@@ -139,7 +143,7 @@ endif()
 # Examples
 
 if(BUILD_EXAMPLES)
-    set(EXAMPLES "hello" "defense" "jestan" "callbacks" "sounds")
+    set(EXAMPLES "hello" "defense" "jestan" "callbacks" "sounds" "text")
 
     foreach(EXAMPLE ${EXAMPLES})
         add_executable(${EXAMPLE} "examples/${EXAMPLE}.c")

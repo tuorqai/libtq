@@ -6,6 +6,8 @@
 
 //------------------------------------------------------------------------------
 
+#include <stdarg.h>
+#include "tq_image_loader.h"
 #include "tq_stream.h"
 
 //------------------------------------------------------------------------------
@@ -130,6 +132,11 @@ void graphics_draw_texture_fragment(int32_t texture_id,
 // [tq::graphics::on_display_resized]
 void tq_graphics_on_display_resized(uint32_t width, uint32_t height);
 
+int32_t     graphics_load_font_from_file(char const *path, float pt, int weight);
+int32_t     graphics_load_font_from_memory(uint8_t const *buffer, size_t size, float pt, int weight);
+void        graphics_delete_font(int32_t font_id);
+void        graphics_draw_text(int32_t font_id, float x, float y, char const *fmt, va_list ap);
+
 //------------------------------------------------------------------------------
 
 typedef struct tq_renderer
@@ -155,10 +162,14 @@ typedef struct tq_renderer
     void        (*set_outline_color)(tq_color_t);
     void        (*set_fill_color)(tq_color_t);
 
+    int32_t     (*create_texture)(tq_image_t const *image);
     int32_t     (*load_texture)(int32_t stream_id);
     void        (*delete_texture)(int32_t texture_id);
     void        (*get_texture_size)(int32_t texture_id, uint32_t *width, uint32_t *height);
     void        (*draw_texture)(int32_t texture_id, float const *data, uint32_t num_vertices);
+
+    void        (*draw_text)(int32_t texture_id, float const *data, uint32_t num_vertices);
+    void        (*draw_text2)(float x, float y, struct image image);
 } tq_renderer_t;
 
 //------------------------------------------------------------------------------

@@ -106,6 +106,7 @@ typedef enum gl_fragment_shader
 {
     FRAGMENT_SHADER_SOLID,
     FRAGMENT_SHADER_TEXTURED,
+    FRAGMENT_SHADER_TEXT,
     TOTAL_FRAGMENT_SHADERS,
 } gl_fragment_shader_t;
 
@@ -120,6 +121,7 @@ typedef enum gl_shader
     SHADER_OUTLINE,
     SHADER_FILL,
     SHADER_TEXTURE,
+    SHADER_TEXT,
     TOTAL_SHADERS,
 } gl_shader_t;
 
@@ -185,6 +187,17 @@ static char const *fragment_shader_source[TOTAL_FRAGMENT_SHADERS] = {
         "    vec2 texCoord = v_texCoord / u_texSize;\n"
         "    gl_FragColor = texture2D(u_texture, texCoord);\n"
         "}\n",
+    [FRAGMENT_SHADER_TEXT] =
+        "varying vec2 v_texCoord;\n"
+        "uniform sampler2D u_texture;\n"
+        "void main() {\n"
+        "    vec4 color = texture2D(u_texture, v_texCoord);\n"
+        "    gl_FragColor = vec4(color.rgb, color.g);\n"
+        "}\n",
+};
+
+enum {
+    NUM_TEXT_TEXTURES = 8,
 };
 
 //------------------------------------------------------------------------------
@@ -221,6 +234,11 @@ typedef struct gl_renderer_priv
     GLuint              shaders[TOTAL_SHADERS];
     GLint               uniform_locations[TOTAL_SHADERS][TOTAL_UNIFORMS];
     uint32_t            dirty_bits[TOTAL_SHADERS];
+
+    GLuint              text_textures[NUM_TEXT_TEXTURES];
+    GLuint              text_texture_width[NUM_TEXT_TEXTURES];
+    GLuint              text_texture_height[NUM_TEXT_TEXTURES];
+    unsigned int        current_text_texture;
 } gl_renderer_priv_t;
 
 //------------------------------------------------------------------------------
@@ -529,6 +547,7 @@ static void initialize(void)
         [SHADER_OUTLINE] = { VERTEX_SHADER_COMMON, FRAGMENT_SHADER_SOLID },
         [SHADER_FILL]    = { VERTEX_SHADER_COMMON, FRAGMENT_SHADER_SOLID },
         [SHADER_TEXTURE] = { VERTEX_SHADER_COMMON, FRAGMENT_SHADER_TEXTURED },
+        [SHADER_TEXT]    = { VERTEX_SHADER_COMMON, FRAGMENT_SHADER_TEXT },
     };
 
     for (int shader_id = 0; shader_id < TOTAL_SHADERS; shader_id++) {
@@ -563,6 +582,24 @@ static void initialize(void)
         gl.fragment_shaders[fs] = 0;
     }
 
+    CHECK_GL(glGenTextures(NUM_TEXT_TEXTURES, gl.text_textures));
+    gl.current_text_texture = 0;
+
+    for (int i = 0; i < NUM_TEXT_TEXTURES; i++) {
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D, gl.text_textures[i]));
+
+        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, 512, 64, 0, GL_LUMINANCE,
+            GL_UNSIGNED_BYTE, NULL));
+
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+
+        gl.text_texture_width[i] = 512;
+        gl.text_texture_height[i] = 64;
+    }
+
+    CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
+
     // Reset OpenGL state.
     glEnable(GL_BLEND);
     glDisable(GL_CULL_FACE);
@@ -573,6 +610,8 @@ static void initialize(void)
 #endif
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     // Initialization is done.
     log_info("OpenGL renderer is initialized.\n");
@@ -757,17 +796,11 @@ static void set_fill_color(tq_color_t fill_color)
     refresh_color(SHADER_FILL, fill_color);
 }
 
-//--------------------------------------
-// Load a texture from an abstract stream.
-//--------------------------------------
-static int32_t load_texture(int32_t stream_id)
+/**
+ * Generate texture from raw pixel data.
+ */
+static int32_t create_texture(tq_image_t const *image)
 {
-    tq_image_t *image = tq_image_load(stream_id);
-
-    if (image == NULL) {
-        return -1;
-    }
-
     GLenum format;
 
     switch (image->pixel_format) {
@@ -813,9 +846,25 @@ static int32_t load_texture(int32_t stream_id)
     gl.textures[index]->width = image->width;
     gl.textures[index]->height = image->height;
 
+    return index;
+}
+
+//--------------------------------------
+// Load a texture from an abstract stream.
+//--------------------------------------
+static int32_t load_texture(int32_t stream_id)
+{
+    tq_image_t *image = tq_image_load(stream_id);
+
+    if (image == NULL) {
+        return -1;
+    }
+
+    int32_t texture_id = create_texture(image);
+
     tq_image_destroy(image);
 
-    return index;
+    return texture_id;
 }
 
 //--------------------------------------
@@ -825,6 +874,7 @@ static void delete_texture(int32_t texture_id)
 {
     CHECK_GL(glDeleteTextures(1, &gl.textures[texture_id]->id));
     free(gl.textures[texture_id]);
+    gl.textures[texture_id] = NULL;
 }
 
 //--------------------------------------
@@ -848,6 +898,70 @@ static void draw_texture(int32_t texture_id, float const *data, uint32_t num_ver
     CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 0));
     CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 2));
     CHECK_GL(glDrawArrays(GL_TRIANGLE_FAN, 0, num_vertices));
+}
+
+/**
+ * Draw pre-rendered text bitmap.
+ */
+static void draw_text(int32_t texture_id, float const *data, uint32_t num_vertices)
+{
+    refresh_attrib_bits(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
+    refresh_shader(SHADER_TEXT);
+    refresh_texture(SHADER_TEXT, texture_id);
+
+    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 0));
+    CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 2));
+    CHECK_GL(glDrawArrays(GL_TRIANGLE_FAN, 0, num_vertices));
+}
+
+/**
+ * Draw pre-rendered text bitmap.
+ */
+static void draw_text2(float x, float y, struct image image)
+{
+    gl.texture_id[gl.shader_id] = -1;
+
+    int id = gl.current_text_texture++;
+
+    CHECK_GL(glBindTexture(GL_TEXTURE_2D, gl.text_textures[id]));
+
+    if (image.width < gl.text_texture_width[id] && image.height < gl.text_texture_height[id]) {
+        CHECK_GL(glTexSubImage2D(GL_TEXTURE_2D, 0,
+            0, 0,
+            image.width, image.height,
+            GL_LUMINANCE,
+            GL_UNSIGNED_BYTE, image.pixels));
+    } else {
+        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0,
+            GL_LUMINANCE,
+            image.width, image.height, 0,
+            GL_LUMINANCE,
+            GL_UNSIGNED_BYTE, image.pixels));
+        
+        gl.text_texture_width[id] = image.width;
+        gl.text_texture_height[id] = image.height;
+    }
+
+    float w = image.width;
+    float h = image.height;
+
+    float data[] = {
+        x,      y,      0.0f,   0.0f,
+        x + w,  y,      1.0f,   0.0f,
+        x + w,  y + h,  1.0f,   1.0f,
+        x,      y + h,  0.0f,   1.0f,
+    };
+
+    refresh_attrib_bits(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
+    refresh_shader(SHADER_TEXT);
+
+    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 0));
+    CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 2));
+    CHECK_GL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+
+    if (gl.current_text_texture == NUM_TEXT_TEXTURES) {
+        gl.current_text_texture = 0;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -880,10 +994,14 @@ void tq_construct_gl_renderer(tq_renderer_t *renderer)
         .set_outline_color  = set_outline_color,
         .set_fill_color     = set_fill_color,
 
+        .create_texture     = create_texture,
         .load_texture       = load_texture,
         .delete_texture     = delete_texture,
         .get_texture_size   = get_texture_size,
         .draw_texture       = draw_texture,
+
+        .draw_text          = draw_text,
+        .draw_text2         = draw_text2,
     };
 }
 

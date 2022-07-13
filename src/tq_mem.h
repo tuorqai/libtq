@@ -18,6 +18,18 @@
 #define tq_mem_realloc  realloc
 #define tq_mem_free     free
 
+#define mem_malloc(size) \
+    malloc(size)
+
+#define mem_calloc(nmemb, size) \
+    calloc(nmemb, size)
+
+#define mem_realloc(ptr, size) \
+    realloc(ptr, size)
+
+#define mem_free(ptr) \
+    free(ptr)
+
 //------------------------------------------------------------------------------
 
 #endif // TQ_MEM_H_INC

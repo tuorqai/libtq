@@ -10,6 +10,23 @@
 
 //------------------------------------------------------------------------------
 
+enum
+{
+    PIXEL_FORMAT_NONE,
+    PIXEL_FORMAT_GRAYSCALE,
+    PIXEL_FORMAT_GRAYSCALE_ALPHA,
+    PIXEL_FORMAT_RGB,
+    PIXEL_FORMAT_RGBA,
+};
+
+struct image
+{
+    unsigned char *pixels;
+    unsigned int width;
+    unsigned int height;
+    unsigned int channels;
+};
+
 typedef enum tq_pixel_format
 {
     TQ_PIXEL_FORMAT_INVALID,
@@ -27,6 +44,11 @@ typedef struct tq_image
     uint32_t height;
     uint32_t pixel_format;
 } tq_image_t;
+
+/**
+ * Create an empty image using given parameters.
+ */
+struct image image_create(unsigned int width, unsigned int height, unsigned int channels);
 
 /**
  * Load image from an input stream.

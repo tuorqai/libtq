@@ -72,6 +72,11 @@
 #define TQ_TEXTURE_LIMIT                (256)
 
 /**
+ * Maximum number of fonts.
+ */
+#define TQ_MAX_FONTS                    (16)
+
+/**
  * @brief Maximum number of open music tracks.
  */
 #define TQ_MUSIC_LIMIT                  (32)
@@ -85,6 +90,16 @@
  * @brief Maximum number of playing audio channels.
  */
 #define TQ_CHANNEL_LIMIT                (16)
+
+/**
+ * Regular font weight.
+ */
+#define TQ_FONT_NORMAL                  (400)
+
+/**
+ * Cx.
+ */
+#define TQ_FONT_BOLD                    (700)
 
 //------------------------------------------------------------------------------
 // Enumerations
@@ -250,6 +265,11 @@ typedef uint32_t tq_color_t;
  * Texture identifier.
  */
 typedef struct { int32_t id; } tq_texture;
+
+/**
+ * Font identifier.
+ */
+typedef struct { int32_t id; } tq_font;
 
 /**
  * Sound identifier.
@@ -674,6 +694,34 @@ TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_v(
     tq_vec2f_t fragment_position,
     tq_vec2f_t fragment_size
 );
+
+//--------------------------------------
+// Fonts
+
+/**
+ * Load font from file.
+ */
+TQ_EXPORT TQ_API tq_font TQ_CALL tq_load_font_from_file(
+    char const *path,
+    float pt, int weight);
+
+/**
+ * Load font from memory buffer.
+ */
+TQ_EXPORT TQ_API tq_font TQ_CALL tq_load_font_from_memory(
+    uint8_t const *buffer, size_t size,
+    float pt, int weight);
+
+/**
+ * Delete previously loaded font.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_delete_font(tq_font font);
+
+/**
+ * Draw formatted text using specified font.
+ * See also: tq_set_fill_color(), tq_set_outline_color().
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_text(tq_font font, tq_vec2f_t position, char const *fmt, ...);
 
 //------------------------------------------------------------------------------
 // Audio

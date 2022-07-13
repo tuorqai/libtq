@@ -73,6 +73,17 @@ int32_t tq_open_file_istream(char const *path);
  */
 int32_t tq_open_memory_istream(uint8_t const *buffer, size_t size);
 
+#define input_stream_read               tq_istream_read
+#define input_stream_seek               tq_istream_seek
+#define input_stream_tell               tq_istream_tell
+#define input_stream_size               tq_istream_size
+#define input_stream_buffer             tq_istream_buffer
+#define input_stream_close              tq_istream_close
+#define input_stream_repr               tq_istream_repr
+
+#define open_file_input_stream          tq_open_file_istream
+#define open_memory_input_stream        tq_open_memory_istream
+
 //------------------------------------------------------------------------------
 
 #endif // TQ_STREAM_H_INC

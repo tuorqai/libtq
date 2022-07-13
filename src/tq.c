@@ -457,6 +457,33 @@ void tq_draw_texture_fragment_v(tq_texture texture,
         fragment_size.x, fragment_size.y);
 }
 
+//----------------------------------------------------------
+// Fonts & text
+
+tq_font tq_load_font_from_file(char const *path, float pt, int weight)
+{
+    return (tq_font) { .id = graphics_load_font_from_file(path, pt, weight) };
+}
+
+tq_font tq_load_font_from_memory(uint8_t const *buffer, size_t size, float pt, int weight)
+{
+    return (tq_font) { .id = graphics_load_font_from_memory(buffer, size, pt, weight) };
+}
+
+void tq_delete_font(tq_font font)
+{
+    graphics_delete_font(font.id);
+}
+
+void tq_draw_text(tq_font font, tq_vec2f_t position, char const *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    graphics_draw_text(font.id, position.x, position.y, fmt, ap);
+    va_end(ap);
+}
+
 //------------------------------------------------------------------------------
 // Audio
 
