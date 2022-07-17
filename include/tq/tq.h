@@ -718,10 +718,15 @@ TQ_EXPORT TQ_API tq_font TQ_CALL tq_load_font_from_memory(
 TQ_EXPORT TQ_API void TQ_CALL tq_delete_font(tq_font font);
 
 /**
+ * Draw simple text using specified font.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_text(tq_font font, tq_vec2f_t position, char const *text);
+
+/**
  * Draw formatted text using specified font.
  * See also: tq_set_fill_color(), tq_set_outline_color().
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_text(tq_font font, tq_vec2f_t position, char const *fmt, ...);
+TQ_EXPORT TQ_API void TQ_CALL tq_print_text(tq_font font, tq_vec2f_t position, char const *fmt, ...);
 
 //------------------------------------------------------------------------------
 // Audio

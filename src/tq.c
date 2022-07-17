@@ -3,11 +3,15 @@
 // tq library :3
 //------------------------------------------------------------------------------
 
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "tq_audio.h"
 #include "tq_core.h"
 #include "tq_graphics.h"
+#include "tq_mem.h"
+#include "tq_text.h"
 
 //------------------------------------------------------------------------------
 
@@ -462,26 +466,51 @@ void tq_draw_texture_fragment_v(tq_texture texture,
 
 tq_font tq_load_font_from_file(char const *path, float pt, int weight)
 {
-    return (tq_font) { .id = graphics_load_font_from_file(path, pt, weight) };
+    return (tq_font) { .id = text_load_font_from_file(path, pt, weight) };
 }
 
 tq_font tq_load_font_from_memory(uint8_t const *buffer, size_t size, float pt, int weight)
 {
-    return (tq_font) { .id = graphics_load_font_from_memory(buffer, size, pt, weight) };
+    return (tq_font) { .id = text_load_font_from_memory(buffer, size, pt, weight) };
 }
 
 void tq_delete_font(tq_font font)
 {
-    graphics_delete_font(font.id);
+    text_delete_font(font.id);
 }
 
-void tq_draw_text(tq_font font, tq_vec2f_t position, char const *fmt, ...)
+void tq_draw_text(tq_font font, tq_vec2f_t position, char const *text)
 {
+    text_draw_text(font.id, position.x, position.y, text);
+}
+
+void tq_print_text(tq_font font, tq_vec2f_t position, char const *fmt, ...)
+{
+    static int buffer_size = 0;
+    static char *buffer = NULL;
+
     va_list ap;
 
     va_start(ap, fmt);
-    graphics_draw_text(font.id, position.x, position.y, fmt, ap);
+    {
+        int bytes_required = vsnprintf(buffer, buffer_size, fmt, ap);
+
+        if (bytes_required >= buffer_size) {
+            if (buffer_size == 0) {
+                buffer_size = 64;
+            }
+
+            while (buffer_size < (bytes_required + 1)) {
+                buffer_size *= 2;
+            }
+
+            buffer = mem_realloc(buffer, buffer_size);
+            vsnprintf(buffer, buffer_size, fmt, ap);
+        }
+    }
     va_end(ap);
+
+    text_draw_text(font.id, position.x, position.y, buffer);
 }
 
 //------------------------------------------------------------------------------

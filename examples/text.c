@@ -14,11 +14,13 @@ int main(int argc, char *argv[])
     tq_initialize();
     atexit(tq_terminate);
 
-    tq_font font = tq_load_font_from_file("assets/fonts/sansation.ttf",
-        72.0f, TQ_FONT_NORMAL);
+    tq_font regular = tq_load_font_from_file("assets/fonts/sansation.ttf",
+        36.0f, TQ_FONT_NORMAL);
 
-    if (font.id == -1) {
-        fprintf(stderr, "Failed to load TTF font.\n");
+    tq_font italic = tq_load_font_from_file("assets/fonts/sansation-italic.ttf",
+        24.0f, TQ_FONT_NORMAL);
+
+    if (regular.id == -1 || italic.id == -1) {
         return EXIT_FAILURE;
     }
 
@@ -27,7 +29,14 @@ int main(int argc, char *argv[])
     while (tq_process()) {
         tq_clear();
 
-        tq_draw_text(font, TQ_VEC2F(32, 32), "Hello world!");
+        tq_draw_text(regular, TQ_VEC2F(32, 64), "Hello world!");
+
+        tq_print_text(italic, TQ_VEC2F(32, 440),
+            "cursor pos: [%d, %d]",
+            tq_get_mouse_cursor_x(), tq_get_mouse_cursor_y());
+
+        tq_print_text(italic, TQ_VEC2F(32, 480),
+            "time: %.2f", tq_get_time_mediump());
     }
 
     return EXIT_SUCCESS;

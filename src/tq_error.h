@@ -10,6 +10,8 @@
 
 TQ_NO_RET void tq_error(char const *fmt, ...);
 
+TQ_NO_RET void out_of_memory(void);
+
 //------------------------------------------------------------------------------
 
 #endif // TQ_ERROR_H_INC

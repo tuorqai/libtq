@@ -15,10 +15,12 @@
 #endif
 
 #include "tq_core.h"
+#include "tq_error.h"
 #include "tq_graphics.h"
 #include "tq_image_loader.h"
 #include "tq_log.h"
 #include "tq_math.h"
+#include "tq_mem.h"
 
 //------------------------------------------------------------------------------
 // OpenGL debug stuff
@@ -196,10 +198,6 @@ static char const *fragment_shader_source[TOTAL_FRAGMENT_SHADERS] = {
         "}\n",
 };
 
-enum {
-    NUM_TEXT_TEXTURES = 8,
-};
-
 //------------------------------------------------------------------------------
 
 //--------------------------------------
@@ -210,6 +208,7 @@ typedef struct gl_texture
     GLuint  id;
     GLuint  width;
     GLuint  height;
+    GLenum  format;
 } gl_texture_t;
 
 //--------------------------------------
@@ -234,11 +233,6 @@ typedef struct gl_renderer_priv
     GLuint              shaders[TOTAL_SHADERS];
     GLint               uniform_locations[TOTAL_SHADERS][TOTAL_UNIFORMS];
     uint32_t            dirty_bits[TOTAL_SHADERS];
-
-    GLuint              text_textures[NUM_TEXT_TEXTURES];
-    GLuint              text_texture_width[NUM_TEXT_TEXTURES];
-    GLuint              text_texture_height[NUM_TEXT_TEXTURES];
-    unsigned int        current_text_texture;
 } gl_renderer_priv_t;
 
 //------------------------------------------------------------------------------
@@ -582,24 +576,6 @@ static void initialize(void)
         gl.fragment_shaders[fs] = 0;
     }
 
-    CHECK_GL(glGenTextures(NUM_TEXT_TEXTURES, gl.text_textures));
-    gl.current_text_texture = 0;
-
-    for (int i = 0; i < NUM_TEXT_TEXTURES; i++) {
-        CHECK_GL(glBindTexture(GL_TEXTURE_2D, gl.text_textures[i]));
-
-        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, 512, 64, 0, GL_LUMINANCE,
-            GL_UNSIGNED_BYTE, NULL));
-
-        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-
-        gl.text_texture_width[i] = 512;
-        gl.text_texture_height[i] = 64;
-    }
-
-    CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
-
     // Reset OpenGL state.
     glEnable(GL_BLEND);
     glDisable(GL_CULL_FACE);
@@ -796,10 +772,59 @@ static void set_fill_color(tq_color_t fill_color)
     refresh_color(SHADER_FILL, fill_color);
 }
 
+static GLenum get_texture_format(int channels)
+{
+    switch (channels) {
+    case 1:
+        return GL_LUMINANCE;
+    case 2:
+        return GL_LUMINANCE_ALPHA;
+    case 3:
+        return GL_RGB;
+    case 4:
+        return GL_RGBA;
+    }
+
+    return GL_INVALID_ENUM;
+}
+
+static int32_t create_texture(int width, int height, int channels)
+{
+    int32_t texture_id = get_texture_index();
+
+    if (texture_id == -1) {
+        return -1;
+    }
+
+    GLenum format = get_texture_format(channels);
+
+    if (format == GL_INVALID_ENUM) {
+        return -1;
+    }
+
+    gl.textures[texture_id] = mem_malloc(sizeof(gl_texture_t));
+
+    CHECK_GL(glGenTextures(1, &gl.textures[texture_id]->id));
+    CHECK_GL(glBindTexture(GL_TEXTURE_2D, gl.textures[texture_id]->id));
+
+    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+
+    CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, format,
+        width, height, 0, format,
+        GL_UNSIGNED_BYTE, NULL));
+    
+    gl.textures[texture_id]->width = width;
+    gl.textures[texture_id]->height = height;
+    gl.textures[texture_id]->format = format;
+
+    return texture_id;
+}
+
 /**
  * Generate texture from raw pixel data.
  */
-static int32_t create_texture(tq_image_t const *image)
+static int32_t create_texture_from_image(tq_image_t const *image)
 {
     GLenum format;
 
@@ -845,6 +870,7 @@ static int32_t create_texture(tq_image_t const *image)
     gl.textures[index]->id = id;
     gl.textures[index]->width = image->width;
     gl.textures[index]->height = image->height;
+    gl.textures[index]->format = format;
 
     return index;
 }
@@ -860,7 +886,7 @@ static int32_t load_texture(int32_t stream_id)
         return -1;
     }
 
-    int32_t texture_id = create_texture(image);
+    int32_t texture_id = create_texture_from_image(image);
 
     tq_image_destroy(image);
 
@@ -886,6 +912,41 @@ static void get_texture_size(int32_t texture_id, uint32_t *width, uint32_t *heig
     *height = gl.textures[texture_id]->height;
 }
 
+static void update_texture(int32_t texture_id, int x_offset, int y_offset,
+    int width, int height, unsigned char *pixels)
+{
+    glBindTexture(GL_TEXTURE_2D, gl.textures[texture_id]->id);
+    glTexSubImage2D(GL_TEXTURE_2D, 0,
+        x_offset, y_offset, width, height,
+        gl.textures[texture_id]->format,
+        GL_UNSIGNED_BYTE, pixels);
+}
+
+static void expand_texture(int32_t texture_id, int width, int height)
+{
+    unsigned char *pixels = mem_malloc(width * height * 4);
+
+    if (!pixels) {
+        out_of_memory();
+    }
+
+    glBindTexture(GL_TEXTURE_2D, gl.textures[texture_id]->id);
+    glGetTexImage(GL_TEXTURE_2D, 0, gl.textures[texture_id]->format, GL_UNSIGNED_BYTE, pixels);
+
+    glTexImage2D(GL_TEXTURE_2D, 0,
+        gl.textures[texture_id]->format, width, height, 0,
+        gl.textures[texture_id]->format, GL_UNSIGNED_BYTE, NULL);
+
+    glTexSubImage2D(GL_TEXTURE_2D, 0,
+        0, 0, gl.textures[texture_id]->width, gl.textures[texture_id]->height,
+        gl.textures[texture_id]->format, GL_UNSIGNED_BYTE, pixels);
+
+    gl.textures[texture_id]->width = width;
+    gl.textures[texture_id]->height = height;
+
+    mem_free(pixels);
+}
+
 //--------------------------------------
 // Draw textured rectangle
 //--------------------------------------
@@ -901,9 +962,9 @@ static void draw_texture(int32_t texture_id, float const *data, uint32_t num_ver
 }
 
 /**
- * Draw pre-rendered text bitmap.
+ * Draw text mesh.
  */
-static void draw_text(int32_t texture_id, float const *data, uint32_t num_vertices)
+static void draw_text(int texture_id, float const *data, unsigned int const *indices, int num_indices)
 {
     refresh_attrib_bits(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
     refresh_shader(SHADER_TEXT);
@@ -911,57 +972,7 @@ static void draw_text(int32_t texture_id, float const *data, uint32_t num_vertic
 
     CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 0));
     CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 2));
-    CHECK_GL(glDrawArrays(GL_TRIANGLE_FAN, 0, num_vertices));
-}
-
-/**
- * Draw pre-rendered text bitmap.
- */
-static void draw_text2(float x, float y, struct image image)
-{
-    gl.texture_id[gl.shader_id] = -1;
-
-    int id = gl.current_text_texture++;
-
-    CHECK_GL(glBindTexture(GL_TEXTURE_2D, gl.text_textures[id]));
-
-    if (image.width < gl.text_texture_width[id] && image.height < gl.text_texture_height[id]) {
-        CHECK_GL(glTexSubImage2D(GL_TEXTURE_2D, 0,
-            0, 0,
-            image.width, image.height,
-            GL_LUMINANCE,
-            GL_UNSIGNED_BYTE, image.pixels));
-    } else {
-        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0,
-            GL_LUMINANCE,
-            image.width, image.height, 0,
-            GL_LUMINANCE,
-            GL_UNSIGNED_BYTE, image.pixels));
-        
-        gl.text_texture_width[id] = image.width;
-        gl.text_texture_height[id] = image.height;
-    }
-
-    float w = image.width;
-    float h = image.height;
-
-    float data[] = {
-        x,      y,      0.0f,   0.0f,
-        x + w,  y,      1.0f,   0.0f,
-        x + w,  y + h,  1.0f,   1.0f,
-        x,      y + h,  0.0f,   1.0f,
-    };
-
-    refresh_attrib_bits(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
-    refresh_shader(SHADER_TEXT);
-
-    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 0));
-    CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 2));
-    CHECK_GL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-
-    if (gl.current_text_texture == NUM_TEXT_TEXTURES) {
-        gl.current_text_texture = 0;
-    }
+    CHECK_GL(glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, indices));
 }
 
 //------------------------------------------------------------------------------
@@ -995,13 +1006,15 @@ void tq_construct_gl_renderer(tq_renderer_t *renderer)
         .set_fill_color     = set_fill_color,
 
         .create_texture     = create_texture,
+        .create_texture_from_image = create_texture_from_image,
         .load_texture       = load_texture,
         .delete_texture     = delete_texture,
         .get_texture_size   = get_texture_size,
+        .update_texture     = update_texture,
+        .expand_texture     = expand_texture,
         .draw_texture       = draw_texture,
 
         .draw_text          = draw_text,
-        .draw_text2         = draw_text2,
     };
 }
 

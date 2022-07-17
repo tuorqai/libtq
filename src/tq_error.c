@@ -29,4 +29,9 @@ void tq_error(char const *fmt, ...)
     abort();
 }
 
+void out_of_memory(void)
+{
+    tq_error("tq library is out of memory.");
+}
+
 //------------------------------------------------------------------------------
