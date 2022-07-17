@@ -119,6 +119,8 @@ typedef struct world
     objects_t   objects;
 
     int32_t     player_id;
+
+    tq_font     font;
 } world_t;
 
 //------------------------------------------------------------------------------
@@ -411,6 +413,9 @@ void spawn_world(world_t *world)
     world->players.texture = tq_load_texture_from_file("assets/raven.png");
     world->objects.texture = world->stage.texture;
 
+    world->font = tq_load_font_from_file("assets/fonts/sansation-bold-italic.ttf",
+        22.0f, TQ_FONT_NORMAL);
+
     spawn_stage(&world->stage);
 
     world->player_id = spawn_player(&world->players);
@@ -434,12 +439,12 @@ void draw_world(world_t const *world)
 {
     tq_clear();
 
+    uint32_t width, height;
+    tq_get_display_size(&width, &height);
+
+    float aspect = width / (float) height;
+    
     if (!tq_is_key_pressed(TQ_KEY_P)) {
-        uint32_t width, height;
-        tq_get_display_size(&width, &height);
-
-        float aspect = width / (float) height;
-
         if (aspect > 1.0f) {
             tq_view(
                 world->camera.x, world->camera.y,
@@ -457,6 +462,7 @@ void draw_world(world_t const *world)
 
     tq_set_line_color(TQ_COLOR24(255, 255, 255));
     tq_set_outline_color(TQ_COLOR24(255, 255, 255));
+    tq_set_fill_color(TQ_COLOR24(130, 170, 40));
 
     draw_stage(&world->stage);
     draw_objects(&world->objects);
@@ -464,6 +470,17 @@ void draw_world(world_t const *world)
 
     tq_draw_line_f(world->camera.x - 2.0f, world->camera.y, world->camera.x + 2.0f, world->camera.y);
     tq_draw_line_f(world->camera.x, world->camera.y - 2.0f, world->camera.x, world->camera.y + 2.0f);
+
+    tq_set_fill_color(TQ_COLOR24(255, 255, 255));
+
+    tq_view(
+        width / 2.0f, height / 2.0f,
+        width, height, 0.0f
+    );
+
+    tq_print_text(world->font, TQ_VEC2F(32, 80), "[%.2f, %.2f]",
+        world->players.x[world->player_id],
+        world->players.y[world->player_id]);
 }
 
 //------------------------------------------------------------------------------
@@ -476,7 +493,6 @@ int main(int argc, char *argv[])
     tq_initialize();
 
     tq_set_clear_color(TQ_COLOR24(0, 0, 0));
-    tq_set_fill_color(TQ_COLOR24(130, 170, 40));
 
     world_t *world = malloc(sizeof(world_t));
 

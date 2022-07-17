@@ -820,6 +820,9 @@ static int32_t create_texture(int width, int height, int channels)
     gl.textures[texture_id]->height = height;
     gl.textures[texture_id]->format = format;
 
+    gl.texture_id[gl.shader_id] = -1;
+    gl.shader_id = -1;
+
     return texture_id;
 }
 
@@ -922,6 +925,9 @@ static void update_texture(int32_t texture_id, int x_offset, int y_offset,
         x_offset, y_offset, width, height,
         gl.textures[texture_id]->format,
         GL_UNSIGNED_BYTE, pixels);
+    
+    gl.texture_id[gl.shader_id] = -1;
+    gl.shader_id = -1;
 }
 
 static void expand_texture(int32_t texture_id, int width, int height)
@@ -947,6 +953,9 @@ static void expand_texture(int32_t texture_id, int width, int height)
     gl.textures[texture_id]->height = height;
 
     mem_free(pixels);
+
+    gl.texture_id[gl.shader_id] = -1;
+    gl.shader_id = -1;
 }
 
 //--------------------------------------
