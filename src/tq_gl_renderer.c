@@ -192,9 +192,10 @@ static char const *fragment_shader_source[TOTAL_FRAGMENT_SHADERS] = {
     [FRAGMENT_SHADER_TEXT] =
         "varying vec2 v_texCoord;\n"
         "uniform sampler2D u_texture;\n"
+        "uniform vec4 u_color;\n"
         "void main() {\n"
         "    vec4 color = texture2D(u_texture, v_texCoord);\n"
-        "    gl_FragColor = vec4(color.rgb, color.g);\n"
+        "    gl_FragColor = vec4(color.rgb, color.g) * u_color;\n"
         "}\n",
 };
 
@@ -770,6 +771,7 @@ static void set_outline_color(tq_color_t outline_color)
 static void set_fill_color(tq_color_t fill_color)
 {
     refresh_color(SHADER_FILL, fill_color);
+    refresh_color(SHADER_TEXT, fill_color);
 }
 
 static GLenum get_texture_format(int channels)

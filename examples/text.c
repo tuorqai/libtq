@@ -29,12 +29,15 @@ int main(int argc, char *argv[])
     while (tq_process()) {
         tq_clear();
 
+        tq_set_fill_color(TQ_COLOR24(224, 208, 0));
         tq_draw_text(regular, TQ_VEC2F(32, 64), "Hello world!");
 
+        tq_set_fill_color(TQ_COLOR24(0, 160, 210));
         tq_print_text(italic, TQ_VEC2F(32, 440),
             "cursor pos: [%d, %d]",
             tq_get_mouse_cursor_x(), tq_get_mouse_cursor_y());
 
+        tq_set_fill_color(TQ_COLOR24(224, 192, 224));
         tq_print_text(italic, TQ_VEC2F(32, 480),
             "time: %.2f", tq_get_time_mediump());
     }
