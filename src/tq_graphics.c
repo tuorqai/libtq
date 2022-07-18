@@ -16,9 +16,18 @@
 #include "tq_text.h"
 
 //------------------------------------------------------------------------------
-// Declarations
 
 #define MAX_MATRICES 32
+
+enum
+{
+    COLOR_CLEAR,
+    COLOR_POINT,
+    COLOR_LINE,
+    COLOR_OUTLINE,
+    COLOR_FILL,
+    COLOR_COUNT,
+};
 
 typedef struct tq_graphics
 {
@@ -27,18 +36,16 @@ typedef struct tq_graphics
     float           default_projection[16];
     float           model_view[MAX_MATRICES][9];
     uint32_t        model_view_index;
-
-    tq_color_t      clear_color;
-    tq_color_t      point_color;
-    tq_color_t      line_color;
-    tq_color_t      outline_color;
-    tq_color_t      fill_color;
 } tq_graphics_t;
 
-//------------------------------------------------------------------------------
-// Definitions
+struct color
+{
+    tq_color_t direct;
+    float normalized[4];
+};
 
 static tq_graphics_t graphics;
+static struct color colors[COLOR_COUNT];
 
 //------------------------------------------------------------------------------
 // Utility functions
@@ -64,20 +71,48 @@ static void make_default_projection(float *dst, uint32_t w, uint32_t h)
     mat4_ortho(dst, 0.0f, (float) w, (float) h, 0.0f, -1.0f, +1.0f);
 }
 
-static float *make_circle(float x, float y, float radius, unsigned int *length)
+static float *make_circle(float x, float y, float radius, int color_id, int *length)
 {
     float e = 0.25f;
     float angle = acosf(2.0f * (1.0f - e / radius) * (1.0f - e / radius) - 1.0f);
 
-    *length = (unsigned int) (ceilf(2.0f * M_PI / angle));
-    float *data = malloc(2 * sizeof(float) * (*length));
+    int count = (int) (ceilf(2.0f * M_PI / angle)) + 1;
+    float *data = mem_malloc(6 * sizeof(float) * count);
 
-    for (unsigned int v = 0; v < (*length); v++) {
-        data[2 * v + 0] = x + (radius * cos(v * angle));
-        data[2 * v + 1] = y + (radius * sin(v * angle));
+    for (int v = 0; v < count - 1; v++) {
+        data[6 * v + 0] = x + (radius * cos(v * angle));
+        data[6 * v + 1] = y + (radius * sin(v * angle));
+        data[6 * v + 2] = colors[color_id].normalized[0];
+        data[6 * v + 3] = colors[color_id].normalized[1];
+        data[6 * v + 4] = colors[color_id].normalized[2];
+        data[6 * v + 5] = colors[color_id].normalized[3];
     }
 
+    data[6 * (count - 1) + 0] = data[0];
+    data[6 * (count - 1) + 1] = data[1];
+    data[6 * (count - 1) + 2] = data[2];
+    data[6 * (count - 1) + 3] = data[3];
+    data[6 * (count - 1) + 4] = data[4];
+    data[6 * (count - 1) + 5] = data[5];
+
+    *length = count;
     return data;
+}
+
+static void decode_color24(float *dst, tq_color_t color)
+{
+    dst[0] = ((color >> 24) & 255) / 255.0f;
+    dst[1] = ((color >> 16) & 255) / 255.0f;
+    dst[2] = ((color >>  8) & 255) / 255.0f;
+    dst[3] = 1.0f;
+}
+
+static void decode_color32(float *dst, tq_color_t color)
+{
+    dst[0] = ((color >> 24) & 255) / 255.0f;
+    dst[1] = ((color >> 16) & 255) / 255.0f;
+    dst[2] = ((color >>  8) & 255) / 255.0f;
+    dst[3] = ((color <<  0) & 255) / 255.0f;
 }
 
 //------------------------------------------------------------------------------
@@ -101,23 +136,17 @@ void tq_graphics_initialize(void)
     
     graphics.model_view_index = 0;
 
-    graphics.clear_color = TQ_COLOR24(29, 43, 83);
-    graphics.point_color = TQ_COLOR24(255, 241, 232);
-    graphics.line_color = TQ_COLOR24(255, 236, 39);
-    graphics.outline_color = TQ_COLOR24(255, 204, 170);
-    graphics.fill_color = TQ_COLOR24(126, 37, 83);
+    graphics_set_clear_color(TQ_COLOR24(0, 0, 0));
+    graphics_set_point_color(TQ_COLOR24(255, 255, 255));
+    graphics_set_line_color(TQ_COLOR24(255, 255, 255));
+    graphics_set_outline_color(TQ_COLOR24(255, 255, 255));
+    graphics_set_fill_color(TQ_COLOR24(0, 0, 0));
 
     graphics.renderer.initialize();
 
     graphics.renderer.update_viewport(0, 0, width, height);
     graphics.renderer.update_projection(graphics.default_projection);
     graphics.renderer.update_model_view(graphics.model_view[0]);
-
-    graphics.renderer.set_clear_color(graphics.clear_color);
-    graphics.renderer.set_point_color(graphics.point_color);
-    graphics.renderer.set_line_color(graphics.line_color);
-    graphics.renderer.set_outline_color(graphics.outline_color);
-    graphics.renderer.set_fill_color(graphics.fill_color);
 
     text_initialize(&graphics.renderer);
 }
@@ -141,18 +170,22 @@ void tq_graphics_process(void)
 
 void graphics_clear(void)
 {
-    graphics.renderer.clear();
+    graphics.renderer.clear(
+        colors[COLOR_CLEAR].normalized[0],
+        colors[COLOR_CLEAR].normalized[1],
+        colors[COLOR_CLEAR].normalized[2]
+    );
 }
 
 tq_color_t graphics_get_clear_color(void)
 {
-    return graphics.clear_color;
+    return colors[COLOR_CLEAR].direct;
 }
 
 void graphics_set_clear_color(tq_color_t clear_color)
 {
-    graphics.clear_color = clear_color;
-    graphics.renderer.set_clear_color(graphics.clear_color);
+    decode_color24(colors[COLOR_CLEAR].normalized, clear_color);
+    colors[COLOR_CLEAR].direct = clear_color;
 }
 
 void tq_graphics_view(float x, float y, float w, float h, float rotation)
@@ -210,193 +243,258 @@ void graphics_rotate_matrix(float a)
 
 void graphics_draw_point(float x, float y)
 {
-    float data[] = { x, y };
-    graphics.renderer.draw_points(data, 1);
+    float r = colors[COLOR_POINT].normalized[0];
+    float g = colors[COLOR_POINT].normalized[1];
+    float b = colors[COLOR_POINT].normalized[2];
+    float a = colors[COLOR_POINT].normalized[3];
+
+    float data[] = {
+        x, y, r, g, b, a,
+    };
+
+    graphics.renderer.draw_solid(RENDERER_MODE_POINTS, data, 1);
 }
 
 void graphics_draw_line(float ax, float ay, float bx, float by)
 {
-    float data[] = { ax, ay, bx, by };
-    graphics.renderer.draw_lines(data, 2);
+    float r = colors[COLOR_LINE].normalized[0];
+    float g = colors[COLOR_LINE].normalized[1];
+    float b = colors[COLOR_LINE].normalized[2];
+    float a = colors[COLOR_LINE].normalized[3];
+
+    float data[] = {
+        ax, ay, r, g, b, a,
+        bx, by, r, g, b, a,
+    };
+
+    graphics.renderer.draw_solid(RENDERER_MODE_LINE_STRIP, data, 2);
 }
 
 void graphics_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy)
 {
-    float data[] = { ax, ay, bx, by, cx, cy };
-    graphics.renderer.draw_fill(data, 3);
-    graphics.renderer.draw_outline(data, 3);
+    graphics_fill_triangle(ax, ay, bx, by, cx, cy);
+    graphics_outline_triangle(ax, ay, bx, by, cx, cy);
 }
 
 void graphics_draw_rectangle(float x, float y, float w, float h)
 {
-    float data[] = { x, y, x + w, y, x + w, y + h, x, y + h };
-    graphics.renderer.draw_fill(data, 4);
-    graphics.renderer.draw_outline(data, 4);
+    graphics_fill_rectangle(x, y, w, h);
+    graphics_outline_rectangle(x, y, w, h);
 }
 
 void graphics_draw_circle(float x, float y, float radius)
 {
-    unsigned int length;
-    float *data = make_circle(x, y, radius, &length);
-    graphics.renderer.draw_fill(data, length);
-    graphics.renderer.draw_outline(data, length);
-    free(data);
+    graphics_fill_circle(x, y, radius);
+    graphics_outline_circle(x, y, radius);
 }
 
 void graphics_outline_triangle(float ax, float ay, float bx, float by, float cx, float cy)
 {
-    float data[] = { ax, ay, bx, by, cx, cy };
-    graphics.renderer.draw_outline(data, 3);
+    float r0 = colors[COLOR_OUTLINE].normalized[0];
+    float g0 = colors[COLOR_OUTLINE].normalized[1];
+    float b0 = colors[COLOR_OUTLINE].normalized[2];
+    float a0 = colors[COLOR_OUTLINE].normalized[3];
+
+    float data[] = {
+        ax, ay, r0, g0, b0, a0,
+        bx, by, r0, g0, b0, a0,
+        cx, cy, r0, g0, b0, a0,
+        ax, ay, r0, g0, b0, a0,
+    };
+
+    graphics.renderer.draw_solid(RENDERER_MODE_LINE_STRIP, data, 4);
 }
 
 void graphics_outline_rectangle(float x, float y, float w, float h)
 {
-    float data[] = { x, y, x + w, y, x + w, y + h, x, y + h };
-    graphics.renderer.draw_outline(data, 4);
+    float r0 = colors[COLOR_OUTLINE].normalized[0];
+    float g0 = colors[COLOR_OUTLINE].normalized[1];
+    float b0 = colors[COLOR_OUTLINE].normalized[2];
+    float a0 = colors[COLOR_OUTLINE].normalized[3];
+
+    float data[] = {
+        x,      y,      r0, g0, b0, a0,
+        x + w,  y,      r0, g0, b0, a0,
+        x + w,  y + h,  r0, g0, b0, a0,
+        x,      y + h,  r0, g0, b0, a0,
+        x,      y,      r0, g0, b0, a0,
+    };
+
+    graphics.renderer.draw_solid(RENDERER_MODE_LINE_STRIP, data, 5);
 }
 
 void graphics_outline_circle(float x, float y, float radius)
 {
-    unsigned int length;
-    float *data = make_circle(x, y, radius, &length);
-    graphics.renderer.draw_outline(data, length);
-    free(data);
+    int length;
+
+    float *data = make_circle(x, y, radius, COLOR_OUTLINE, &length);
+    graphics.renderer.draw_solid(RENDERER_MODE_LINE_STRIP, data, length);
+
+    mem_free(data);
 }
 
 void graphics_fill_triangle(float ax, float ay, float bx, float by, float cx, float cy)
 {
-    float data[] = { ax, ay, bx, by, cx, cy };
-    graphics.renderer.draw_fill(data, 3);
+    float r0 = colors[COLOR_FILL].normalized[0];
+    float g0 = colors[COLOR_FILL].normalized[1];
+    float b0 = colors[COLOR_FILL].normalized[2];
+    float a0 = colors[COLOR_FILL].normalized[3];
+
+    float data[] = {
+        ax, ay, r0, g0, b0, a0, 
+        bx, by, r0, g0, b0, a0,
+        cx, cy, r0, g0, b0, a0,
+    };
+
+    graphics.renderer.draw_solid(RENDERER_MODE_TRIANGLE_FAN, data, 3);
 }
 
 void graphics_fill_rectangle(float x, float y, float w, float h)
 {
-    float data[] = { x, y, x + w, y, x + w, y + h, x, y + h };
-    graphics.renderer.draw_fill(data, 4);
+    float r0 = colors[COLOR_FILL].normalized[0];
+    float g0 = colors[COLOR_FILL].normalized[1];
+    float b0 = colors[COLOR_FILL].normalized[2];
+    float a0 = colors[COLOR_FILL].normalized[3];
+
+    float data[] = {
+        x,      y,      r0, g0, b0, a0, 
+        x + w,  y,      r0, g0, b0, a0,
+        x + w,  y + h,  r0, g0, b0, a0,
+        x,      y + h,  r0, g0, b0, a0,
+    };
+
+    graphics.renderer.draw_solid(RENDERER_MODE_TRIANGLE_FAN, data, 4);
 }
 
 void graphics_fill_circle(float x, float y, float radius)
 {
-    unsigned int length;
-    float *data = make_circle(x, y, radius, &length);
-    graphics.renderer.draw_fill(data, length);
-    free(data);
+    int length;
+
+    float *data = make_circle(x, y, radius, COLOR_FILL, &length);
+    graphics.renderer.draw_solid(RENDERER_MODE_TRIANGLE_FAN, data, length - 1);
+
+    mem_free(data);
 }
 
 tq_color_t graphics_get_point_color(void)
 {
-    return graphics.point_color;
+    return colors[COLOR_POINT].direct;
 }
 
 void graphics_set_point_color(tq_color_t point_color)
 {
-    graphics.point_color = point_color;
-    graphics.renderer.set_point_color(graphics.point_color);
+    decode_color32(colors[COLOR_POINT].normalized, point_color);
+    colors[COLOR_POINT].direct = point_color;
 }
 
 tq_color_t graphics_get_line_color(void)
 {
-    return graphics.line_color;
+    return colors[COLOR_LINE].direct;
 }
 
 void graphics_set_line_color(tq_color_t line_color)
 {
-    graphics.line_color = line_color;
-    graphics.renderer.set_line_color(graphics.line_color);
+    decode_color32(colors[COLOR_LINE].normalized, line_color);
+    colors[COLOR_LINE].direct = line_color;
 }
 
 tq_color_t graphics_get_outline_color(void)
 {
-    return graphics.outline_color;
+    return colors[COLOR_OUTLINE].direct;
 }
 
 void graphics_set_outline_color(tq_color_t outline_color)
 {
-    graphics.outline_color = outline_color;
-    graphics.renderer.set_outline_color(graphics.outline_color);
+    decode_color32(colors[COLOR_OUTLINE].normalized, outline_color);
+    colors[COLOR_OUTLINE].direct = outline_color;
 }
 
 tq_color_t graphics_get_fill_color(void)
 {
-    return graphics.fill_color;
+    return colors[COLOR_FILL].direct;
 }
 
 void graphics_set_fill_color(tq_color_t fill_color)
 {
-    graphics.fill_color = fill_color;
-    graphics.renderer.set_fill_color(graphics.fill_color);
+    decode_color32(colors[COLOR_FILL].normalized, fill_color);
+    colors[COLOR_FILL].direct = fill_color;
 }
 
-int32_t graphics_load_texture_from_file(char const *path)
+int graphics_load_texture(int stream_id)
 {
-    int32_t stream_id = tq_open_file_istream(path);
+    struct image image = image_load(stream_id);
+    input_stream_close(stream_id);
 
-    if (stream_id == -1) {
+    if (!image.pixels) {
         return -1;
     }
 
-    int32_t texture_id = graphics.renderer.load_texture(stream_id);
+    int texture_id = graphics.renderer.create_texture(image.width, image.height, image.channels);
 
-    tq_istream_close(stream_id);
+    if (texture_id == -1) {
+        mem_free(image.pixels);
+        return -1;
+    }
+
+    graphics.renderer.update_texture(texture_id, 0, 0, -1, -1, image.pixels);
+    mem_free(image.pixels);
 
     return texture_id;
 }
 
-int32_t graphics_load_texture_from_memory(uint8_t const *buffer, size_t size)
+int graphics_load_texture_from_file(char const *path)
 {
-    int32_t stream_id = tq_open_memory_istream(buffer, size);
-
-    if (stream_id == -1) {
-        return -1;
-    }
-
-    int32_t texture_id = graphics.renderer.load_texture(stream_id);
-
-    tq_istream_close(stream_id);
-    return texture_id;
+    return graphics_load_texture(open_file_input_stream(path));
 }
 
-void graphics_delete_texture(int32_t texture_handle)
+int graphics_load_texture_from_memory(void const *buffer, size_t size)
 {
-    graphics.renderer.delete_texture(texture_handle);
+    return graphics_load_texture(open_memory_input_stream(buffer, size));
 }
 
-void graphics_get_texture_size(int32_t texture_handle, uint32_t *width, uint32_t *height)
+void graphics_delete_texture(int texture_id)
 {
-    graphics.renderer.get_texture_size(texture_handle, width, height);
+    graphics.renderer.delete_texture(texture_id);
 }
 
-void graphics_draw_texture(int32_t texture_id,
+void graphics_get_texture_size(int texture_id, int *width, int *height)
+{
+    graphics.renderer.get_texture_size(texture_id, width, height);
+}
+
+void graphics_draw_texture(int texture_id,
     float x, float y,
     float w, float h)
 {
-    uint32_t u, v;
-    graphics.renderer.get_texture_size(texture_id, &u, &v);
-
     float data[] = {
         x,      y,      0.0f,   0.0f,
-        x + w,  y,      u,      0.0f,
-        x + w,  y + h,  u,      v,
-        x,      y + h,  0.0f,   v,
+        x + w,  y,      1.0f,   0.0f,
+        x + w,  y + h,  1.0f,   1.0f,
+        x,      y + h,  0.0f,   1.0f,
     };
 
-    graphics.renderer.draw_texture(texture_id, data, 4);
+    graphics.renderer.bind_texture(texture_id);
+    graphics.renderer.draw_textured(RENDERER_MODE_TRIANGLE_FAN, data, 4);
 }
 
-void graphics_draw_texture_fragment(int32_t texture_id,
+void graphics_draw_texture_fragment(int texture_id,
     float x, float y,
     float w, float h,
     float fx, float fy,
     float fw, float fh)
 {
+    int u, v;
+    graphics.renderer.get_texture_size(texture_id, &u, &v);
+
     float data[] = {
-        x,      y,      fx,         fy,
-        x + w,  y,      fx + fw,    fy,
-        x + w,  y + h,  fx + fw,    fy + fh,
-        x,      y + h,  fx,         fy + fh,
+        x,      y,      fx / u,         fy / v,
+        x + w,  y,      (fx + fw) / u,  fy / v,
+        x + w,  y + h,  (fx + fw) / u,  (fy + fh) / v,
+        x,      y + h,  fx / u,         (fy + fh) / v,
     };
 
-    graphics.renderer.draw_texture(texture_id, data, 4);
+    graphics.renderer.bind_texture(texture_id);
+    graphics.renderer.draw_textured(RENDERER_MODE_TRIANGLE_FAN, data, 4);
 }
 
 //--------------------------------------

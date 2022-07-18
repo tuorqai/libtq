@@ -321,7 +321,7 @@ int32_t tq_open_file_istream(char const *path)
     return id;
 }
 
-int32_t tq_open_memory_istream(uint8_t const *buffer, size_t size)
+int32_t tq_open_memory_istream(void const *buffer, size_t size)
 {
     int32_t id = get_istream_id();
 
@@ -343,7 +343,7 @@ int32_t tq_open_memory_istream(uint8_t const *buffer, size_t size)
     istream->close = memory_istream_close;
     istream->repr = memory_istream_repr;
 
-    istream->data.memory.buffer = buffer;
+    istream->data.memory.buffer = (unsigned char *) buffer;
     istream->data.memory.size = size;
     istream->data.memory.position = 0;
     snprintf("%p", TQ_STREAM_NAME_LENGTH, istream->data.memory.repr, (void *) buffer);

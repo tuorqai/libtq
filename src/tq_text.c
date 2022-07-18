@@ -180,7 +180,7 @@ static int cache_glyph(int font_id, unsigned long codepoint, float x_advance, fl
 
         if (atlas->cursor_y >= (atlas->height - atlas->y_padding - bitmap_height)) {
             atlas->height *= 2;
-            renderer->expand_texture(atlas->texture_id, atlas->width, atlas->height);
+            renderer->resize_texture(atlas->texture_id, atlas->width, atlas->height);
         }
 
         atlas->line_height = 0;
@@ -491,8 +491,8 @@ void text_draw_text(int font_id, float x, float y, char const *text)
         quad_count++;
     }
 
-    renderer->draw_text(fonts[font_id].atlas.texture_id,
-        vertex_buffer, index_buffer, 6 * quad_count);
+    renderer->bind_texture(fonts[font_id].atlas.texture_id);
+    renderer->draw_font(vertex_buffer, index_buffer, 6 * quad_count);
 
     hb_buffer_destroy(buffer);
 }

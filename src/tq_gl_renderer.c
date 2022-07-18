@@ -72,19 +72,19 @@ static void check_gl_errors(char const *call, char const *file, unsigned int lin
 //------------------------------------------------------------------------------
 // Types
 
-//--------------------------------------
-// Enum of vertex attributes
-//--------------------------------------
-typedef enum attribute
+/**
+ * Vertex attributes.
+ */
+enum
 {
     ATTRIB_POSITION,
     ATTRIB_COLOR,
     ATTRIB_TEXCOORD,
-} gl_vertex_attrib_t;
+};
 
-//--------------------------------------
-// Vertex attribute bits
-//--------------------------------------
+/**
+ * Vertex attribute bits.
+ */
 enum
 {
     ATTRIB_BIT_POSITION = (1 << ATTRIB_POSITION),
@@ -92,689 +92,176 @@ enum
     ATTRIB_BIT_TEXCOORD = (1 << ATTRIB_TEXCOORD)
 };
 
-//--------------------------------------
-// Enum of vertex shaders
-//--------------------------------------
-typedef enum gl_vertex_shader
+/**
+ * Shader programs.
+ */
+enum
 {
-    VERTEX_SHADER_COMMON,
-    TOTAL_VERTEX_SHADERS,
-} gl_vertex_shader_t;
+    PROGRAM_SOLID,
+    PROGRAM_TEXTURED,
+    PROGRAM_FONT,
+    PROGRAM_COUNT,
+};
 
-//--------------------------------------
-// Enum of fragment shaders
-//--------------------------------------
-typedef enum gl_fragment_shader
-{
-    FRAGMENT_SHADER_SOLID,
-    FRAGMENT_SHADER_TEXTURED,
-    FRAGMENT_SHADER_TEXT,
-    TOTAL_FRAGMENT_SHADERS,
-} gl_fragment_shader_t;
-
-//--------------------------------------
-// Enum of shaders
-//--------------------------------------
-typedef enum gl_shader
-{
-    SHADER_NONE = -1,
-    SHADER_POINT,
-    SHADER_LINE,
-    SHADER_OUTLINE,
-    SHADER_FILL,
-    SHADER_TEXTURE,
-    SHADER_TEXT,
-    TOTAL_SHADERS,
-} gl_shader_t;
-
-//--------------------------------------
-// Enum of uniforms
-//--------------------------------------
+/**
+ * Shader uniforms.
+ */
 typedef enum uniform
 {
     UNIFORM_PROJECTION,
     UNIFORM_MODELVIEW,
-    UNIFORM_COLOR,
-    UNIFORM_TEXTURE,
-    UNIFORM_TEXSIZE,
-    TOTAL_UNIFORMS,
+    UNIFORM_COUNT,
 } gl_uniform_t;
 
-//--------------------------------------
-// Uniform bits
-//--------------------------------------
-enum
+/**
+ * Standard vertex shader source code.
+ */
+static char const *vs_src_standard =
+    "attribute vec2 a_position;\n"
+    "attribute vec4 a_color;\n"
+    "attribute vec2 a_texCoord;\n"
+    "varying vec4 v_color;\n"
+    "varying vec2 v_texCoord;\n"
+    "uniform mat4 u_projection;\n"
+    "uniform mat4 u_modelView;\n"
+    "void main() {\n"
+    "    v_texCoord = a_texCoord;\n"
+    "    v_color = a_color;\n"
+    "    vec4 position = vec4(a_position, 0.0, 1.0);\n"
+    "    gl_Position = u_projection * u_modelView * position;\n"
+    "}\n";
+
+/**
+ * Solid mesh fragment shader source code.
+ */
+static char const *fs_src_solid =
+    "varying vec4 v_color;\n"
+    "void main() {\n"
+    "    gl_FragColor = v_color;\n"
+    "}\n";
+
+/**
+ * Textured mesh fragment shader source code.
+ */
+static char const *fs_src_textured =
+    "varying vec2 v_texCoord;\n"
+    "uniform sampler2D u_texture;\n"
+    "void main() {\n"
+    "    gl_FragColor = texture2D(u_texture, v_texCoord);\n"
+    "}\n";
+
+/**
+ * Font mesh fragment shader source code.
+ */
+static char const *fs_src_font =
+    "varying vec2 v_texCoord;\n"
+    "uniform sampler2D u_texture;\n"
+    "void main() {\n"
+    "    vec4 texColor = texture2D(u_texture, v_texCoord);\n"
+    "    gl_FragColor = vec4(texColor.rgb, texColor.g);\n"
+    "}\n";
+
+//------------------------------------------------------------------------------
+
+struct gl_matrices
 {
-    UNIFORM_BIT_PROJECTION = (1 << UNIFORM_PROJECTION),
-    UNIFORM_BIT_MODELVIEW = (1 << UNIFORM_MODELVIEW),
-    UNIFORM_BIT_COLOR = (1 << UNIFORM_COLOR),
-    UNIFORM_BIT_TEXTURE = (1 << UNIFORM_TEXTURE),
-    UNIFORM_BIT_TEXSIZE = (1 << UNIFORM_TEXSIZE),
+    float proj[16];
+    float mv[16];
 };
 
-//--------------------------------------
-// Vertex shader source code
-//--------------------------------------
-static char const *vertex_shader_source[TOTAL_VERTEX_SHADERS] = {
-    [VERTEX_SHADER_COMMON] =
-        "attribute vec2 a_position;\n"
-        "attribute vec4 a_color;\n"
-        "attribute vec2 a_texCoord;\n"
-        "varying vec4 v_color;\n"
-        "varying vec2 v_texCoord;\n"
-        "uniform mat4 u_projection;\n"
-        "uniform mat4 u_modelView;\n"
-        "void main() {\n"
-        "    v_texCoord = a_texCoord;\n"
-        "    v_color = a_color;\n"
-        "    vec4 position = vec4(a_position, 0.0, 1.0);\n"
-        "    gl_Position = u_projection * u_modelView * position;\n"
-        "}\n",
+struct gl_program
+{
+    GLuint handle;
+    GLint uniforms[UNIFORM_COUNT];
+    long dirty_uniform_bits;
 };
 
-//--------------------------------------
-// Fragment shader source code
-//--------------------------------------
-static char const *fragment_shader_source[TOTAL_FRAGMENT_SHADERS] = {
-    [FRAGMENT_SHADER_SOLID] =
-        "uniform vec4 u_color;\n"
-        "void main() {\n"
-        "    gl_FragColor = u_color;\n"
-        "}\n",
-    [FRAGMENT_SHADER_TEXTURED] =
-        "varying vec2 v_texCoord;\n"
-        "uniform sampler2D u_texture;\n"
-        "uniform vec2 u_texSize;\n"
-        "void main() {\n"
-        "    vec2 texCoord = v_texCoord / u_texSize;\n"
-        "    gl_FragColor = texture2D(u_texture, texCoord);\n"
-        "}\n",
-    [FRAGMENT_SHADER_TEXT] =
-        "varying vec2 v_texCoord;\n"
-        "uniform sampler2D u_texture;\n"
-        "uniform vec4 u_color;\n"
-        "void main() {\n"
-        "    vec4 color = texture2D(u_texture, v_texCoord);\n"
-        "    gl_FragColor = vec4(color.rgb, color.g) * u_color;\n"
-        "}\n",
+struct gl_texture
+{
+    GLuint handle;
+    GLsizei width;
+    GLsizei height;
+    GLenum format;
+    int channels;
 };
 
 //------------------------------------------------------------------------------
 
-//--------------------------------------
-// Structure to hold OpenGL texture metadata
-//--------------------------------------
-typedef struct gl_texture
-{
-    GLuint  id;
-    GLuint  width;
-    GLuint  height;
-    GLenum  format;
-} gl_texture_t;
-
-//--------------------------------------
-// Main structure
-//--------------------------------------
-typedef struct gl_renderer_priv
-{
-    uint32_t            attrib_bits;
-    gl_shader_t         shader_id;
-
-    float               projection[16];
-    float               model_view[16];
-    GLclampf            color[TOTAL_SHADERS][4];
-    int32_t             texture_id[TOTAL_SHADERS];
-
-    gl_texture_t        *textures[TQ_TEXTURE_LIMIT];
-    int32_t             current_texture_index;
-
-    GLuint              vertex_shaders[TOTAL_VERTEX_SHADERS];
-    GLuint              fragment_shaders[TOTAL_FRAGMENT_SHADERS];
-
-    GLuint              shaders[TOTAL_SHADERS];
-    GLint               uniform_locations[TOTAL_SHADERS][TOTAL_UNIFORMS];
-    uint32_t            dirty_bits[TOTAL_SHADERS];
-} gl_renderer_priv_t;
+#define INITIAL_TEXTURE_COUNT       16
 
 //------------------------------------------------------------------------------
-// Module instance
 
-static gl_renderer_priv_t gl;
+static struct gl_matrices matrices;
+
+static struct gl_texture *textures;
+static int texture_count;
+
+static struct gl_program programs[PROGRAM_COUNT];
+
+static int current_vertex_format;
+static int current_program_id;
+
+//------------------------------------------------------------------------------
+
+static void delete_texture(int texture_id);
+
+//------------------------------------------------------------------------------
+
+static int get_texture_id(void)
+{
+    for (int i = 0; i < texture_count; i++) {
+        if (textures[i].handle == 0) {
+            return i;
+        }
+    }
+
+    int next_count = TQ_MAX(texture_count * 2, INITIAL_TEXTURE_COUNT);
+    size_t next_size = sizeof(struct gl_texture) * next_count;
+
+    struct gl_texture *next_array = mem_realloc(textures, next_size);
+
+    if (!next_array) {
+        out_of_memory();
+    }
+
+    int texture_id = texture_count;
+
+    texture_count = next_count;
+    textures = next_array;
+
+    for (int i = texture_id; i < texture_count; i++) {
+        textures[i].handle = 0;
+    }
+
+    return texture_id;
+}
 
 //------------------------------------------------------------------------------
 // Utility functions
 
-//--------------------------------------
-// Convert 24-bit tq_color_t to OpenGL color value.
-//--------------------------------------
-static void decode_rgb(GLclampf *dst, tq_color_t src)
+/**
+ * Get OpenGL render mode.
+ */
+static GLenum conv_mode(int mode)
 {
-    dst[0] = TQ_EXTRACT_R(src) / 255.0f;
-    dst[1] = TQ_EXTRACT_G(src) / 255.0f;
-    dst[2] = TQ_EXTRACT_B(src) / 255.0f;
-}
-
-//--------------------------------------
-// Convert 32-bit tq_color_t to OpenGL color value.
-//--------------------------------------
-static void decode_rgba(GLclampf *dst, tq_color_t src)
-{
-    dst[0] = TQ_EXTRACT_R(src) / 255.0f;
-    dst[1] = TQ_EXTRACT_G(src) / 255.0f;
-    dst[2] = TQ_EXTRACT_B(src) / 255.0f;
-    dst[3] = TQ_EXTRACT_A(src) / 255.0f;
-}
-
-//--------------------------------------
-// Compile a shader unit.
-//--------------------------------------
-static GLuint compile_shader(GLenum type, char const *source)
-{
-    GLuint handle = glCreateShader(type);
-    glShaderSource(handle, 1, &source, NULL);
-    glCompileShader(handle);
-
-    GLint status;
-    glGetShaderiv(handle, GL_COMPILE_STATUS, &status);
-
-    if (status != GL_TRUE) {
-        GLchar buffer[1024];
-        glGetShaderInfoLog(handle, sizeof(buffer), NULL, buffer);
-
-        char const *type_str;
-
-        if (type == GL_VERTEX_SHADER) {
-            type_str = "vertex";
-        } else if (type == GL_FRAGMENT_SHADER) {
-            type_str = "fragment";
-        } else {
-            type_str = "unknown";
-        }
-
-        log_error("** Failed to link GLSL %s shader. **\n", type_str);
-        log_error("%s\n", buffer);
-
-        return 0;
+    switch (mode) {
+    case RENDERER_MODE_POINTS:
+        return GL_POINTS;
+    case RENDERER_MODE_LINE_STRIP:
+        return GL_LINE_STRIP;
+    case RENDERER_MODE_TRIANGLES:
+        return GL_TRIANGLES;
+    case RENDERER_MODE_TRIANGLE_FAN:
+        return GL_TRIANGLE_FAN;
     }
 
-    return handle;
+    return GL_INVALID_ENUM;
 }
 
-//--------------------------------------
-// Build a shader program.
-//--------------------------------------
-static GLuint make_shader(gl_vertex_shader_t vs, gl_fragment_shader_t fs)
-{
-    if (gl.vertex_shaders[vs] == 0) {
-        gl.vertex_shaders[vs] = compile_shader(GL_VERTEX_SHADER, vertex_shader_source[vs]);
-    }
-
-    if (gl.fragment_shaders[fs] == 0) {
-        gl.fragment_shaders[fs] = compile_shader(GL_FRAGMENT_SHADER, fragment_shader_source[fs]);
-    }
-
-    GLuint handle = glCreateProgram();
-
-    glAttachShader(handle, gl.vertex_shaders[vs]);
-    glAttachShader(handle, gl.fragment_shaders[fs]);
-
-    glBindAttribLocation(handle, ATTRIB_POSITION, "a_position");
-    glBindAttribLocation(handle, ATTRIB_COLOR, "a_color");
-    glBindAttribLocation(handle, ATTRIB_TEXCOORD, "a_texCoord");
-
-    glLinkProgram(handle);
-
-    GLint status;
-    glGetProgramiv(handle, GL_LINK_STATUS, &status);
-
-    if (status != GL_TRUE) {
-        GLchar buffer[1024];
-        glGetProgramInfoLog(handle, sizeof(buffer), NULL, buffer);
-
-        log_error("** Failed to link GLSL program. **\n");
-        log_error("%s\n", buffer);
-
-        return 0;
-    }
-
-    return handle;
-}
-
-//--------------------------------------
-// Update current vertex format.
-// Doesn't do anything if the format is the same.
-//--------------------------------------
-static void refresh_attrib_bits(uint32_t attrib_bits)
-{
-    if (gl.attrib_bits == attrib_bits) {
-        return;
-    }
-
-    if (attrib_bits & ATTRIB_BIT_POSITION) {
-        CHECK_GL(glEnableVertexAttribArray(ATTRIB_POSITION));
-    } else {
-        CHECK_GL(glDisableVertexAttribArray(ATTRIB_POSITION));
-    }
-
-    if (attrib_bits & ATTRIB_BIT_COLOR) {
-        CHECK_GL(glEnableVertexAttribArray(ATTRIB_COLOR));
-    } else {
-        CHECK_GL(glDisableVertexAttribArray(ATTRIB_COLOR));
-    }
-
-    if (attrib_bits & ATTRIB_BIT_TEXCOORD) {
-        CHECK_GL(glEnableVertexAttribArray(ATTRIB_TEXCOORD));
-    } else {
-        CHECK_GL(glDisableVertexAttribArray(ATTRIB_TEXCOORD));
-    }
-
-    gl.attrib_bits = attrib_bits;
-}
-
-//--------------------------------------
-// Actually update color for the current shader.
-//--------------------------------------
-static void apply_color(void)
-{
-    int32_t shader_id = gl.shader_id;
-    GLint location = gl.uniform_locations[shader_id][UNIFORM_COLOR];
-    CHECK_GL(glUniform4fv(location, 1, gl.color[shader_id]));
-}
-
-//--------------------------------------
-// Actually update texture for the current shader.
-//--------------------------------------
-static void apply_texture(void)
-{
-    int32_t shader_id = gl.shader_id;
-    int32_t texture_id = gl.texture_id[shader_id];
-
-    CHECK_GL(glActiveTexture(GL_TEXTURE0));
-
-    if (texture_id == -1) {
-        CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
-    } else {
-        CHECK_GL(glBindTexture(GL_TEXTURE_2D, gl.textures[texture_id]->id));
-        
-        GLint u_texsize = gl.uniform_locations[shader_id][UNIFORM_TEXSIZE];
-        CHECK_GL(glUniform2f(u_texsize,
-            (GLfloat) gl.textures[texture_id]->width,
-            (GLfloat) gl.textures[texture_id]->height));
-    }
-
-    GLint u_unit = gl.uniform_locations[shader_id][UNIFORM_TEXTURE];
-    CHECK_GL(glUniform1i(u_unit, 0));
-}
-
-//--------------------------------------
-// Update current shader.
-// Also updates uniform values if there are changed ones.
-// Doesn't do anything if the shader is the same.
-//--------------------------------------
-static void refresh_shader(gl_shader_t shader_id)
-{
-    if (gl.shader_id == shader_id) {
-        return;
-    }
-
-    CHECK_GL(glUseProgram(gl.shaders[shader_id]));
-    gl.shader_id = shader_id;
-
-    if (gl.dirty_bits[shader_id] & UNIFORM_BIT_PROJECTION) {
-        GLint location = gl.uniform_locations[shader_id][UNIFORM_PROJECTION];
-        CHECK_GL(glUniformMatrix4fv(location, 1, GL_TRUE, gl.projection));
-    }
-
-    if (gl.dirty_bits[shader_id] & UNIFORM_BIT_MODELVIEW) {
-        GLint location = gl.uniform_locations[shader_id][UNIFORM_MODELVIEW];
-        CHECK_GL(glUniformMatrix4fv(location, 1, GL_TRUE, gl.model_view));
-    }
-
-    if (gl.dirty_bits[shader_id] & UNIFORM_BIT_COLOR) {
-        apply_color();
-    }
-
-    if (gl.dirty_bits[shader_id] & UNIFORM_BIT_TEXTURE) {
-        apply_texture();
-    }
-
-    gl.dirty_bits[shader_id] = 0;
-}
-
-//--------------------------------------
-// Update current color value for the shader.
-//--------------------------------------
-static void refresh_color(gl_shader_t shader_id, tq_color_t color)
-{
-    decode_rgba(gl.color[shader_id], color);
-
-    if (gl.shader_id == shader_id) {
-        apply_color();
-    } else {
-        gl.dirty_bits[shader_id] |= UNIFORM_BIT_COLOR;
-    }
-}
-
-//--------------------------------------
-// Switch current texture for the given shader.
-//--------------------------------------
-static void refresh_texture(gl_shader_t shader_id, int32_t texture_id)
-{
-    // if (texture_id == gl.texture_id[shader_id]) {
-    //     return;
-    // }
-
-    gl.texture_id[shader_id] = texture_id;
-
-    if (gl.shader_id == shader_id) {
-        apply_texture();
-    } else {
-        gl.dirty_bits[shader_id] |= UNIFORM_BIT_TEXTURE;
-    }
-}
-
-//--------------------------------------
-// Get unused identifier for a texture object.
-//--------------------------------------
-static int32_t get_texture_index()
-{
-    int32_t index = gl.current_texture_index;
-        
-    if (!gl.textures[index]) {
-        gl.current_texture_index = (gl.current_texture_index + 1) % TQ_TEXTURE_LIMIT;
-        return index;
-    }
-
-    for (int32_t id = 0; id < TQ_TEXTURE_LIMIT; id++) {
-        if (gl.textures[index]) {
-            continue;
-        }
-
-        gl.current_texture_index = (id + 1) % TQ_TEXTURE_LIMIT;
-        return id;
-    }
-
-    return -1;
-}
-
-//------------------------------------------------------------------------------
-// Module implementation
-
-//--------------------------------------
-// Initialize OpenGL renderer.
-//--------------------------------------
-static void initialize(void)
-{
-#if !defined(TQ_USE_OPENGL_ES)
-    // Load OpenGL extensions.
-    if (glewInit() != GLEW_OK) {
-        log_error("Failed to initialize GLEW.\n");
-    }
-#endif
-
-    // Set default values.
-    // This is done per field on purpose.
-
-    gl.attrib_bits = 0;
-    gl.shader_id = SHADER_NONE;
-
-    mat4_identity(gl.projection);
-    mat4_identity(gl.model_view);
-    memset(gl.color, 255, sizeof(gl.color));
-    memset(gl.texture_id, 255, sizeof(gl.texture_id));
-
-    memset(gl.textures, 0, sizeof(gl.textures));
-    gl.current_texture_index = 0;
-
-    memset(gl.vertex_shaders, 0, sizeof(gl.vertex_shaders));
-    memset(gl.fragment_shaders, 0, sizeof(gl.fragment_shaders));
-
-    memset(gl.shaders, 0, sizeof(gl.shaders));
-    memset(gl.uniform_locations, 0, sizeof(gl.uniform_locations));
-    memset(gl.dirty_bits, 255, sizeof(gl.dirty_bits));
-
-    // Compile and link shader programs.
-    // There is a single shader program for each "brush".
-
-    int map[TOTAL_SHADERS][2] = {
-        [SHADER_POINT]   = { VERTEX_SHADER_COMMON, FRAGMENT_SHADER_SOLID },
-        [SHADER_LINE]    = { VERTEX_SHADER_COMMON, FRAGMENT_SHADER_SOLID },
-        [SHADER_OUTLINE] = { VERTEX_SHADER_COMMON, FRAGMENT_SHADER_SOLID },
-        [SHADER_FILL]    = { VERTEX_SHADER_COMMON, FRAGMENT_SHADER_SOLID },
-        [SHADER_TEXTURE] = { VERTEX_SHADER_COMMON, FRAGMENT_SHADER_TEXTURED },
-        [SHADER_TEXT]    = { VERTEX_SHADER_COMMON, FRAGMENT_SHADER_TEXT },
-    };
-
-    for (int shader_id = 0; shader_id < TOTAL_SHADERS; shader_id++) {
-        gl_vertex_shader_t vs = map[shader_id][0];
-        gl_fragment_shader_t fs = map[shader_id][1];
-
-        gl.shaders[shader_id] = make_shader(vs, fs);
-
-        char const *names[TOTAL_UNIFORMS] = {
-            [UNIFORM_PROJECTION]    = "u_projection",
-            [UNIFORM_MODELVIEW]     = "u_modelView",
-            [UNIFORM_COLOR]         = "u_color",
-            [UNIFORM_TEXTURE]       = "u_texture",
-            [UNIFORM_TEXSIZE]       = "u_texSize",
-        };
-
-        for (int uniform = 0; uniform < TOTAL_UNIFORMS; uniform++) {
-            gl.uniform_locations[shader_id][uniform]
-                = glGetUniformLocation(gl.shaders[shader_id], names[uniform]);
-        }
-    }
-
-    // Shaders units are not needed by now.
-
-    for (int vs = 0; vs < TOTAL_VERTEX_SHADERS; vs++) {
-        CHECK_GL(glDeleteShader(gl.vertex_shaders[vs]));
-        gl.vertex_shaders[vs] = 0;
-    }
-
-    for (int fs = 0; fs < TOTAL_FRAGMENT_SHADERS; fs++) {
-        CHECK_GL(glDeleteShader(gl.fragment_shaders[fs]));
-        gl.fragment_shaders[fs] = 0;
-    }
-
-    // Reset OpenGL state.
-    glEnable(GL_BLEND);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-
-#if !defined(TQ_USE_OPENGL_ES)
-    glEnable(GL_MULTISAMPLE);
-#endif
-
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-    // Initialization is done.
-    log_info("OpenGL renderer is initialized.\n");
-    log_info("[  GL_VENDOR] %s\n", glGetString(GL_VENDOR));
-    log_info("[GL_RENDERER] %s\n", glGetString(GL_RENDERER));
-    log_info("[ GL_VERSION] %s\n", glGetString(GL_VERSION));
-}
-
-//--------------------------------------
-// Terminate OpenGL renderer.
-//--------------------------------------
-static void terminate(void)
-{
-    // Delete all shader programs.
-    for (int shader = 0; shader < TOTAL_SHADERS; shader++) {
-        CHECK_GL(glDeleteProgram(gl.shaders[shader]));
-    }
-
-    // Free all textures that are still in use.
-    for (int id = 0; id < TQ_TEXTURE_LIMIT; id++) {
-        if (gl.textures[id]) {
-            CHECK_GL(glDeleteTextures(1, &gl.textures[id]->id));
-            free(gl.textures[id]);
-        }
-    }
-}
-
-//--------------------------------------
-// Called at the end of a frame.
-//--------------------------------------
-static void process(void)
-{
-    // Is it even needed?
-    CHECK_GL(glFlush());
-}
-
-//--------------------------------------
-// Clear background.
-//--------------------------------------
-static void clear(void)
-{
-    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
-}
-
-//--------------------------------------
-// Set background color.
-//--------------------------------------
-static void set_clear_color(tq_color_t clear_color)
-{
-    GLclampf value[3];
-    decode_rgb(value, clear_color);
-    CHECK_GL(glClearColor(value[0], value[1], value[2], 1.0f));
-}
-
-//--------------------------------------
-// Update viewport.
-//--------------------------------------
-static void update_viewport(int x, int y, int w, int h)
-{
-    CHECK_GL(glViewport(x, y, w, h));
-}
-
-//--------------------------------------
-// Update projection matrix.
-//--------------------------------------
-static void update_projection(float const *mat4)
-{
-    mat4_copy(gl.projection, mat4);
-
-    for (int shader_id = 0; shader_id < TOTAL_SHADERS; shader_id++) {
-        GLint location = gl.uniform_locations[shader_id][UNIFORM_PROJECTION];
-
-        if (shader_id == gl.shader_id) {
-            CHECK_GL(glUniformMatrix4fv(location, 1, GL_TRUE, gl.projection));
-        } else {
-            gl.dirty_bits[shader_id] |= (1 << UNIFORM_PROJECTION);
-        }
-    }
-}
-
-//--------------------------------------
-// Update model-view matrix.
-//--------------------------------------
-static void update_model_view(float const *mat3)
-{
-    // (Note: the "view" matrix corresponds to the projection matrix,
-    //  and the "transform" one roughly corresponds to the model-view matrix
-    //  of classic OpenGL).
-    // (Note 2: OpenGL's own matrices are not used here, since I handle
-    //  this in the "tq::graphics" module independently of renderer).
-
-    mat4_expand(gl.model_view, mat3);
-
-    for (int shader_id = 0; shader_id < TOTAL_SHADERS; shader_id++) {
-        GLint location = gl.uniform_locations[shader_id][UNIFORM_MODELVIEW];
-
-        if (shader_id == gl.shader_id) {
-            CHECK_GL(glUniformMatrix4fv(location, 1, GL_TRUE, gl.model_view));
-        } else {
-            gl.dirty_bits[shader_id] |= UNIFORM_BIT_MODELVIEW;
-        }
-    }
-}
-
-//--------------------------------------
-// Draw array of vertices as points.
-//--------------------------------------
-static void draw_points(float const *data, uint32_t num_vertices)
-{
-    refresh_attrib_bits(ATTRIB_BIT_POSITION);
-    refresh_shader(SHADER_POINT);
-
-    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0, data));
-    CHECK_GL(glDrawArrays(GL_POINTS, 0, num_vertices));
-}
-
-//--------------------------------------
-// Draw array of vertices as lines.
-//--------------------------------------
-static void draw_lines(float const *data, uint32_t num_vertices)
-{
-    refresh_attrib_bits(ATTRIB_BIT_POSITION);
-    refresh_shader(SHADER_LINE);
-
-    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0, data));
-    CHECK_GL(glDrawArrays(GL_LINES, 0, num_vertices));
-}
-
-//--------------------------------------
-// Draw array of vertices as a shape outline.
-//--------------------------------------
-static void draw_outline(float const *data, uint32_t num_vertices)
-{
-    refresh_attrib_bits(ATTRIB_BIT_POSITION);
-    refresh_shader(SHADER_OUTLINE);
-
-    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0, data));
-    CHECK_GL(glDrawArrays(GL_LINE_LOOP, 0, num_vertices));
-}
-
-//--------------------------------------
-// Draw array of vertices as a shape fill.
-//--------------------------------------
-static void draw_fill(float const *data, uint32_t num_vertices)
-{
-    refresh_attrib_bits(ATTRIB_BIT_POSITION);
-    refresh_shader(SHADER_FILL);
-
-    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0, data));
-    CHECK_GL(glDrawArrays(GL_TRIANGLE_FAN, 0, num_vertices));
-}
-
-//--------------------------------------
-// Set color of points.
-//--------------------------------------
-static void set_point_color(tq_color_t point_color)
-{
-    refresh_color(SHADER_POINT, point_color);
-}
-
-//--------------------------------------
-// Set color of lines.
-//--------------------------------------
-static void set_line_color(tq_color_t line_color)
-{
-    refresh_color(SHADER_LINE, line_color);
-}
-
-//--------------------------------------
-// Set color of outlines.
-//--------------------------------------
-static void set_outline_color(tq_color_t outline_color)
-{
-    refresh_color(SHADER_OUTLINE, outline_color);
-}
-
-//--------------------------------------
-// Set fill color.
-//--------------------------------------
-static void set_fill_color(tq_color_t fill_color)
-{
-    refresh_color(SHADER_FILL, fill_color);
-    refresh_color(SHADER_TEXT, fill_color);
-}
-
-static GLenum get_texture_format(int channels)
+/**
+ * Get OpenGL texture format.
+ */
+static GLenum conv_texture_format(int channels)
 {
     switch (channels) {
     case 1:
@@ -790,24 +277,308 @@ static GLenum get_texture_format(int channels)
     return GL_INVALID_ENUM;
 }
 
-static int32_t create_texture(int width, int height, int channels)
+/**
+ * Compile GLSL shader.
+ */
+static GLuint compile_shader(GLenum type, char const *source)
 {
-    int32_t texture_id = get_texture_index();
+    GLuint handle = glCreateShader(type);
+    CHECK_GL(glShaderSource(handle, 1, &source, NULL));
+    CHECK_GL(glCompileShader(handle));
 
-    if (texture_id == -1) {
+    GLint success;
+    CHECK_GL(glGetShaderiv(handle, GL_COMPILE_STATUS, &success));
+
+    if (!success) {
+        GLchar buffer[1024];
+        CHECK_GL(glGetShaderInfoLog(handle, sizeof(buffer), NULL, buffer));
+
+        char const *type_str;
+
+        if (type == GL_VERTEX_SHADER) {
+            type_str = "vertex";
+        } else if (type == GL_FRAGMENT_SHADER) {
+            type_str = "fragment";
+        } else {
+            type_str = "unknown";
+        }
+
+        log_error("** Failed to compile GLSL %s shader. **\n", type_str);
+        log_error("%s\n", buffer);
+
+        return 0;
+    }
+
+    return handle;
+}
+
+/**
+ * Assemble GLSL shader program.
+ */
+static GLuint link_program(GLuint vs, GLuint fs)
+{
+    GLuint handle = glCreateProgram();
+
+    CHECK_GL(glAttachShader(handle, vs));
+    CHECK_GL(glAttachShader(handle, fs));
+
+    CHECK_GL(glBindAttribLocation(handle, ATTRIB_POSITION, "a_position"));
+    CHECK_GL(glBindAttribLocation(handle, ATTRIB_COLOR, "a_color"));
+    CHECK_GL(glBindAttribLocation(handle, ATTRIB_TEXCOORD, "a_texCoord"));
+
+    CHECK_GL(glLinkProgram(handle));
+
+    GLint success;
+    CHECK_GL(glGetProgramiv(handle, GL_LINK_STATUS, &success));
+
+    if (!success) {
+        GLchar buffer[1024];
+        CHECK_GL(glGetProgramInfoLog(handle, sizeof(buffer), NULL, buffer));
+
+        log_error("** Failed to link GLSL program. **\n");
+        log_error("%s\n", buffer);
+
+        return 0;
+    }
+
+    return handle;
+}
+
+/**
+ * Update current vertex format.
+ * Doesn't do anything if the format is the same.
+ */
+static void set_current_vertex_format(int vertex_format)
+{
+    if (current_vertex_format == vertex_format) {
+        return;
+    }
+
+    if (vertex_format & ATTRIB_BIT_POSITION) {
+        CHECK_GL(glEnableVertexAttribArray(ATTRIB_POSITION));
+    } else {
+        CHECK_GL(glDisableVertexAttribArray(ATTRIB_POSITION));
+    }
+
+    if (vertex_format & ATTRIB_BIT_COLOR) {
+        CHECK_GL(glEnableVertexAttribArray(ATTRIB_COLOR));
+    } else {
+        CHECK_GL(glDisableVertexAttribArray(ATTRIB_COLOR));
+    }
+
+    if (vertex_format & ATTRIB_BIT_TEXCOORD) {
+        CHECK_GL(glEnableVertexAttribArray(ATTRIB_TEXCOORD));
+    } else {
+        CHECK_GL(glDisableVertexAttribArray(ATTRIB_TEXCOORD));
+    }
+
+    current_vertex_format = vertex_format;
+}
+
+/**
+ * Updates all uniforms for the current shader if needed.
+ */
+static void apply_uniforms(void)
+{
+    long bits = programs[current_program_id].dirty_uniform_bits;
+    GLint *location = programs[current_program_id].uniforms;
+
+    if (bits & (1 << UNIFORM_PROJECTION)) {
+        CHECK_GL(glUniformMatrix4fv(location[UNIFORM_PROJECTION], 1, GL_TRUE, matrices.proj));
+    }
+
+    if (bits & (1 << UNIFORM_MODELVIEW)) {
+        CHECK_GL(glUniformMatrix4fv(location[UNIFORM_MODELVIEW], 1, GL_TRUE, matrices.mv));
+    }
+
+    programs[current_program_id].dirty_uniform_bits = 0;
+}
+
+/**
+ * Switch to different shader.
+ */
+static void set_current_program_id(int program_id)
+{
+    if (current_program_id == program_id) {
+        return;
+    }
+
+    current_program_id = program_id;
+
+    if (program_id == -1) {
+        CHECK_GL(glUseProgram(0));
+        return;
+    }
+
+    CHECK_GL(glUseProgram(programs[program_id].handle));
+
+    if (programs[program_id].dirty_uniform_bits) {
+        apply_uniforms();
+    }
+}
+
+/**
+ * Mark uniform for change.
+ * This is needed so we don't have to update uniforms
+ * for each shader. Only when shader is activated, the pending
+ * uniform changes will take effect.
+ */
+static void set_dirty_uniform(int program_id, int uniform_id)
+{
+    programs[program_id].dirty_uniform_bits |= (1 << uniform_id);
+
+    if (current_program_id == program_id) {
+        apply_uniforms();
+    }
+}
+
+//------------------------------------------------------------------------------
+// Module implementation
+
+//--------------------------------------
+// Initialize OpenGL renderer.
+//--------------------------------------
+static void initialize(void)
+{
+    #ifndef TQ_USE_OPENGL_ES
+        // Load OpenGL extensions.
+        if (glewInit() != GLEW_OK) {
+            log_error("Failed to initialize GLEW.\n");
+        }
+    #endif
+
+    mat4_identity(matrices.proj);
+    mat4_identity(matrices.mv);
+
+    textures = NULL;
+    texture_count = 0;
+
+    current_vertex_format = 0;
+    current_program_id = -1;
+
+    GLuint vs_standard = compile_shader(GL_VERTEX_SHADER, vs_src_standard);
+    GLuint fs_solid = compile_shader(GL_FRAGMENT_SHADER, fs_src_solid);
+    GLuint fs_textured = compile_shader(GL_FRAGMENT_SHADER, fs_src_textured);
+    GLuint fs_font = compile_shader(GL_FRAGMENT_SHADER, fs_src_font);
+
+    programs[PROGRAM_SOLID].handle = link_program(vs_standard, fs_solid);
+    programs[PROGRAM_TEXTURED].handle = link_program(vs_standard, fs_textured);
+    programs[PROGRAM_FONT].handle = link_program(vs_standard, fs_font);
+
+    for (int i = 0; i < PROGRAM_COUNT; i++) {
+        programs[i].uniforms[UNIFORM_PROJECTION] = glGetUniformLocation(programs[i].handle, "u_projection");
+        programs[i].uniforms[UNIFORM_MODELVIEW] = glGetUniformLocation(programs[i].handle, "u_modelView");
+        programs[i].dirty_uniform_bits = 0xFFFF;
+    }
+
+    glDeleteShader(vs_standard);
+    glDeleteShader(fs_solid);
+    glDeleteShader(fs_textured);
+    glDeleteShader(fs_font);
+
+    // Reset OpenGL state.
+    glEnable(GL_BLEND);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+
+#if !defined(TQ_USE_OPENGL_ES)
+    glEnable(GL_MULTISAMPLE);
+#endif
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    // Initialization is done.
+    log_info("OpenGL renderer initialized.\n");
+    log_info("GL_VENDOR: %s\n", glGetString(GL_VENDOR));
+    log_info("GL_RENDERER: %s\n", glGetString(GL_RENDERER));
+    log_info("GL_VERSION: %s\n", glGetString(GL_VERSION));
+}
+
+//--------------------------------------
+// Terminate OpenGL renderer.
+//--------------------------------------
+static void terminate(void)
+{
+    // Delete all shader programs.
+    for (int i = 0; i < PROGRAM_COUNT; i++) {
+        CHECK_GL(glDeleteProgram(programs[i].handle));
+    }
+
+    // Free all textures that are still in use.
+    for (int i = 0; i < texture_count; i++) {
+        delete_texture(i);
+    }
+
+    mem_free(textures);
+}
+
+//--------------------------------------
+// Called at the end of a frame.
+//--------------------------------------
+static void process(void)
+{
+    // Is it even needed?
+    CHECK_GL(glFlush());
+}
+
+//--------------------------------------
+// Update viewport.
+//--------------------------------------
+static void update_viewport(int x, int y, int w, int h)
+{
+    CHECK_GL(glViewport(x, y, w, h));
+}
+
+//--------------------------------------
+// Update projection matrix.
+//--------------------------------------
+static void update_projection(float const *mat4)
+{
+    mat4_copy(matrices.proj, mat4);
+
+    for (int i = 0; i < PROGRAM_COUNT; i++) {
+        set_dirty_uniform(i, UNIFORM_PROJECTION);
+    }
+}
+
+//--------------------------------------
+// Update model-view matrix.
+//--------------------------------------
+static void update_model_view(float const *mat3)
+{
+    // (Note: the "view" matrix corresponds to the projection matrix,
+    //  and the "transform" one roughly corresponds to the model-view matrix
+    //  of classic OpenGL).
+    // (Note 2: OpenGL's own matrices are not used here, since I handle
+    //  this in the "tq::graphics" module independently of renderer).
+
+    mat4_expand(matrices.mv, mat3);
+
+    for (int i = 0; i < PROGRAM_COUNT; i++) {
+        set_dirty_uniform(i, UNIFORM_MODELVIEW);
+    }
+}
+
+/**
+ * Generate empty texture with given parameters.
+ */
+static int create_texture(int width, int height, int channels)
+{
+    if ((width < 0) || (height < 0)) {
         return -1;
     }
 
-    GLenum format = get_texture_format(channels);
-
-    if (format == GL_INVALID_ENUM) {
+    if ((channels < 1) || (channels > 4)) {
         return -1;
     }
 
-    gl.textures[texture_id] = mem_malloc(sizeof(gl_texture_t));
+    GLuint handle = 0;
+    GLenum format = conv_texture_format(channels);
 
-    CHECK_GL(glGenTextures(1, &gl.textures[texture_id]->id));
-    CHECK_GL(glBindTexture(GL_TEXTURE_2D, gl.textures[texture_id]->id));
+    CHECK_GL(glGenTextures(1, &handle));
+    CHECK_GL(glBindTexture(GL_TEXTURE_2D, handle));
 
     CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
     CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
@@ -815,171 +586,126 @@ static int32_t create_texture(int width, int height, int channels)
     CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, format,
         width, height, 0, format,
         GL_UNSIGNED_BYTE, NULL));
-    
-    gl.textures[texture_id]->width = width;
-    gl.textures[texture_id]->height = height;
-    gl.textures[texture_id]->format = format;
 
-    gl.texture_id[gl.shader_id] = -1;
-    gl.shader_id = -1;
+    int texture_id = get_texture_id();
+
+    textures[texture_id].handle = handle;
+    textures[texture_id].width = width;
+    textures[texture_id].height = height;
+    textures[texture_id].format = format;
+    textures[texture_id].channels = channels;
 
     return texture_id;
 }
 
 /**
- * Generate texture from raw pixel data.
+ * Delete a texture
  */
-static int32_t create_texture_from_image(tq_image_t const *image)
+static void delete_texture(int texture_id)
 {
-    GLenum format;
-
-    switch (image->pixel_format) {
-    case TQ_PIXEL_FORMAT_GRAYSCALE:
-        format = GL_LUMINANCE;
-        break;
-    case TQ_PIXEL_FORMAT_GRAYSCALE_ALPHA:
-        format = GL_LUMINANCE_ALPHA;
-        break;
-    case TQ_PIXEL_FORMAT_RGB:
-        format = GL_RGB;
-        break;
-    case TQ_PIXEL_FORMAT_RGBA:
-        format = GL_RGBA;
-        break;
-    default:
-        format = GL_INVALID_ENUM;
-        break;
+    if (texture_id < 0 || texture_id > texture_count || textures[texture_id].handle == 0) {
+        return;
     }
 
-    // Current texture state is going to be altered.
-    // We have to reset these values so on the next
-    // attempt to draw something the state will be forcibly
-    // refreshed and the correct texture will be used.
-    gl.texture_id[gl.shader_id] = -1;
-    gl.shader_id = -1;
-
-    GLuint id;
-    CHECK_GL(glGenTextures(1, &id));
-    CHECK_GL(glBindTexture(GL_TEXTURE_2D, id));
-
-    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-
-    CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, format,
-        image->width, image->height, 0, format,
-        GL_UNSIGNED_BYTE, image->pixels));
-
-    int32_t index = get_texture_index();
-
-    gl.textures[index] = malloc(sizeof(gl_texture_t));
-    gl.textures[index]->id = id;
-    gl.textures[index]->width = image->width;
-    gl.textures[index]->height = image->height;
-    gl.textures[index]->format = format;
-
-    return index;
+    CHECK_GL(glDeleteTextures(1, &textures[texture_id].handle));
+    textures[texture_id].handle = 0;
 }
 
-//--------------------------------------
-// Load a texture from an abstract stream.
-//--------------------------------------
-static int32_t load_texture(int32_t stream_id)
+static void get_texture_size(int texture_id, int *width, int *height)
 {
-    tq_image_t *image = tq_image_load(stream_id);
-
-    if (image == NULL) {
-        return -1;
+    if (texture_id < 0 || texture_id > texture_count || textures[texture_id].handle == 0) {
+        *width = -1;
+        *height = -1;
+    } else {
+        *width = textures[texture_id].width;
+        *height = textures[texture_id].height;
     }
-
-    int32_t texture_id = create_texture_from_image(image);
-
-    tq_image_destroy(image);
-
-    return texture_id;
 }
 
-//--------------------------------------
-// Delete a texture
-//--------------------------------------
-static void delete_texture(int32_t texture_id)
+static void update_texture(int texture_id, int x_offset, int y_offset, int width, int height, unsigned char *pixels)
 {
-    CHECK_GL(glDeleteTextures(1, &gl.textures[texture_id]->id));
-    free(gl.textures[texture_id]);
-    gl.textures[texture_id] = NULL;
+    glBindTexture(GL_TEXTURE_2D, textures[texture_id].handle);
+
+    if (x_offset == 0 && y_offset == 0 && width == -1 && height == -1) {
+        glTexImage2D(GL_TEXTURE_2D, 0, textures[texture_id].format,
+            textures[texture_id].width, textures[texture_id].height, 0,
+            textures[texture_id].format, GL_UNSIGNED_BYTE, pixels);
+    } else {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x_offset, y_offset, width, height,
+            textures[texture_id].format, GL_UNSIGNED_BYTE, pixels);
+    }
 }
 
-//--------------------------------------
-// Get size of a texture
-//--------------------------------------
-static void get_texture_size(int32_t texture_id, uint32_t *width, uint32_t *height)
+static void resize_texture(int texture_id, int new_width, int new_height)
 {
-    *width = gl.textures[texture_id]->width;
-    *height = gl.textures[texture_id]->height;
-}
+    int old_width = textures[texture_id].width;
+    int old_height = textures[texture_id].height;
 
-static void update_texture(int32_t texture_id, int x_offset, int y_offset,
-    int width, int height, unsigned char *pixels)
-{
-    glBindTexture(GL_TEXTURE_2D, gl.textures[texture_id]->id);
-    glTexSubImage2D(GL_TEXTURE_2D, 0,
-        x_offset, y_offset, width, height,
-        gl.textures[texture_id]->format,
-        GL_UNSIGNED_BYTE, pixels);
-    
-    gl.texture_id[gl.shader_id] = -1;
-    gl.shader_id = -1;
-}
-
-static void expand_texture(int32_t texture_id, int width, int height)
-{
-    unsigned char *pixels = mem_malloc(width * height * 4);
+    unsigned char *pixels = mem_malloc(textures[texture_id].channels *
+        old_width * old_height);
 
     if (!pixels) {
         out_of_memory();
     }
 
-    glBindTexture(GL_TEXTURE_2D, gl.textures[texture_id]->id);
-    glGetTexImage(GL_TEXTURE_2D, 0, gl.textures[texture_id]->format, GL_UNSIGNED_BYTE, pixels);
+    glBindTexture(GL_TEXTURE_2D, textures[texture_id].handle);
+    glGetTexImage(GL_TEXTURE_2D, 0, textures[texture_id].format, GL_UNSIGNED_BYTE, pixels);
 
     glTexImage2D(GL_TEXTURE_2D, 0,
-        gl.textures[texture_id]->format, width, height, 0,
-        gl.textures[texture_id]->format, GL_UNSIGNED_BYTE, NULL);
+        textures[texture_id].format, new_width, new_height, 0,
+        textures[texture_id].format, GL_UNSIGNED_BYTE, NULL);
 
-    glTexSubImage2D(GL_TEXTURE_2D, 0,
-        0, 0, gl.textures[texture_id]->width, gl.textures[texture_id]->height,
-        gl.textures[texture_id]->format, GL_UNSIGNED_BYTE, pixels);
+    if (new_width >= old_width && new_height >= old_height) {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, old_width, old_height,
+            textures[texture_id].format, GL_UNSIGNED_BYTE, pixels);
+    }
 
-    gl.textures[texture_id]->width = width;
-    gl.textures[texture_id]->height = height;
+    textures[texture_id].width = new_width;
+    textures[texture_id].height = new_height;
 
     mem_free(pixels);
-
-    gl.texture_id[gl.shader_id] = -1;
-    gl.shader_id = -1;
 }
 
-//--------------------------------------
-// Draw textured rectangle
-//--------------------------------------
-static void draw_texture(int32_t texture_id, float const *data, uint32_t num_vertices)
+static void bind_texture(int texture_id)
 {
-    refresh_attrib_bits(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
-    refresh_shader(SHADER_TEXTURE);
-    refresh_texture(SHADER_TEXTURE, texture_id);
+    if (texture_id == -1) {
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
+        return;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, textures[texture_id].handle);
+}
+
+static void clear(float r, float g, float b)
+{
+    CHECK_GL(glClearColor(r, g, b, 1.0f));
+    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
+}
+
+static void draw_solid(int mode, float const *data, int num_vertices)
+{
+    set_current_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_COLOR);
+    set_current_program_id(PROGRAM_SOLID);
+
+    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 6, data + 0));
+    CHECK_GL(glVertexAttribPointer(ATTRIB_COLOR, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 6, data + 2));
+    CHECK_GL(glDrawArrays(conv_mode(mode), 0, num_vertices));
+}
+
+static void draw_textured(int mode, float const *data, int num_vertices)
+{
+    set_current_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
+    set_current_program_id(PROGRAM_TEXTURED);
 
     CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 0));
     CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 2));
-    CHECK_GL(glDrawArrays(GL_TRIANGLE_FAN, 0, num_vertices));
+    CHECK_GL(glDrawArrays(conv_mode(mode), 0, num_vertices));
 }
 
-/**
- * Draw text mesh.
- */
-static void draw_text(int texture_id, float const *data, unsigned int const *indices, int num_indices)
+static void draw_font(float const *data, unsigned int const *indices, int num_indices)
 {
-    refresh_attrib_bits(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
-    refresh_shader(SHADER_TEXT);
-    refresh_texture(SHADER_TEXT, texture_id);
+    set_current_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
+    set_current_program_id(PROGRAM_FONT);
 
     CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 0));
     CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 2));
@@ -995,37 +721,25 @@ static void draw_text(int texture_id, float const *data, unsigned int const *ind
 void tq_construct_gl_renderer(tq_renderer_t *renderer)
 {
     *renderer = (tq_renderer_t) {
-        .initialize         = initialize,
-        .terminate          = terminate,
-        .process            = process,
+        .initialize = initialize,
+        .terminate = terminate,
+        .process = process,
         
-        .clear              = clear,
-        .set_clear_color    = set_clear_color,
+        .update_viewport = update_viewport,
+        .update_projection = update_projection,
+        .update_model_view = update_model_view,
 
-        .update_viewport    = update_viewport,
-        .update_projection  = update_projection,
-        .update_model_view  = update_model_view,
+        .create_texture = create_texture,
+        .delete_texture = delete_texture,
+        .get_texture_size = get_texture_size,
+        .update_texture = update_texture,
+        .resize_texture = resize_texture,
+        .bind_texture = bind_texture,
 
-        .draw_points        = draw_points,
-        .draw_lines         = draw_lines,
-        .draw_outline       = draw_outline,
-        .draw_fill          = draw_fill,
-
-        .set_point_color    = set_point_color,
-        .set_line_color     = set_line_color,
-        .set_outline_color  = set_outline_color,
-        .set_fill_color     = set_fill_color,
-
-        .create_texture     = create_texture,
-        .create_texture_from_image = create_texture_from_image,
-        .load_texture       = load_texture,
-        .delete_texture     = delete_texture,
-        .get_texture_size   = get_texture_size,
-        .update_texture     = update_texture,
-        .expand_texture     = expand_texture,
-        .draw_texture       = draw_texture,
-
-        .draw_text          = draw_text,
+        .clear = clear,
+        .draw_solid = draw_solid,
+        .draw_textured = draw_textured,
+        .draw_font = draw_font,
     };
 }
 

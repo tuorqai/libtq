@@ -105,25 +105,20 @@ tq_color_t graphics_get_fill_color(void);
 // [tq::graphics::set_fill_color]
 void graphics_set_fill_color(tq_color_t fill_color);
 
-// [tq::graphics::load_texture_from_file]
-int32_t graphics_load_texture_from_file(char const *path);
+int graphics_load_texture(int stream_id);
+int graphics_load_texture_from_file(char const *path);
+int graphics_load_texture_from_memory(void const *buffer, size_t length);
+void graphics_delete_texture(int texture_id);
 
-// [tq::graphics::load_texture_from_memory]
-int32_t graphics_load_texture_from_memory(uint8_t const *buffer, size_t length);
-
-// [tq::graphics::delete_texture]
-void graphics_delete_texture(int32_t texture_id);
-
-// [tq::graphics::get_texture_size]
-void graphics_get_texture_size(int32_t texture_id, uint32_t *width, uint32_t *height);
+void graphics_get_texture_size(int texture_id, int *width, int *height);
 
 // [tq::graphics::draw_texture]
-void graphics_draw_texture(int32_t texture_id,
+void graphics_draw_texture(int texture_id,
     float x, float y,
     float w, float h);
 
 // [tq::graphics::draw_texture_fragment]
-void graphics_draw_texture_fragment(int32_t texture_id,
+void graphics_draw_texture_fragment(int texture_id,
     float x, float y,
     float w, float h,
     float fx, float fy,
@@ -134,39 +129,35 @@ void tq_graphics_on_display_resized(uint32_t width, uint32_t height);
 
 //------------------------------------------------------------------------------
 
+enum
+{
+    RENDERER_MODE_POINTS,
+    RENDERER_MODE_LINE_STRIP,
+    RENDERER_MODE_TRIANGLES,
+    RENDERER_MODE_TRIANGLE_FAN,
+};
+
 typedef struct renderer_impl
 {
     void        (*initialize)(void);
     void        (*terminate)(void);
     void        (*process)(void);
 
-    void        (*clear)(void);
-    void        (*set_clear_color)(tq_color_t);
-
     void        (*update_viewport)(int x, int y, int w, int h);
     void        (*update_projection)(float const *mat4);
     void        (*update_model_view)(float const *mat3);
 
-    void        (*draw_points)(float const *, unsigned int);
-    void        (*draw_lines)(float const *, unsigned int);
-    void        (*draw_outline)(float const *, unsigned int);
-    void        (*draw_fill)(float const *, unsigned int);
-
-    void        (*set_point_color)(tq_color_t);
-    void        (*set_line_color)(tq_color_t);
-    void        (*set_outline_color)(tq_color_t);
-    void        (*set_fill_color)(tq_color_t);
-
     int32_t     (*create_texture)(int width, int height, int channels);
-    int32_t     (*create_texture_from_image)(tq_image_t const *image);
-    int32_t     (*load_texture)(int32_t stream_id);
     void        (*delete_texture)(int32_t texture_id);
-    void        (*get_texture_size)(int32_t texture_id, uint32_t *width, uint32_t *height);
-    void        (*update_texture)(int32_t texture_id, int x_offset, int y_offset, int width, int height, unsigned char *pixels);
-    void        (*expand_texture)(int32_t texture_id, int width, int height);
-    void        (*draw_texture)(int32_t texture_id, float const *data, uint32_t num_vertices);
+    void        (*get_texture_size)(int texture_id, int *width, int *height);
+    void        (*update_texture)(int texture_id, int x_offset, int y_offset, int width, int height, unsigned char *pixels);
+    void        (*resize_texture)(int texture_id, int new_width, int new_height);
+    void        (*bind_texture)(int texture_id);
 
-    void        (*draw_text)(int texture_id, float const *data, unsigned int const *indices, int num_indices);
+    void (*clear)(float r, float g, float b);
+    void (*draw_solid)(int mode, float const *data, int num_vertices);
+    void (*draw_textured)(int mode, float const *data, int num_vertices);
+    void (*draw_font)(float const *data, unsigned int const *indices, int num_indices);
 } tq_renderer_t;
 
 //------------------------------------------------------------------------------

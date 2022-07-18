@@ -71,7 +71,7 @@ int32_t tq_open_file_istream(char const *path);
  * The buffer shouldn't be freed before the stream
  * is closed.
  */
-int32_t tq_open_memory_istream(uint8_t const *buffer, size_t size);
+int32_t tq_open_memory_istream(void const *buffer, size_t size);
 
 #define input_stream_read               tq_istream_read
 #define input_stream_seek               tq_istream_seek
