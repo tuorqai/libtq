@@ -140,20 +140,20 @@ enum
 
 struct renderer_impl
 {
-    void        (*initialize)(void);
-    void        (*terminate)(void);
-    void        (*process)(void);
+    void (*initialize)(void);
+    void (*terminate)(void);
+    void (*process)(void);
 
-    void        (*update_viewport)(int x, int y, int w, int h);
-    void        (*update_projection)(float const *mat4);
-    void        (*update_model_view)(float const *mat3);
+    void (*update_viewport)(int x, int y, int w, int h);
+    void (*update_projection)(float const *mat4);
+    void (*update_model_view)(float const *mat3);
 
-    int32_t     (*create_texture)(int width, int height, int channels);
-    void        (*delete_texture)(int32_t texture_id);
-    void        (*get_texture_size)(int texture_id, int *width, int *height);
-    void        (*update_texture)(int texture_id, int x_offset, int y_offset, int width, int height, unsigned char *pixels);
-    void        (*resize_texture)(int texture_id, int new_width, int new_height);
-    void        (*bind_texture)(int texture_id);
+    int32_t (*create_texture)(int width, int height, int channels);
+    void (*delete_texture)(int32_t texture_id);
+    void (*get_texture_size)(int texture_id, int *width, int *height);
+    void (*update_texture)(int texture_id, int x_offset, int y_offset, int width, int height, unsigned char *pixels);
+    void (*resize_texture)(int texture_id, int new_width, int new_height);
+    void (*bind_texture)(int texture_id);
 
     void (*set_clear_color)(tq_color_t color);
     void (*set_draw_color)(tq_color_t color);

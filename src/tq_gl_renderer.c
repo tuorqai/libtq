@@ -70,50 +70,6 @@ static void check_gl_errors(char const *call, char const *file, unsigned int lin
 #endif // defined(NDEBUG)
 
 //------------------------------------------------------------------------------
-// Types
-
-/**
- * Vertex attributes.
- */
-enum
-{
-    ATTRIB_POSITION,
-    ATTRIB_COLOR,
-    ATTRIB_TEXCOORD,
-};
-
-/**
- * Vertex attribute bits.
- */
-enum
-{
-    ATTRIB_BIT_POSITION = (1 << ATTRIB_POSITION),
-    ATTRIB_BIT_COLOR = (1 << ATTRIB_COLOR),
-    ATTRIB_BIT_TEXCOORD = (1 << ATTRIB_TEXCOORD)
-};
-
-/**
- * Shader programs.
- */
-enum
-{
-    PROGRAM_SOLID,
-    PROGRAM_COLORED,
-    PROGRAM_TEXTURED,
-    PROGRAM_FONT,
-    PROGRAM_COUNT,
-};
-
-/**
- * Shader uniforms.
- */
-typedef enum uniform
-{
-    UNIFORM_PROJECTION,
-    UNIFORM_MODELVIEW,
-    UNIFORM_COLOR,
-    UNIFORM_COUNT,
-} gl_uniform_t;
 
 /**
  * Standard vertex shader source code.
@@ -174,6 +130,53 @@ static char const *fs_src_font =
 
 //------------------------------------------------------------------------------
 
+#define INITIAL_TEXTURE_COUNT       16
+
+/**
+ * Vertex attributes.
+ */
+enum
+{
+    ATTRIB_POSITION,
+    ATTRIB_COLOR,
+    ATTRIB_TEXCOORD,
+};
+
+/**
+ * Vertex attribute bits.
+ */
+enum
+{
+    ATTRIB_BIT_POSITION = (1 << ATTRIB_POSITION),
+    ATTRIB_BIT_COLOR = (1 << ATTRIB_COLOR),
+    ATTRIB_BIT_TEXCOORD = (1 << ATTRIB_TEXCOORD)
+};
+
+/**
+ * Shader programs.
+ */
+enum
+{
+    PROGRAM_SOLID,
+    PROGRAM_COLORED,
+    PROGRAM_TEXTURED,
+    PROGRAM_FONT,
+    PROGRAM_COUNT,
+};
+
+/**
+ * Shader uniforms.
+ */
+enum
+{
+    UNIFORM_PROJECTION,
+    UNIFORM_MODELVIEW,
+    UNIFORM_COLOR,
+    UNIFORM_COUNT,
+};
+
+//------------------------------------------------------------------------------
+
 struct gl_colors
 {
     GLfloat clear[4];
@@ -186,13 +189,6 @@ struct gl_matrices
     float mv[16];
 };
 
-struct gl_program
-{
-    GLuint handle;
-    GLint uniforms[UNIFORM_COUNT];
-    long dirty_uniform_bits;
-};
-
 struct gl_texture
 {
     GLuint handle;
@@ -202,22 +198,27 @@ struct gl_texture
     int channels;
 };
 
-//------------------------------------------------------------------------------
+struct gl_program
+{
+    GLuint handle;
+    GLint uniforms[UNIFORM_COUNT];
+    int dirty_uniform_bits;
+};
 
-#define INITIAL_TEXTURE_COUNT       16
+struct gl_state
+{
+    int vertex_format;
+    int program_id;
+};
 
 //------------------------------------------------------------------------------
 
 static struct gl_colors colors;
 static struct gl_matrices matrices;
-
 static struct gl_texture *textures;
 static int texture_count;
-
 static struct gl_program programs[PROGRAM_COUNT];
-
-static int current_vertex_format;
-static int current_program_id;
+static struct gl_state state;
 
 //------------------------------------------------------------------------------
 
@@ -384,9 +385,9 @@ static GLuint link_program(GLuint vs, GLuint fs)
  * Update current vertex format.
  * Doesn't do anything if the format is the same.
  */
-static void set_current_vertex_format(int vertex_format)
+static void set_vertex_format(int vertex_format)
 {
-    if (current_vertex_format == vertex_format) {
+    if (state.vertex_format == vertex_format) {
         return;
     }
 
@@ -408,7 +409,7 @@ static void set_current_vertex_format(int vertex_format)
         CHECK_GL(glDisableVertexAttribArray(ATTRIB_TEXCOORD));
     }
 
-    current_vertex_format = vertex_format;
+    state.vertex_format = vertex_format;
 }
 
 /**
@@ -416,8 +417,8 @@ static void set_current_vertex_format(int vertex_format)
  */
 static void apply_uniforms(void)
 {
-    long bits = programs[current_program_id].dirty_uniform_bits;
-    GLint *location = programs[current_program_id].uniforms;
+    long bits = programs[state.program_id].dirty_uniform_bits;
+    GLint *location = programs[state.program_id].uniforms;
 
     if (bits & (1 << UNIFORM_PROJECTION)) {
         CHECK_GL(glUniformMatrix4fv(location[UNIFORM_PROJECTION], 1, GL_TRUE, matrices.proj));
@@ -431,19 +432,19 @@ static void apply_uniforms(void)
         CHECK_GL(glUniform4fv(location[UNIFORM_COLOR], 1, colors.draw));
     }
 
-    programs[current_program_id].dirty_uniform_bits = 0;
+    programs[state.program_id].dirty_uniform_bits = 0;
 }
 
 /**
  * Switch to different shader.
  */
-static void set_current_program_id(int program_id)
+static void set_program_id(int program_id)
 {
-    if (current_program_id == program_id) {
+    if (state.program_id == program_id) {
         return;
     }
 
-    current_program_id = program_id;
+    state.program_id = program_id;
 
     if (program_id == -1) {
         CHECK_GL(glUseProgram(0));
@@ -467,17 +468,16 @@ static void set_dirty_uniform(int program_id, int uniform_id)
 {
     programs[program_id].dirty_uniform_bits |= (1 << uniform_id);
 
-    if (current_program_id == program_id) {
+    if (state.program_id == program_id) {
         apply_uniforms();
     }
 }
 
 //------------------------------------------------------------------------------
-// Module implementation
 
-//--------------------------------------
-// Initialize OpenGL renderer.
-//--------------------------------------
+/**
+ * Initialize OpenGL renderer.
+ */
 static void initialize(void)
 {
     #ifndef TQ_USE_OPENGL_ES
@@ -493,8 +493,8 @@ static void initialize(void)
     textures = NULL;
     texture_count = 0;
 
-    current_vertex_format = 0;
-    current_program_id = -1;
+    state.vertex_format = 0;
+    state.program_id = -1;
 
     GLuint vs_standard = compile_shader(GL_VERTEX_SHADER, vs_src_standard);
     GLuint fs_solid = compile_shader(GL_FRAGMENT_SHADER, fs_src_solid);
@@ -539,9 +539,9 @@ static void initialize(void)
     log_info("GL_VERSION: %s\n", glGetString(GL_VERSION));
 }
 
-//--------------------------------------
-// Terminate OpenGL renderer.
-//--------------------------------------
+/**
+ * Terminate OpenGL renderer.
+ */
 static void terminate(void)
 {
     // Delete all shader programs.
@@ -557,26 +557,26 @@ static void terminate(void)
     mem_free(textures);
 }
 
-//--------------------------------------
-// Called at the end of a frame.
-//--------------------------------------
+/**
+ * Called every frame.
+ */
 static void process(void)
 {
-    // Is it even needed?
+    // Is this even needed?
     CHECK_GL(glFlush());
 }
 
-//--------------------------------------
-// Update viewport.
-//--------------------------------------
+/**
+ * Update viewport.
+ */
 static void update_viewport(int x, int y, int w, int h)
 {
     CHECK_GL(glViewport(x, y, w, h));
 }
 
-//--------------------------------------
-// Update projection matrix.
-//--------------------------------------
+/**
+ * Update projection matrix.
+ */
 static void update_projection(float const *mat4)
 {
     mat4_copy(matrices.proj, mat4);
@@ -586,9 +586,9 @@ static void update_projection(float const *mat4)
     }
 }
 
-//--------------------------------------
-// Update model-view matrix.
-//--------------------------------------
+/**
+ * Update model-view matrix.
+ */
 static void update_model_view(float const *mat3)
 {
     // (Note: the "view" matrix corresponds to the projection matrix,
@@ -733,7 +733,7 @@ static void set_draw_color(tq_color_t draw_color)
         programs[i].dirty_uniform_bits |= (1 << UNIFORM_COLOR);
     }
 
-    if (current_program_id != -1) {
+    if (state.program_id != -1) {
         apply_uniforms();
     }
 }
@@ -745,8 +745,8 @@ static void clear(void)
 
 static void draw_solid(int mode, float const *data, int num_vertices)
 {
-    set_current_vertex_format(ATTRIB_BIT_POSITION);
-    set_current_program_id(PROGRAM_SOLID);
+    set_vertex_format(ATTRIB_BIT_POSITION);
+    set_program_id(PROGRAM_SOLID);
 
     CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0, data));
     CHECK_GL(glDrawArrays(conv_mode(mode), 0, num_vertices));
@@ -754,8 +754,8 @@ static void draw_solid(int mode, float const *data, int num_vertices)
 
 static void draw_colored(int mode, float const *data, int num_vertices)
 {
-    set_current_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_COLOR);
-    set_current_program_id(PROGRAM_COLORED);
+    set_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_COLOR);
+    set_program_id(PROGRAM_COLORED);
 
     CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 6, data + 0));
     CHECK_GL(glVertexAttribPointer(ATTRIB_COLOR, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 6, data + 2));
@@ -764,8 +764,8 @@ static void draw_colored(int mode, float const *data, int num_vertices)
 
 static void draw_textured(int mode, float const *data, int num_vertices)
 {
-    set_current_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
-    set_current_program_id(PROGRAM_TEXTURED);
+    set_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
+    set_program_id(PROGRAM_TEXTURED);
 
     CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 0));
     CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 2));
@@ -774,8 +774,8 @@ static void draw_textured(int mode, float const *data, int num_vertices)
 
 static void draw_font(float const *data, unsigned int const *indices, int num_indices)
 {
-    set_current_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
-    set_current_program_id(PROGRAM_FONT);
+    set_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
+    set_program_id(PROGRAM_FONT);
 
     CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 0));
     CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 2));
