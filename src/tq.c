@@ -230,112 +230,57 @@ void tq_rotate_matrix(float degrees)
 //----------------------------------------------------------
 // Primitives
 
-void tq_draw_point_f(float x, float y)
-{
-    graphics_draw_point(x, y);
-}
-
-void tq_draw_point_v(tq_vec2f_t position)
+void tq_draw_point(tq_vec2f position)
 {
     graphics_draw_point(position.x, position.y);
 }
 
-void tq_draw_line_f(float ax, float ay, float bx, float by)
-{
-    graphics_draw_line(ax, ay, bx, by);
-}
-
-void tq_draw_line_v(tq_vec2f_t a, tq_vec2f_t b)
+void tq_draw_line(tq_vec2f a, tq_vec2f b)
 {
     graphics_draw_line(a.x, a.y, b.x, b.y);
 }
 
-void tq_draw_triangle_f(float ax, float ay, float bx, float by, float cx, float cy)
-{
-    graphics_draw_triangle(ax, ay, bx, by, cx, cy);
-}
-
-void tq_draw_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c)
+void tq_draw_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c)
 {
     graphics_draw_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
 }
 
-void tq_draw_rectangle_f(float x, float y, float w, float h)
+void tq_draw_rectangle(tq_rectf rect)
 {
-    graphics_draw_rectangle(x, y, w, h);
+    graphics_draw_rectangle(rect.x, rect.y, rect.w, rect.h);
 }
 
-void tq_draw_rectangle_v(tq_vec2f_t position, tq_vec2f_t size)
-{
-    graphics_draw_rectangle(position.x, position.y, size.x, size.y);
-}
-
-void tq_draw_circle_f(float x, float y, float radius)
-{
-    graphics_draw_circle(x, y, radius);
-}
-
-void tq_draw_circle_v(tq_vec2f_t position, float radius)
+void tq_draw_circle(tq_vec2f position, float radius)
 {
     graphics_draw_circle(position.x, position.y, radius);
 }
 
-void tq_outline_triangle_f(float ax, float ay, float bx, float by, float cx, float cy)
-{
-    graphics_outline_triangle(ax, ay, bx, by, cx, cy);
-}
-
-void tq_outline_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c)
+void tq_outline_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c)
 {
     graphics_outline_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
 }
 
-void tq_outline_rectangle_f(float x, float y, float w, float h)
+void tq_outline_rectangle(tq_rectf rect)
 {
-    graphics_outline_rectangle(x, y, w, h);
+    graphics_outline_rectangle(rect.x, rect.y, rect.w, rect.h);
 }
 
-void tq_outline_rectangle_v(tq_vec2f_t position, tq_vec2f_t size)
-{
-    graphics_outline_rectangle(position.x, position.y, size.x, size.y);
-}
-
-void tq_outline_circle_f(float x, float y, float radius)
-{
-    graphics_outline_circle(x, y, radius);
-}
-
-void tq_outline_circle_v(tq_vec2f_t position, float radius)
+void tq_outline_circle(tq_vec2f position, float radius)
 {
     graphics_outline_circle(position.x, position.y, radius);
 }
 
-void tq_fill_triangle_f(float ax, float ay, float bx, float by, float cx, float cy)
-{
-    graphics_fill_triangle(ax, ay, bx, by, cx, cy);
-}
-
-void tq_fill_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c)
+void tq_fill_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c)
 {
     graphics_fill_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
 }
 
-void tq_fill_rectangle_f(float x, float y, float w, float h)
+void tq_fill_rectangle(tq_rectf rect)
 {
-    graphics_fill_rectangle(x, y, w, h);
+    graphics_fill_rectangle(rect.x, rect.y, rect.w, rect.h);
 }
 
-void tq_fill_rectangle_v(tq_vec2f_t position, tq_vec2f_t size)
-{
-    graphics_fill_rectangle(position.x, position.y, size.x, size.y);
-}
-
-void tq_fill_circle_f(float x, float y, float radius)
-{
-    graphics_fill_circle(x, y, radius);
-}
-
-void tq_fill_circle_v(tq_vec2f_t position, float radius)
+void tq_fill_circle(tq_vec2f position, float radius)
 {
     graphics_fill_circle(position.x, position.y, radius);
 }

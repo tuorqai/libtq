@@ -23,7 +23,7 @@ void draw_button(int index, float x, float y)
         tq_draw_texture_fragment_f(texture,
             -16.0f, -16.0f, 32.0f, 32.0f,
             index * 16.0f, 0.0f, 16.0f, 16.0f);
-        tq_outline_rectangle_f(-32.0f, -32.0f, 64.0f, 64.0f);
+        tq_outline_rectangle(TQ_RECTF(-32.0f, -32.0f, 64.0f, 64.0f));
     tq_pop_matrix();
 }
 

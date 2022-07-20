@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
         }
 
         tq_clear();
-        tq_draw_rectangle_f(128.0f, 128.0f, 256.0f, 256.0f);
+        tq_draw_rectangle(TQ_RECTF(128.0f, 128.0f, 256.0f, 256.0f));
         tq_draw_texture_f(moon, 128.0f, 128.0f, 256.0f, 256.0f);
     }
 

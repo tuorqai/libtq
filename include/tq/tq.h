@@ -316,15 +316,6 @@ typedef struct tq_vec2i
 } tq_vec2i;
 
 /**
- * Two-dimensional vector of unsigned integer numbers.
- */
-typedef struct tq_vec2u
-{
-    uint32_t x;
-    uint32_t y;
-} tq_vec2u;
-
-/**
  * Two-dimensional vector of floating-point numbers.
  */
 typedef struct tq_vec2f
@@ -333,10 +324,31 @@ typedef struct tq_vec2f
     float y;
 } tq_vec2f;
 
+/**
+ * Rectangle (integer).
+ */
+typedef struct tq_recti
+{
+    int x;
+    int y;
+    int w;
+    int h;
+} tq_recti;
+
+/**
+ * Rectangle (floating point).
+ */
+typedef struct tq_rectf
+{
+    float x;
+    float y;
+    float w;
+    float h;
+} tq_rectf;
+
 //------------------------------------------------------------------------------
 
 typedef struct tq_vec2i tq_vec2i_t;
-typedef struct tq_vec2u tq_vec2u_t;
 typedef struct tq_vec2f tq_vec2f_t;
 
 //------------------------------------------------------------------------------
@@ -552,94 +564,99 @@ TQ_EXPORT TQ_API void TQ_CALL tq_rotate_matrix(float degrees);
 //--------------------------------------
 // Primitives
 
-/* Draw a point. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_point_f(float x, float y);
+/**
+ * Draw a point.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_point(tq_vec2f position);
 
-/* Draw a point (vector arguments). */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_point_v(tq_vec2f_t position);
+/**
+ * Draw a line.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_line(tq_vec2f a, tq_vec2f b);
 
-/* Draws a line. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_line_f(float ax, float ay, float bx, float by);
+/**
+ * Fill and outline a triangle.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c);
 
-/* Draws a line. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_line_v(tq_vec2f_t a, tq_vec2f_t b);
+/**
+ * Fill and outline a rectangle.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_rectangle(tq_rectf rect);
 
-/* Fills and outlines a triangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_triangle_f(float ax, float ay, float bx, float by, float cx, float cy);
+/**
+ * Fill and outline a circle.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_draw_circle(tq_vec2f position, float radius);
 
-/* Fills and outlines a triangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c);
+/**
+ * Outline a triangle.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_outline_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c);
 
-/* Fills and outlines a rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_rectangle_f(float x, float y, float w, float h);
+/**
+ * Outline a rectangle.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_outline_rectangle(tq_rectf rect);
 
-/* Fills and outlines a rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_rectangle_v(tq_vec2f_t position, tq_vec2f_t size);
+/**
+ * Outline a circle.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_outline_circle(tq_vec2f position, float radius);
 
-/* Fills and outlines a circle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_circle_f(float x, float y, float radius);
+/**
+ * Fill a triangle.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_fill_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c);
 
-/* Fills and outlines a circle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_circle_v(tq_vec2f_t position, float radius);
+/**
+ * Fill a rectangle.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_fill_rectangle(tq_rectf rect);
 
-/* Outlines a triangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_triangle_f(float ax, float ay, float bx, float by, float cx, float cy);
+/**
+ * Fill a circle.
+ */
+TQ_EXPORT TQ_API void TQ_CALL tq_fill_circle(tq_vec2f position, float radius);
 
-/* Outlines a triangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c);
-
-/* Outlines a rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_rectangle_f(float x, float y, float w, float h);
-
-/* Outlines a rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_rectangle_v(tq_vec2f_t position, tq_vec2f_t size);
-
-/* Outlines a circle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_circle_f(float x, float y, float radius);
-
-/* Outlines a circle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_circle_v(tq_vec2f_t position, float radius);
-
-/* Fills a triangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_triangle_f(float ax, float ay, float bx, float by, float cx, float cy);
-
-/* Fills a triangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_triangle_v(tq_vec2f_t a, tq_vec2f_t b, tq_vec2f_t c);
-
-/* Fills a rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_rectangle_f(float x, float y, float w, float h);
-
-/* Fills a rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_rectangle_v(tq_vec2f_t position, tq_vec2f_t size);
-
-/* Fills a circle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_circle_f(float x, float y, float radius);
-
-/* Fills a circle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_circle_v(tq_vec2f_t position, float radius);
-
-/* Returns current point color (used by draw_point). */
+/**
+ * Get current point color (used by draw_point).
+ */
 TQ_EXPORT TQ_API tq_color_t TQ_CALL tq_get_point_color(void);
 
-/* Replaces current point color (used by draw_point). */
+/**
+ * Set current point color (used by draw_point).
+ */
 TQ_EXPORT TQ_API void TQ_CALL tq_set_point_color(tq_color_t point_color);
 
-/* Returns current line color (used by draw_line). */
+/**
+ * Get current line color (used by draw_line).
+ */
 TQ_EXPORT TQ_API tq_color_t TQ_CALL tq_get_line_color(void);
 
-/* Replaces current line color (used by draw_line). */
+/**
+ * Set current line color (used by draw_line).
+ */
 TQ_EXPORT TQ_API void TQ_CALL tq_set_line_color(tq_color_t line_color);
 
-/* Returns current outline color. */
+/**
+ * Get current outline color.
+ */
 TQ_EXPORT TQ_API tq_color_t TQ_CALL tq_get_outline_color(void);
 
-/* Replaces current outline color. */
+/**
+ * Set current outline color.
+ */
 TQ_EXPORT TQ_API void TQ_CALL tq_set_outline_color(tq_color_t outline_color);
 
-/* Returns current fill color. */
+/**
+ * Get current fill color.
+ */
 TQ_EXPORT TQ_API tq_color_t TQ_CALL tq_get_fill_color(void);
 
-/* Replaces current fill color. */
+/**
+ * Set current fill color.
+ */
 TQ_EXPORT TQ_API void TQ_CALL tq_set_fill_color(tq_color_t fill_color);
 
 //--------------------------------------
@@ -820,17 +837,22 @@ TQ_EXPORT TQ_API void TQ_CALL tq_stop_channel(tq_channel channel);
 #define TQ_VEC2I(x, y)              ((tq_vec2i_t) { (x), (y) })
 
 /**
- * Construct 2-component unsigned integer vector.
- */
-#define TQ_VEC2U(x, y)              ((tq_vec2u_t) { (x), (y) })
-
-/**
  * Construct 2-component floating-point vector.
  */
 #define TQ_VEC2F(x, y)              ((tq_vec2f_t) { (x), (y) })
 
 /**
- * @brief Cast 2-component integer vector to floating-point vector.
+ * Construct rectangle (integer).
+ */
+#define TQ_RECTI(x, y, w, h)        ((tq_recti) { (x), (y), (w), (h) })
+
+/**
+ * Construct rectangle (floating point).
+ */
+#define TQ_RECTF(x, y, w, h)        ((tq_rectf) { (x), (y), (w), (h) })
+
+/**
+ * Cast 2-component integer vector to floating-point vector.
  */
 static inline tq_vec2f_t tq_vec2i_cast(tq_vec2i_t ivec)
 {
@@ -841,18 +863,7 @@ static inline tq_vec2f_t tq_vec2i_cast(tq_vec2i_t ivec)
 }
 
 /**
- * @brief Cast 2-component unsigned integer vector to floating-point vector.
- */
-static inline tq_vec2f_t tq_vec2u_cast(tq_vec2u_t uvec)
-{
-    return (tq_vec2f_t) {
-        .x = (float) uvec.x,
-        .y = (float) uvec.y,
-    };
-}
-
-/**
- * @brief Add two floating-point 2D vectors.
+ * Add two floating-point 2D vectors.
  */
 static inline tq_vec2f_t tq_vec2f_add(tq_vec2f_t v0, tq_vec2f_t v1)
 {
@@ -863,7 +874,7 @@ static inline tq_vec2f_t tq_vec2f_add(tq_vec2f_t v0, tq_vec2f_t v1)
 }
 
 /**
- * @brief Subtract two floating-point 2D vectors.
+ * Subtract two floating-point 2D vectors.
  */
 static inline tq_vec2f_t tq_vec2f_subtract(tq_vec2f_t v0, tq_vec2f_t v1)
 {
@@ -874,7 +885,7 @@ static inline tq_vec2f_t tq_vec2f_subtract(tq_vec2f_t v0, tq_vec2f_t v1)
 }
 
 /**
- * @brief Multiply two floating-point 2D vectors.
+ * Multiply two floating-point 2D vectors.
  */
 static inline tq_vec2f_t tq_vec2f_multiply(tq_vec2f_t v0, tq_vec2f_t v1)
 {
@@ -885,7 +896,7 @@ static inline tq_vec2f_t tq_vec2f_multiply(tq_vec2f_t v0, tq_vec2f_t v1)
 }
 
 /**
- * @brief Scale a floating-point 2D vector.
+ * Scale a floating-point 2D vector.
  */
 static inline tq_vec2f_t tq_vec2f_scale(tq_vec2f_t vec, float f)
 {
@@ -896,7 +907,7 @@ static inline tq_vec2f_t tq_vec2f_scale(tq_vec2f_t vec, float f)
 }
 
 /**
- * @brief Get length of a floating-point 2D vector.
+ * Get length of a floating-point 2D vector.
  */
 static inline float tq_vec2f_length(tq_vec2f_t vec)
 {
@@ -904,7 +915,7 @@ static inline float tq_vec2f_length(tq_vec2f_t vec)
 }
 
 /**
- * @brief Normalize a floating-point 2D vector.
+ * Normalize a floating-point 2D vector.
  */
 static inline tq_vec2f_t tq_vec2f_normalize(tq_vec2f_t vec)
 {
@@ -917,7 +928,7 @@ static inline tq_vec2f_t tq_vec2f_normalize(tq_vec2f_t vec)
 }
 
 /**
- * @brief Calculate the distance between two vectors.
+ * Calculate the distance between two vectors.
  */
 static inline float tq_vec2f_distance(tq_vec2f_t v0, tq_vec2f_t v1)
 {
@@ -925,7 +936,7 @@ static inline float tq_vec2f_distance(tq_vec2f_t v0, tq_vec2f_t v1)
 }
 
 /**
- * @brief Calculate an angle needed to aim to the target.
+ * Calculate an angle needed to aim to the target.
  */
 static inline float tq_vec2f_look_at(tq_vec2f_t observer, tq_vec2f_t target)
 {

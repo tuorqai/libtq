@@ -152,7 +152,7 @@ void update_stage(world_t *world, stage_t *self)
 
 void draw_stage(stage_t const *self)
 {
-    tq_fill_rectangle_f(0.0f, 0.0f, STAGE_WIDTH * 16.0f, STAGE_HEIGHT * 16.0f);
+    tq_fill_rectangle(TQ_RECTF(0.0f, 0.0f, STAGE_WIDTH * 16.0f, STAGE_HEIGHT * 16.0f));
 
     for (int q = 0; q < STAGE_HEIGHT; q++) {
         for (int p = 0; p < STAGE_WIDTH; p++) {
@@ -376,7 +376,7 @@ void draw_players(players_t const *self)
 
         tq_push_matrix();
         tq_translate_matrix(TQ_VEC2F(self->x[id], self->y[id]));
-        tq_outline_rectangle_f(0.0f, 0.0f, 16.0f, 18.0f);
+        tq_outline_rectangle(TQ_RECTF(0.0f, 0.0f, 16.0f, 18.0f));
         tq_draw_texture_fragment_f(
             self->texture,
             0.0f, 0.0f,
@@ -468,8 +468,8 @@ void draw_world(world_t const *world)
     draw_objects(&world->objects);
     draw_players(&world->players);
 
-    tq_draw_line_f(world->camera.x - 2.0f, world->camera.y, world->camera.x + 2.0f, world->camera.y);
-    tq_draw_line_f(world->camera.x, world->camera.y - 2.0f, world->camera.x, world->camera.y + 2.0f);
+    tq_draw_line(TQ_VEC2F(world->camera.x - 2.0f, world->camera.y), TQ_VEC2F(world->camera.x + 2.0f, world->camera.y));
+    tq_draw_line(TQ_VEC2F(world->camera.x, world->camera.y - 2.0f), TQ_VEC2F(world->camera.x, world->camera.y + 2.0f));
 
     tq_set_fill_color(TQ_COLOR24(255, 255, 255));
 

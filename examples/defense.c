@@ -418,12 +418,12 @@ void draw_turrets(struct turrets const *self)
             tq_translate_matrix(TQ_VEC2F(self->x[id], self->y[id]));
             tq_push_matrix();
                 tq_rotate_matrix(self->base_rotation[id]);
-                tq_draw_triangle_f(-10.0f, -10.0f, -10.0f, 10.0f, -20.0f, 0.0f);
+                tq_draw_triangle(TQ_VEC2F(-10.0f, -10.0f), TQ_VEC2F(-10.0f, 10.0f), TQ_VEC2F(-20.0f, 0.0f));
             tq_pop_matrix();
-            tq_draw_circle_f(0.0f, 0.0f, 16.0f);
+            tq_draw_circle(TQ_VEC2F(0.0f, 0.0f), 16.0f);
             tq_rotate_matrix(self->rotation[id]);
-            tq_draw_rectangle_f(-10.0f - self->bob[id], -5.0f, 40.0f, 10.0f);
-            tq_draw_rectangle_f(-10.0f - self->bob[id], -5.0f, 10.0f, 10.0f);
+            tq_draw_rectangle(TQ_RECTF(-10.0f - self->bob[id], -5.0f, 40.0f, 10.0f));
+            tq_draw_rectangle(TQ_RECTF(-10.0f - self->bob[id], -5.0f, 10.0f, 10.0f));
         tq_pop_matrix();
 
         if (self->bits[id] & TURRET_BIT_MANUAL) {
@@ -559,7 +559,7 @@ void draw_projectiles(struct projectiles const *projectiles)
         tq_push_matrix();
             tq_translate_matrix(TQ_VEC2F(projectiles->x[id], projectiles->y[id]));
             tq_rotate_matrix(projectiles->rotation[id]);
-            tq_draw_line_f(-8.0f, 0.0f, 8.0f, 0.0f);
+            tq_draw_line(TQ_VEC2F(-8.0f, 0.0f), TQ_VEC2F(8.0f, 0.0f));
         tq_pop_matrix();
     }
 }
@@ -662,8 +662,8 @@ void draw_enemies(struct enemies const *self)
         tq_push_matrix();
         tq_translate_matrix(TQ_VEC2F(self->x[id], self->y[id]));
         tq_rotate_matrix(self->rotation[id]);
-        tq_draw_triangle_f(0.0f, -r, 0.0f, r, r * 1.5f, 0.0f);
-        tq_draw_circle_f(0.0f, 0.0f, self->radius[id]);
+        tq_draw_triangle(TQ_VEC2F(0.0f, -r), TQ_VEC2F(0.0f, r), TQ_VEC2F(r * 1.5f, 0.0f));
+        tq_draw_circle(TQ_VEC2F(0.0f, 0.0f), self->radius[id]);
         tq_pop_matrix();
     }
 }
@@ -765,13 +765,13 @@ void draw_particles(struct particles const *self)
         }
 
         if (self->type[id] == PARTICLE_TYPE_CIRCLE) {
-            tq_outline_circle_f(self->x[id], self->y[id], self->size[id]);
+            tq_outline_circle(TQ_VEC2F(self->x[id], self->y[id]), self->size[id]);
         } else if (self->type[id] == PARTICLE_TYPE_SQUARE) {
             float const s = self->size[id];
             tq_push_matrix();
                 tq_translate_matrix(TQ_VEC2F(self->x[id], self->y[id]));
                 tq_rotate_matrix(self->rotation[id]);
-                tq_outline_rectangle_f(-s / 2, -s / 2, s, s);
+                tq_outline_rectangle(TQ_RECTF(-s / 2, -s / 2, s, s));
             tq_pop_matrix();
         } else if (self->type[id] == PARTICLE_TYPE_POPUP) {
             float const s = self->size[id];
@@ -968,11 +968,9 @@ void draw_world(struct world const *world)
             16.0f, 24.0f,
             1, "%02d:%02d", world->state.minutes, world->state.seconds);
 
-        tq_draw_line_f(
-            0.0f,
-            CANVAS_HEIGHT - 1.0f,
-            CANVAS_WIDTH * (world->turrets.health[0] / 100.0f),
-            CANVAS_HEIGHT - 1.0f
+        tq_draw_line(
+            TQ_VEC2F(0.0f, CANVAS_HEIGHT - 1.0f),
+            TQ_VEC2F(CANVAS_WIDTH * (world->turrets.health[0] / 100.0f), CANVAS_HEIGHT - 1.0f)
         );
         break;
     case STATE_MODE_TITLE:
@@ -989,8 +987,8 @@ void draw_world(struct world const *world)
 
 void draw_crosshair(float x, float y)
 {
-    tq_draw_line_f(x - 8.0f, y, x + 8.0f, y);
-    tq_draw_line_f(x, y - 8.0f, x, y + 8.0f);
+    tq_draw_line(TQ_VEC2F(x - 8.0f, y), TQ_VEC2F(x + 8.0f, y));
+    tq_draw_line(TQ_VEC2F(x, y - 8.0f), TQ_VEC2F(x, y + 8.0f));
 }
 
 void draw_string(float x, float y, float sx, float sy, int align, char const *fmt, ...)
@@ -1303,8 +1301,8 @@ void draw_string(float x, float y, float sx, float sy, int align, char const *fm
     } else {
         float length = 0.0f;
 
-        for (char const *s = buffer; *s; *s++) {
-            length += sx * (widths[*s] + k);
+        for (char const *s = buffer; *s; s++) {
+            length += sx * (widths[(int) *s] + k);
         }
 
         if (align == 0) {
@@ -1314,17 +1312,21 @@ void draw_string(float x, float y, float sx, float sy, int align, char const *fm
         }
     }
 
-    for (char const *s = buffer; *s; *s++) {
-        for (int i = 0; i < total_lines[*s]; i++) {
-            tq_draw_line_f(
-                cx + (frand(rx) * 2.0f - rx) + (lines[*s][4 * i + 0] * sx),
-                cy + (frand(ry) * 2.0f - ry) + (lines[*s][4 * i + 1] * sy),
-                cx + (frand(rx) * 2.0f - rx) + (lines[*s][4 * i + 2] * sx),
-                cy + (frand(ry) * 2.0f - ry) + (lines[*s][4 * i + 3] * sy)
+    for (char const *s = buffer; *s; s++) {
+        for (int i = 0; i < total_lines[(int) *s]; i++) {
+            tq_draw_line(
+                TQ_VEC2F(
+                    cx + (frand(rx) * 2.0f - rx) + (lines[(int) *s][4 * i + 0] * sx),
+                    cy + (frand(ry) * 2.0f - ry) + (lines[(int) *s][4 * i + 1] * sy)
+                ),
+                TQ_VEC2F(
+                    cx + (frand(rx) * 2.0f - rx) + (lines[(int) *s][4 * i + 2] * sx),
+                    cy + (frand(ry) * 2.0f - ry) + (lines[(int) *s][4 * i + 3] * sy)
+                )
             );
         }
 
-        cx += sx * (widths[*s] + k);
+        cx += sx * (widths[(int) *s] + k);
     }
 }
 
