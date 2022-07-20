@@ -98,6 +98,7 @@ enum
 enum
 {
     PROGRAM_SOLID,
+    PROGRAM_COLORED,
     PROGRAM_TEXTURED,
     PROGRAM_FONT,
     PROGRAM_COUNT,
@@ -110,6 +111,7 @@ typedef enum uniform
 {
     UNIFORM_PROJECTION,
     UNIFORM_MODELVIEW,
+    UNIFORM_COLOR,
     UNIFORM_COUNT,
 } gl_uniform_t;
 
@@ -135,6 +137,15 @@ static char const *vs_src_standard =
  * Solid mesh fragment shader source code.
  */
 static char const *fs_src_solid =
+    "uniform vec4 u_color;\n"
+    "void main() {\n"
+    "    gl_FragColor = u_color;\n"
+    "}\n";
+
+/**
+ * Colored mesh fragment shader source code.
+ */
+static char const *fs_src_colored =
     "varying vec4 v_color;\n"
     "void main() {\n"
     "    gl_FragColor = v_color;\n"
@@ -162,6 +173,12 @@ static char const *fs_src_font =
     "}\n";
 
 //------------------------------------------------------------------------------
+
+struct gl_colors
+{
+    GLfloat clear[4];
+    GLfloat draw[4];
+};
 
 struct gl_matrices
 {
@@ -191,6 +208,7 @@ struct gl_texture
 
 //------------------------------------------------------------------------------
 
+static struct gl_colors colors;
 static struct gl_matrices matrices;
 
 static struct gl_texture *textures;
@@ -206,6 +224,22 @@ static int current_program_id;
 static void delete_texture(int texture_id);
 
 //------------------------------------------------------------------------------
+
+static void decode_color24(GLfloat *dst, tq_color_t color)
+{
+    dst[0] = ((color >> 24) & 255) / 255.0f;
+    dst[1] = ((color >> 16) & 255) / 255.0f;
+    dst[2] = ((color >>  8) & 255) / 255.0f;
+    dst[3] = 1.0f;
+}
+
+static void decode_color32(GLfloat *dst, tq_color_t color)
+{
+    dst[0] = ((color >> 24) & 255) / 255.0f;
+    dst[1] = ((color >> 16) & 255) / 255.0f;
+    dst[2] = ((color >>  8) & 255) / 255.0f;
+    dst[3] = ((color <<  0) & 255) / 255.0f;
+}
 
 static int get_texture_id(void)
 {
@@ -245,13 +279,15 @@ static int get_texture_id(void)
 static GLenum conv_mode(int mode)
 {
     switch (mode) {
-    case RENDERER_MODE_POINTS:
+    case PRIMITIVE_POINTS:
         return GL_POINTS;
-    case RENDERER_MODE_LINE_STRIP:
+    case PRIMITIVE_LINE_STRIP:
         return GL_LINE_STRIP;
-    case RENDERER_MODE_TRIANGLES:
+    case PRIMITIVE_LINE_LOOP:
+        return GL_LINE_LOOP;
+    case PRIMITIVE_TRIANGLES:
         return GL_TRIANGLES;
-    case RENDERER_MODE_TRIANGLE_FAN:
+    case PRIMITIVE_TRIANGLE_FAN:
         return GL_TRIANGLE_FAN;
     }
 
@@ -391,6 +427,10 @@ static void apply_uniforms(void)
         CHECK_GL(glUniformMatrix4fv(location[UNIFORM_MODELVIEW], 1, GL_TRUE, matrices.mv));
     }
 
+    if (bits & (1 << UNIFORM_COLOR)) {
+        CHECK_GL(glUniform4fv(location[UNIFORM_COLOR], 1, colors.draw));
+    }
+
     programs[current_program_id].dirty_uniform_bits = 0;
 }
 
@@ -458,17 +498,20 @@ static void initialize(void)
 
     GLuint vs_standard = compile_shader(GL_VERTEX_SHADER, vs_src_standard);
     GLuint fs_solid = compile_shader(GL_FRAGMENT_SHADER, fs_src_solid);
+    GLuint fs_colored = compile_shader(GL_FRAGMENT_SHADER, fs_src_colored);
     GLuint fs_textured = compile_shader(GL_FRAGMENT_SHADER, fs_src_textured);
     GLuint fs_font = compile_shader(GL_FRAGMENT_SHADER, fs_src_font);
 
     programs[PROGRAM_SOLID].handle = link_program(vs_standard, fs_solid);
+    programs[PROGRAM_COLORED].handle = link_program(vs_standard, fs_colored);
     programs[PROGRAM_TEXTURED].handle = link_program(vs_standard, fs_textured);
     programs[PROGRAM_FONT].handle = link_program(vs_standard, fs_font);
 
     for (int i = 0; i < PROGRAM_COUNT; i++) {
         programs[i].uniforms[UNIFORM_PROJECTION] = glGetUniformLocation(programs[i].handle, "u_projection");
         programs[i].uniforms[UNIFORM_MODELVIEW] = glGetUniformLocation(programs[i].handle, "u_modelView");
-        programs[i].dirty_uniform_bits = 0xFFFF;
+        programs[i].uniforms[UNIFORM_COLOR] = glGetUniformLocation(programs[i].handle, "u_color");
+        programs[i].dirty_uniform_bits = 2147483647; // totally not a magic number
     }
 
     glDeleteShader(vs_standard);
@@ -676,16 +719,43 @@ static void bind_texture(int texture_id)
     glBindTexture(GL_TEXTURE_2D, textures[texture_id].handle);
 }
 
-static void clear(float r, float g, float b)
+static void set_clear_color(tq_color_t clear_color)
 {
-    CHECK_GL(glClearColor(r, g, b, 1.0f));
+    decode_color24(colors.clear, clear_color);
+    CHECK_GL(glClearColor(colors.clear[0], colors.clear[1], colors.clear[2], 1.0f));
+}
+
+static void set_draw_color(tq_color_t draw_color)
+{
+    decode_color32(colors.draw, draw_color);
+
+    for (int i = 0; i < PROGRAM_COUNT; i++) {
+        programs[i].dirty_uniform_bits |= (1 << UNIFORM_COLOR);
+    }
+
+    if (current_program_id != -1) {
+        apply_uniforms();
+    }
+}
+
+static void clear(void)
+{
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
 }
 
 static void draw_solid(int mode, float const *data, int num_vertices)
 {
-    set_current_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_COLOR);
+    set_current_vertex_format(ATTRIB_BIT_POSITION);
     set_current_program_id(PROGRAM_SOLID);
+
+    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0, data));
+    CHECK_GL(glDrawArrays(conv_mode(mode), 0, num_vertices));
+}
+
+static void draw_colored(int mode, float const *data, int num_vertices)
+{
+    set_current_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_COLOR);
+    set_current_program_id(PROGRAM_COLORED);
 
     CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 6, data + 0));
     CHECK_GL(glVertexAttribPointer(ATTRIB_COLOR, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 6, data + 2));
@@ -718,9 +788,9 @@ static void draw_font(float const *data, unsigned int const *indices, int num_in
 //--------------------------------------
 // Construct abstract module for OpenGL renderer.
 //--------------------------------------
-void tq_construct_gl_renderer(tq_renderer_t *renderer)
+void construct_gl_renderer(struct renderer_impl *renderer)
 {
-    *renderer = (tq_renderer_t) {
+    *renderer = (struct renderer_impl) {
         .initialize = initialize,
         .terminate = terminate,
         .process = process,
@@ -736,8 +806,12 @@ void tq_construct_gl_renderer(tq_renderer_t *renderer)
         .resize_texture = resize_texture,
         .bind_texture = bind_texture,
 
+        .set_clear_color = set_clear_color,
+        .set_draw_color = set_draw_color,
+
         .clear = clear,
         .draw_solid = draw_solid,
+        .draw_colored = draw_colored,
         .draw_textured = draw_textured,
         .draw_font = draw_font,
     };

@@ -131,13 +131,14 @@ void tq_graphics_on_display_resized(uint32_t width, uint32_t height);
 
 enum
 {
-    RENDERER_MODE_POINTS,
-    RENDERER_MODE_LINE_STRIP,
-    RENDERER_MODE_TRIANGLES,
-    RENDERER_MODE_TRIANGLE_FAN,
+    PRIMITIVE_POINTS,
+    PRIMITIVE_LINE_STRIP,
+    PRIMITIVE_LINE_LOOP,
+    PRIMITIVE_TRIANGLES,
+    PRIMITIVE_TRIANGLE_FAN,
 };
 
-typedef struct renderer_impl
+struct renderer_impl
 {
     void        (*initialize)(void);
     void        (*terminate)(void);
@@ -154,16 +155,20 @@ typedef struct renderer_impl
     void        (*resize_texture)(int texture_id, int new_width, int new_height);
     void        (*bind_texture)(int texture_id);
 
-    void (*clear)(float r, float g, float b);
+    void (*set_clear_color)(tq_color_t color);
+    void (*set_draw_color)(tq_color_t color);
+
+    void (*clear)(void);
     void (*draw_solid)(int mode, float const *data, int num_vertices);
+    void (*draw_colored)(int mode, float const *data, int num_vertices);
     void (*draw_textured)(int mode, float const *data, int num_vertices);
     void (*draw_font)(float const *data, unsigned int const *indices, int num_indices);
-} tq_renderer_t;
+};
 
 //------------------------------------------------------------------------------
 
 #if defined(TQ_USE_OPENGL)
-    void tq_construct_gl_renderer(tq_renderer_t *renderer);
+    void construct_gl_renderer(struct renderer_impl *renderer);
 #endif
 
 //------------------------------------------------------------------------------
