@@ -415,7 +415,7 @@ void draw_turrets(struct turrets const *self)
         }
 
         tq_push_matrix();
-            tq_translate_matrix_f(self->x[id], self->y[id]);
+            tq_translate_matrix(TQ_VEC2F(self->x[id], self->y[id]));
             tq_push_matrix();
                 tq_rotate_matrix(self->base_rotation[id]);
                 tq_draw_triangle_f(-10.0f, -10.0f, -10.0f, 10.0f, -20.0f, 0.0f);
@@ -557,7 +557,7 @@ void draw_projectiles(struct projectiles const *projectiles)
         }
 
         tq_push_matrix();
-            tq_translate_matrix_f(projectiles->x[id], projectiles->y[id]);
+            tq_translate_matrix(TQ_VEC2F(projectiles->x[id], projectiles->y[id]));
             tq_rotate_matrix(projectiles->rotation[id]);
             tq_draw_line_f(-8.0f, 0.0f, 8.0f, 0.0f);
         tq_pop_matrix();
@@ -660,7 +660,7 @@ void draw_enemies(struct enemies const *self)
         float const r = self->radius[id];
 
         tq_push_matrix();
-        tq_translate_matrix_f(self->x[id], self->y[id]);
+        tq_translate_matrix(TQ_VEC2F(self->x[id], self->y[id]));
         tq_rotate_matrix(self->rotation[id]);
         tq_draw_triangle_f(0.0f, -r, 0.0f, r, r * 1.5f, 0.0f);
         tq_draw_circle_f(0.0f, 0.0f, self->radius[id]);
@@ -769,7 +769,7 @@ void draw_particles(struct particles const *self)
         } else if (self->type[id] == PARTICLE_TYPE_SQUARE) {
             float const s = self->size[id];
             tq_push_matrix();
-                tq_translate_matrix_f(self->x[id], self->y[id]);
+                tq_translate_matrix(TQ_VEC2F(self->x[id], self->y[id]));
                 tq_rotate_matrix(self->rotation[id]);
                 tq_outline_rectangle_f(-s / 2, -s / 2, s, s);
             tq_pop_matrix();
@@ -951,7 +951,7 @@ void draw_world(struct world const *world)
     tq_clear();
 
     tq_push_matrix();
-        tq_translate_matrix_f(CANVAS_WIDTH / 2.0f, CANVAS_HEIGHT / 2.0f);
+        tq_translate_matrix(TQ_VEC2F(CANVAS_WIDTH / 2.0f, CANVAS_HEIGHT / 2.0f));
         draw_turrets(&world->turrets);
         draw_projectiles(&world->projectiles);
         draw_enemies(&world->enemies);

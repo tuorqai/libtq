@@ -313,7 +313,7 @@ typedef struct tq_vec2i
 {
     int32_t x;
     int32_t y;
-} tq_vec2i_t;
+} tq_vec2i;
 
 /**
  * Two-dimensional vector of unsigned integer numbers.
@@ -322,7 +322,7 @@ typedef struct tq_vec2u
 {
     uint32_t x;
     uint32_t y;
-} tq_vec2u_t;
+} tq_vec2u;
 
 /**
  * Two-dimensional vector of floating-point numbers.
@@ -331,7 +331,13 @@ typedef struct tq_vec2f
 {
     float x;
     float y;
-} tq_vec2f_t;
+} tq_vec2f;
+
+//------------------------------------------------------------------------------
+
+typedef struct tq_vec2i tq_vec2i_t;
+typedef struct tq_vec2u tq_vec2u_t;
+typedef struct tq_vec2f tq_vec2f_t;
 
 //------------------------------------------------------------------------------
 
@@ -535,16 +541,10 @@ TQ_EXPORT TQ_API void TQ_CALL tq_push_matrix(void);
 TQ_EXPORT TQ_API void TQ_CALL tq_pop_matrix(void);
 
 /* Translate current transformation matrix. */
-TQ_EXPORT TQ_API void TQ_CALL tq_translate_matrix_f(float x, float y);
-
-/* Translate current transformation matrix. */
-TQ_EXPORT TQ_API void TQ_CALL tq_translate_matrix_v(tq_vec2f_t v);
+TQ_EXPORT TQ_API void TQ_CALL tq_translate_matrix(tq_vec2f translate);
 
 /* Scale current transformation matrix. */
-TQ_EXPORT TQ_API void TQ_CALL tq_scale_matrix_f(float x, float y);
-
-/* Scale current transformation matrix. */
-TQ_EXPORT TQ_API void TQ_CALL tq_scale_matrix_v(tq_vec2f_t v);
+TQ_EXPORT TQ_API void TQ_CALL tq_scale_matrix(tq_vec2f scale);
 
 /* Rotate current transformation matrix. */
 TQ_EXPORT TQ_API void TQ_CALL tq_rotate_matrix(float degrees);
@@ -655,13 +655,13 @@ TQ_EXPORT TQ_API tq_texture TQ_CALL tq_load_texture_from_memory(uint8_t const *b
 TQ_EXPORT TQ_API void TQ_CALL tq_delete_texture(tq_texture texture);
 
 /* Get the width of a texture. */
-TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_texture_width(tq_texture texture);
+TQ_EXPORT TQ_API int TQ_CALL tq_get_texture_width(tq_texture texture);
 
 /* Get the height of a texture. */
-TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_texture_height(tq_texture texture);
+TQ_EXPORT TQ_API int TQ_CALL tq_get_texture_height(tq_texture texture);
 
 /* Get both width and height of a texture. Both pointers should be valid. */
-TQ_EXPORT TQ_API void TQ_CALL tq_get_texture_size(tq_texture texture, uint32_t *width, uint32_t *height);
+TQ_EXPORT TQ_API void TQ_CALL tq_get_texture_size(tq_texture texture, int *width, int *height);
 
 /* Draw the texture inside a rectangle. */
 TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_f(

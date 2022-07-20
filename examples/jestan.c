@@ -166,7 +166,7 @@ void draw_stage(stage_t const *self)
             int y = c / 20;
 
             tq_push_matrix();
-            tq_translate_matrix_f(p * 16.0f, q * 16.0f);
+            tq_translate_matrix(TQ_VEC2F(p * 16.0f, q * 16.0f));
             tq_draw_texture_fragment_f(
                 self->texture,
                 0.0f, 0.0f,
@@ -375,7 +375,7 @@ void draw_players(players_t const *self)
         }
 
         tq_push_matrix();
-        tq_translate_matrix_f(self->x[id], self->y[id]);
+        tq_translate_matrix(TQ_VEC2F(self->x[id], self->y[id]));
         tq_outline_rectangle_f(0.0f, 0.0f, 16.0f, 18.0f);
         tq_draw_texture_fragment_f(
             self->texture,

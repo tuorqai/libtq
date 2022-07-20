@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
         tq_clear();
 
         tq_set_outline_color(colors[current_color]);
-        tq_translate_matrix_f(position_x, position_y);
+        tq_translate_matrix(TQ_VEC2F(position_x, position_y));
         tq_rotate_matrix(t * 45.0f);
         tq_outline_rectangle_f(-size / 2.0f, -size / 2.0f, size, size);
     }

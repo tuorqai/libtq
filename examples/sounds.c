@@ -19,7 +19,7 @@ void draw_button(int index, float x, float y)
     tq_set_outline_color((index == selected_index) ? 0xFFFFFFFF : 0x808080FF);
 
     tq_push_matrix();
-        tq_translate_matrix_f(x, y);
+        tq_translate_matrix(TQ_VEC2F(x, y));
         tq_draw_texture_fragment_f(texture,
             -16.0f, -16.0f, 32.0f, 32.0f,
             index * 16.0f, 0.0f, 16.0f, 16.0f);

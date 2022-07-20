@@ -212,22 +212,12 @@ void tq_pop_matrix(void)
     graphics_pop_matrix();
 }
 
-void tq_translate_matrix_f(float x, float y)
-{
-    graphics_translate_matrix(x, y);
-}
-
-void tq_translate_matrix_v(tq_vec2f_t v)
+void tq_translate_matrix(tq_vec2f v)
 {
     graphics_translate_matrix(v.x, v.y);
 }
 
-void tq_scale_matrix_f(float x, float y)
-{
-    graphics_scale_matrix(x, y);
-}
-
-void tq_scale_matrix_v(tq_vec2f_t v)
+void tq_scale_matrix(tq_vec2f v)
 {
     graphics_scale_matrix(v.x, v.y);
 }
@@ -408,23 +398,23 @@ void tq_delete_texture(tq_texture texture)
     graphics_delete_texture(texture.id);
 }
 
-uint32_t tq_get_texture_width(tq_texture texture)
+int tq_get_texture_width(tq_texture texture)
 {
-    uint32_t width, height;
+    int width, height;
     graphics_get_texture_size(texture.id, &width, &height);
 
     return width;
 }
 
-uint32_t tq_get_texture_height(tq_texture texture)
+int tq_get_texture_height(tq_texture texture)
 {
-    uint32_t width, height;
+    int width, height;
     graphics_get_texture_size(texture.id, &width, &height);
     
     return height;
 }
 
-void tq_get_texture_size(tq_texture texture, uint32_t *width, uint32_t *height)
+void tq_get_texture_size(tq_texture texture, int *width, int *height)
 {
     graphics_get_texture_size(texture.id, width, height);
 }
