@@ -43,24 +43,17 @@ bool tq_process(void)
 //----------------------------------------------------------
 // Display
 
-uint32_t tq_get_display_width(void)
+tq_vec2i tq_get_display_size(void)
 {
-    return tq_core_get_display_width();
+    tq_vec2i size;
+    tq_core_get_display_size(&size.x, &size.y);
+
+    return size;
 }
 
-uint32_t tq_get_display_height(void)
+void tq_set_display_size(tq_vec2i size)
 {
-    return tq_core_get_display_height();
-}
-
-void tq_get_display_size(uint32_t *width, uint32_t *height)
-{
-    tq_core_get_display_size(width, height);
-}
-
-void tq_set_display_size(uint32_t width, uint32_t height)
-{
-    tq_core_set_display_size(width, height);
+    tq_core_set_display_size(size.x, size.y);
 }
 
 char const *tq_get_title(void)
@@ -109,20 +102,12 @@ void tq_on_key_released(tq_key_callback_t callback)
 //----------------------------------------------------------
 // Mouse
 
-int32_t tq_get_mouse_cursor_x(void)
+tq_vec2i tq_get_mouse_cursor_position(void)
 {
-    return tq_core_get_mouse_cursor_x();
-}
+    tq_vec2i position;
+    tq_core_get_mouse_cursor_position(&position.x, &position.y);
 
-int32_t tq_get_mouse_cursor_y(void)
-{
-    return tq_core_get_mouse_cursor_y();
-}
-
-void tq_get_mouse_cursor_position(int32_t *x, int32_t *y)
-{
-    *x = tq_core_get_mouse_cursor_x();
-    *y = tq_core_get_mouse_cursor_y();
+    return position;
 }
 
 void tq_on_mouse_button_pressed(tq_mouse_button_callback_t callback)
@@ -179,28 +164,44 @@ void tq_clear(void)
     graphics_clear();
 }
 
-tq_color_t tq_get_clear_color(void)
+tq_color tq_get_clear_color(void)
 {
     return graphics_get_clear_color();
 }
 
-void tq_set_clear_color(tq_color_t clear_color)
+void tq_set_clear_color(tq_color clear_color)
 {
     graphics_set_clear_color(clear_color);
 }
 
-void tq_view(float x, float y, float width, float height, float angle)
+//----------------------------------------------------------
+// View
+
+tq_vec2f tq_get_relative_position(tq_vec2f absolute)
 {
-    tq_graphics_view(x, y, width, height, angle);
+    tq_vec2f relative;
+    graphics_get_relative_position(absolute.x, absolute.y, &relative.x, &relative.y);
+
+    return relative;
 }
 
-void tq_view_v(tq_vec2f_t position, tq_vec2f_t size, float angle)
+void tq_set_view(tq_rectf rect, float rotation)
 {
-    tq_graphics_view(position.x, position.y, size.x, size.y, angle);
+    graphics_set_view(rect.x, rect.y, rect.w, rect.h, rotation);
+}
+
+void tq_reset_view(void)
+{
+    graphics_reset_view();
+}
+
+void tq_set_auto_view_reset_enabled(bool enabled)
+{
+    graphics_set_auto_view_reset_enabled(enabled);
 }
 
 //----------------------------------------------------------
-// Matrices
+// Transformation matrix stack
 
 void tq_push_matrix(void)
 {
@@ -285,42 +286,42 @@ void tq_fill_circle(tq_vec2f position, float radius)
     graphics_fill_circle(position.x, position.y, radius);
 }
 
-tq_color_t tq_get_point_color(void)
+tq_color tq_get_point_color(void)
 {
     return graphics_get_point_color();
 }
 
-void tq_set_point_color(tq_color_t point_color)
+void tq_set_point_color(tq_color point_color)
 {
     graphics_set_point_color(point_color);
 }
 
-tq_color_t tq_get_line_color(void)
+tq_color tq_get_line_color(void)
 {
     return graphics_get_line_color();
 }
 
-void tq_set_line_color(tq_color_t line_color)
+void tq_set_line_color(tq_color line_color)
 {
     graphics_set_line_color(line_color);
 }
 
-tq_color_t tq_get_outline_color(void)
+tq_color tq_get_outline_color(void)
 {
     return graphics_get_outline_color();
 }
 
-void tq_set_outline_color(tq_color_t outline_color)
+void tq_set_outline_color(tq_color outline_color)
 {
     graphics_set_outline_color(outline_color);
 }
 
-tq_color_t tq_get_fill_color(void)
+tq_color tq_get_fill_color(void)
 {
     return graphics_get_fill_color();
 }
 
-void tq_set_fill_color(tq_color_t fill_color)
+void tq_set_fill_color(tq_color fill_color)
 {
     graphics_set_fill_color(fill_color);
 }
@@ -343,57 +344,24 @@ void tq_delete_texture(tq_texture texture)
     graphics_delete_texture(texture.id);
 }
 
-int tq_get_texture_width(tq_texture texture)
+tq_vec2i tq_get_texture_size(tq_texture texture)
 {
-    int width, height;
-    graphics_get_texture_size(texture.id, &width, &height);
+    tq_vec2i size;
+    graphics_get_texture_size(texture.id, &size.x, &size.y);
 
-    return width;
+    return size;
 }
 
-int tq_get_texture_height(tq_texture texture)
+void tq_draw_texture(tq_texture texture, tq_rectf rect)
 {
-    int width, height;
-    graphics_get_texture_size(texture.id, &width, &height);
-    
-    return height;
+    graphics_draw_texture(texture.id, rect.x, rect.y, rect.w, rect.h);
 }
 
-void tq_get_texture_size(tq_texture texture, int *width, int *height)
+void tq_draw_subtexture(tq_texture texture, tq_rectf sub, tq_rectf rect)
 {
-    graphics_get_texture_size(texture.id, width, height);
-}
-
-void tq_draw_texture_f(tq_texture texture, float x, float y, float w, float h)
-{
-    graphics_draw_texture(texture.id, x, y, w, h);
-}
-
-void tq_draw_texture_v(tq_texture texture, tq_vec2f_t position, tq_vec2f_t size)
-{
-    graphics_draw_texture(texture.id, position.x, position.y, size.x, size.y);
-}
-
-void tq_draw_texture_fragment_f(tq_texture texture,
-    float x, float y,
-    float w, float h,
-    float fx, float fy,
-    float fw, float fh)
-{
-    graphics_draw_texture_fragment(texture.id, x, y, w, h, fx, fy, fw, fh);
-}
-
-void tq_draw_texture_fragment_v(tq_texture texture,
-    tq_vec2f_t position,
-    tq_vec2f_t size,
-    tq_vec2f_t fragment_position,
-    tq_vec2f_t fragment_size)
-{
-    graphics_draw_texture_fragment(texture.id,
-        position.x, position.y,
-        size.x, size.y,
-        fragment_position.x, fragment_position.y,
-        fragment_size.x, fragment_size.y);
+    graphics_draw_subtexture(texture.id,
+        rect.x, rect.y, rect.w, rect.h,
+        sub.x, sub.y, sub.w, sub.h);
 }
 
 //----------------------------------------------------------
@@ -414,12 +382,12 @@ void tq_delete_font(tq_font font)
     text_delete_font(font.id);
 }
 
-void tq_draw_text(tq_font font, tq_vec2f_t position, char const *text)
+void tq_draw_text(tq_font font, tq_vec2f position, char const *text)
 {
     text_draw_text(font.id, position.x, position.y, text);
 }
 
-void tq_print_text(tq_font font, tq_vec2f_t position, char const *fmt, ...)
+void tq_print_text(tq_font font, tq_vec2f position, char const *fmt, ...)
 {
     static int buffer_size = 0;
     static char *buffer = NULL;

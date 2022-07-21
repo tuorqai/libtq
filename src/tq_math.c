@@ -189,4 +189,43 @@ void mat4_rotate(float *mat, float rad, float x, float y, float z)
     mat4_multiply(mat, rotation);
 }
 
+void mat4_inverse(float const *mat, float *dst)
+{
+    float det =
+        mat[0] * (mat[15] * mat[5] - mat[7] * mat[13]) -
+        mat[1] * (mat[15] * mat[4] - mat[7] * mat[12]) +
+        mat[3] * (mat[13] * mat[4] - mat[5] * mat[12]);
+    
+    if (det == 0.0f) {
+        mat4_identity(dst);
+        return;
+    }
+
+    dst[ 0] = +(mat[15] * mat[5] - mat[7] * mat[13]) / det;
+    dst[ 1] = -(mat[15] * mat[4] - mat[7] * mat[12]) / det;
+    dst[ 2] = 0.0f;
+    dst[ 3] = +(mat[13] * mat[4] - mat[5] * mat[12]) / det;
+
+    dst[ 4] = -(mat[15] * mat[1] - mat[3] * mat[13]) / det;
+    dst[ 5] = +(mat[15] * mat[0] - mat[3] * mat[12]) / det;
+    dst[ 6] = 0.0f;
+    dst[ 7] = -(mat[13] * mat[0] - mat[1] * mat[12]) / det;
+
+    dst[ 8] = 0.0f;
+    dst[ 9] = 0.0f;
+    dst[10] = 1.0f;
+    dst[11] = 0.0f;
+
+    dst[12] = +(mat[7]  * mat[1] - mat[3] * mat[5])  / det;
+    dst[13] = -(mat[7]  * mat[0] - mat[3] * mat[4])  / det;
+    dst[14] = 0.0f;
+    dst[15] = +(mat[5]  * mat[0] - mat[1] * mat[4])  / det;
+}
+
+void mat4_transform_point(float const *mat, float u, float v, float *x, float *y)
+{
+    *x = mat[0] * u + mat[4] * v + mat[12];
+    *y = mat[1] * u + mat[5] * v + mat[13];
+}
+
 //------------------------------------------------------------------------------

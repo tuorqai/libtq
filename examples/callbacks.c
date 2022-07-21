@@ -4,13 +4,17 @@
 
 #define NUM_COLORS  7
 
-static tq_color_t colors[NUM_COLORS] = {
-    0xE0E0E0FF, 0xE00000FF, 0x00E000FF, 0x0000E0FF,
-    0xE0E000FF, 0xE000E0FF, 0x00E0E0FF,
+static tq_color colors[NUM_COLORS] = {
+    {0xE0, 0xE0, 0xE0, 0xFF},
+    {0xE0, 0x00, 0x00, 0xFF},
+    {0x00, 0xE0, 0x00, 0xFF},
+    {0x00, 0x00, 0xE0, 0xFF},
+    {0xE0, 0xE0, 0x00, 0xFF},
+    {0xE0, 0x00, 0xE0, 0xFF},
+    {0x00, 0xE0, 0xE0, 0xFF},
 };
 
-static float position_x = 256.0f;
-static float position_y = 256.0f;
+static tq_vec2f position = {256.0f, 256.0f};
 static float size = 128.0f;
 static int current_color = 0;
 
@@ -33,21 +37,21 @@ void on_key_pressed(tq_key_t key)
     }
 }
 
-void on_mouse_button_pressed(tq_mouse_button_t mouse_button, int32_t x, int32_t y)
+void on_mouse_button_pressed(tq_vec2i cursor, tq_mouse_button_t mouse_button)
 {
     if (mouse_button == TQ_MOUSE_BUTTON_LEFT) {
-        position_x = (float) x;
-        position_y = (float) y;
+        position.x = (float) cursor.x;
+        position.y = (float) cursor.y;
     } else if (mouse_button == TQ_MOUSE_BUTTON_RIGHT) {
-        position_x = 256.0f;
-        position_y = 256.0f;
+        position.x = 256.0f;
+        position.y = 256.0f;
         size = 128.0f;
     }
 }
 
-void on_mouse_wheel_scrolled(float delta, int32_t x, int32_t y)
+void on_mouse_wheel_scrolled(tq_vec2i cursor, tq_vec2f wheel)
 {
-    size += delta * 16.0f;
+    size += wheel.y * 16.0f;
 
     if (size < 16.0f) {
         size = 16.0f;
@@ -57,17 +61,17 @@ void on_mouse_wheel_scrolled(float delta, int32_t x, int32_t y)
         size = 256.0f;
     }
 
-    printf("on_mouse_wheel_scrolled(): %f, %d, %d\n", delta, x, y);
+    printf("on_mouse_wheel_scrolled(): %f, %d, %d\n", wheel.y, cursor.x, cursor.y);
 }
 
 int main(int argc, char *argv[])
 {
-    tq_set_display_size(512, 512);
+    tq_set_display_size(TQ_VEC2I(512, 512));
 
     tq_initialize();
 
-    tq_set_clear_color(TQ_COLOR24(20, 20, 64));
-    tq_set_outline_color(TQ_COLOR24(224, 224, 224));
+    tq_set_clear_color(tq_c24(20, 20, 64));
+    tq_set_outline_color(tq_c24(224, 224, 224));
 
     tq_on_key_pressed(on_key_pressed);
     tq_on_mouse_button_pressed(on_mouse_button_pressed);
@@ -79,9 +83,13 @@ int main(int argc, char *argv[])
         tq_clear();
 
         tq_set_outline_color(colors[current_color]);
-        tq_translate_matrix(TQ_VEC2F(position_x, position_y));
+        tq_translate_matrix(position);
         tq_rotate_matrix(t * 45.0f);
-        tq_outline_rectangle(TQ_RECTF(-size / 2.0f, -size / 2.0f, size, size));
+
+        tq_outline_rectangle((tq_rectf) {
+            .x = -size / 2.0f, .y = -size / 2.0f,
+            .w = size, .h = size,
+        });
     }
 
     tq_terminate();

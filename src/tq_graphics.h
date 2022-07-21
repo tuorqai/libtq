@@ -21,17 +21,14 @@ void tq_graphics_terminate(void);
 // [tq::graphics::process]
 void tq_graphics_process(void);
 
-// [tq::graphics::clear]
 void graphics_clear(void);
+tq_color graphics_get_clear_color(void);
+void graphics_set_clear_color(tq_color clear_color);
 
-// [tq::graphics::get_clear_color]
-tq_color_t graphics_get_clear_color(void);
-
-// [tq::graphics::set_clear_color]
-void graphics_set_clear_color(tq_color_t clear_color);
-
-// [tq::graphics::view]
-void tq_graphics_view(float x, float y, float w, float h, float rotation);
+void graphics_get_relative_position(float ax, float ay, float *x, float *y);
+void graphics_set_view(float x, float y, float w, float h, float rotation);
+void graphics_reset_view(void);
+void graphics_set_auto_view_reset_enabled(bool enabled);
 
 // [tq::graphics::push_matrix]
 void graphics_push_matrix(void);
@@ -81,29 +78,17 @@ void graphics_fill_rectangle(float x, float y, float w, float h);
 // [tq::graphics::fill_circle]
 void graphics_fill_circle(float x, float y, float radius);
 
-// [tq::graphics::get_point_color]
-tq_color_t graphics_get_point_color(void);
+tq_color graphics_get_point_color(void);
+void graphics_set_point_color(tq_color point_color);
 
-// [tq::graphics::set_point_color]
-void graphics_set_point_color(tq_color_t point_color);
+tq_color graphics_get_line_color(void);
+void graphics_set_line_color(tq_color line_color);
 
-// [tq::graphics::get_line_color]
-tq_color_t graphics_get_line_color(void);
+tq_color graphics_get_outline_color(void);
+void graphics_set_outline_color(tq_color outline_color);
 
-// [tq::graphics::set_line_color]
-void graphics_set_line_color(tq_color_t line_color);
-
-// [tq::graphics::get_outline_color]
-tq_color_t graphics_get_outline_color(void);
-
-// [tq::graphics::set_outline_color]
-void graphics_set_outline_color(tq_color_t outline_color);
-
-// [tq::graphics::get_fill_color]
-tq_color_t graphics_get_fill_color(void);
-
-// [tq::graphics::set_fill_color]
-void graphics_set_fill_color(tq_color_t fill_color);
+tq_color graphics_get_fill_color(void);
+void graphics_set_fill_color(tq_color fill_color);
 
 int graphics_load_texture(int stream_id);
 int graphics_load_texture_from_file(char const *path);
@@ -112,20 +97,17 @@ void graphics_delete_texture(int texture_id);
 
 void graphics_get_texture_size(int texture_id, int *width, int *height);
 
-// [tq::graphics::draw_texture]
 void graphics_draw_texture(int texture_id,
     float x, float y,
     float w, float h);
 
-// [tq::graphics::draw_texture_fragment]
-void graphics_draw_texture_fragment(int texture_id,
+void graphics_draw_subtexture(int texture_id,
     float x, float y,
     float w, float h,
     float fx, float fy,
     float fw, float fh);
 
-// [tq::graphics::on_display_resized]
-void tq_graphics_on_display_resized(uint32_t width, uint32_t height);
+void graphics_on_display_resized(int width, int height);
 
 //------------------------------------------------------------------------------
 
@@ -155,8 +137,8 @@ struct renderer_impl
     void (*resize_texture)(int texture_id, int new_width, int new_height);
     void (*bind_texture)(int texture_id);
 
-    void (*set_clear_color)(tq_color_t color);
-    void (*set_draw_color)(tq_color_t color);
+    void (*set_clear_color)(tq_color color);
+    void (*set_draw_color)(tq_color color);
 
     void (*clear)(void);
     void (*draw_solid)(int mode, float const *data, int num_vertices);

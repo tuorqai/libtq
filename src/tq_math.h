@@ -29,6 +29,8 @@ void mat4_multiply(float *mat, float const *n);
 void mat4_ortho(float *mat, float left, float right, float bottom, float top, float n, float f);
 void mat4_translate(float *mat, float x, float y, float z);
 void mat4_rotate(float *mat, float rad, float x, float y, float z);
+void mat4_inverse(float const *mat, float *dst);
+void mat4_transform_point(float const *mat, float u, float v, float *x, float *y);
 
 //------------------------------------------------------------------------------
 

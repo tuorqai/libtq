@@ -162,6 +162,9 @@ static void initialize(uint32_t a0, uint32_t a1, char const *a2)
         tq_error("Failed to initialize SDL: %s", SDL_GetError());
     }
 
+    int width, height;
+    tq_core_get_display_size(&width, &height);
+
     tq_sdl_gl_version_t versions[] = {
         { 4, 6, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
         { 4, 5, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
@@ -186,8 +189,7 @@ static void initialize(uint32_t a0, uint32_t a1, char const *a2)
             tq_core_get_title(),
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
-            tq_core_get_display_width(),
-            tq_core_get_display_height(),
+            width, height,
             SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
         );
 
@@ -261,7 +263,7 @@ static bool process_events(void)
             break;
         case SDL_MOUSEWHEEL:
             if (event.wheel.y) {
-                tq_core_on_mouse_wheel_scrolled((float) event.wheel.y, -1, -1);
+                tq_core_on_mouse_wheel_scrolled((float) event.wheel.x, (float) event.wheel.y);
             }
             break;
         case SDL_WINDOWEVENT:

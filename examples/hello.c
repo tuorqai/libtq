@@ -26,7 +26,7 @@
 
 int main(int argc, char *argv[])
 {
-    tq_set_display_size(512, 512);
+    tq_set_display_size(TQ_VEC2I(512, 512));
     tq_set_title("Hello, tq!");
 
     tq_initialize();
@@ -34,9 +34,9 @@ int main(int argc, char *argv[])
     tq_texture moon = tq_load_texture_from_file("assets/moon.png");
     tq_music ostrich = tq_open_music_from_file("assets/ostrich.ogg");
 
-    tq_set_clear_color(TQ_COLOR24(237, 199, 229));
-    tq_set_outline_color(TQ_COLOR24(40, 112, 106));
-    tq_set_fill_color(TQ_COLOR24(213, 237, 199));
+    tq_set_clear_color(tq_c24(237, 199, 229));
+    tq_set_outline_color(tq_c24(40, 112, 106));
+    tq_set_fill_color(tq_c24(213, 237, 199));
 
     tq_play_music(ostrich, -1);
 
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
         tq_clear();
         tq_draw_rectangle(TQ_RECTF(128.0f, 128.0f, 256.0f, 256.0f));
-        tq_draw_texture_f(moon, 128.0f, 128.0f, 256.0f, 256.0f);
+        tq_draw_texture(moon, TQ_RECTF(128.0f, 128.0f, 256.0f, 256.0f));
     }
 
     tq_terminate();

@@ -32,18 +32,25 @@ enum
 struct matrices
 {
     float       default_projection[16];
+    float       projection[16];
     float       model_view[MAX_MATRICES][9];
-    uint32_t    model_view_index;
+    int         current_model_view;
+
+    float       inverse_projection[16];
+    bool        dirty_inverse_projection;
 };
 
 struct color
 {
-    tq_color_t direct;
+    tq_color value;
 };
 
 static struct renderer_impl renderer;
+static int display_width;
+static int display_height;
 static struct matrices matrices;
 static struct color colors[COLOR_COUNT];
+static bool auto_view_reset;
 
 //------------------------------------------------------------------------------
 // Utility functions
@@ -64,7 +71,7 @@ static void make_projection(float *dst, float x, float y, float w, float h, floa
     }
 }
 
-static void make_default_projection(float *dst, uint32_t w, uint32_t h)
+static void make_default_projection(float *dst, int w, int h)
 {
     mat4_ortho(dst, 0.0f, (float) w, (float) h, 0.0f, -1.0f, +1.0f);
 }
@@ -86,6 +93,16 @@ static float *make_circle(float x, float y, float radius, int color_id, int *len
     return data;
 }
 
+static float const *get_inverse_projection(void)
+{
+    if (matrices.dirty_inverse_projection) {
+        mat4_inverse(matrices.projection, matrices.inverse_projection);
+        matrices.dirty_inverse_projection = false;
+    }
+
+    return matrices.inverse_projection;
+}
+
 //------------------------------------------------------------------------------
 
 void tq_graphics_initialize(void)
@@ -96,27 +113,30 @@ void tq_graphics_initialize(void)
     #error Invalid configuration. Check your build settings.
 #endif
 
-    uint32_t width = tq_core_get_display_width();
-    uint32_t height = tq_core_get_display_height();
+    tq_core_get_display_size(&display_width, &display_height);
 
-    make_default_projection(matrices.default_projection, width, height);
+    make_default_projection(matrices.default_projection, display_width, display_height);
+    mat4_copy(matrices.projection, matrices.default_projection);
 
     for (int index = 0; index < MAX_MATRICES; index++) {
         mat3_identity(matrices.model_view[index]);
     }
     
-    matrices.model_view_index = 0;
+    matrices.current_model_view = 0;
+    matrices.dirty_inverse_projection = true;
 
-    graphics_set_clear_color(TQ_COLOR24(0, 0, 0));
-    graphics_set_point_color(TQ_COLOR24(255, 255, 255));
-    graphics_set_line_color(TQ_COLOR24(255, 255, 255));
-    graphics_set_outline_color(TQ_COLOR24(255, 255, 255));
-    graphics_set_fill_color(TQ_COLOR24(0, 0, 0));
+    graphics_set_clear_color(tq_c24(0, 0, 0));
+    graphics_set_point_color(tq_c24(255, 255, 255));
+    graphics_set_line_color(tq_c24(255, 255, 255));
+    graphics_set_outline_color(tq_c24(255, 255, 255));
+    graphics_set_fill_color(tq_c24(0, 0, 0));
+
+    auto_view_reset = true;
 
     renderer.initialize();
 
-    renderer.update_viewport(0, 0, width, height);
-    renderer.update_projection(matrices.default_projection);
+    renderer.update_viewport(0, 0, display_width, display_height);
+    renderer.update_projection(matrices.projection);
     renderer.update_model_view(matrices.model_view[0]);
 
     text_initialize(&renderer);
@@ -132,40 +152,71 @@ void tq_graphics_process(void)
 {
     renderer.process();
 
-    matrices.model_view_index = 0;
     mat3_identity(matrices.model_view[0]);
-
-    renderer.update_projection(matrices.default_projection);
     renderer.update_model_view(matrices.model_view[0]);
+
+    matrices.current_model_view = 0;
+
+    if (auto_view_reset) {
+        mat4_copy(matrices.projection, matrices.default_projection);
+        renderer.update_projection(matrices.projection);
+    }
 }
+
+//------------------------------------------------------------------------------
 
 void graphics_clear(void)
 {
     renderer.clear();
 }
 
-tq_color_t graphics_get_clear_color(void)
+tq_color graphics_get_clear_color(void)
 {
-    return colors[COLOR_CLEAR].direct;
+    return colors[COLOR_CLEAR].value;
 }
 
-void graphics_set_clear_color(tq_color_t clear_color)
+void graphics_set_clear_color(tq_color clear_color)
 {
-    colors[COLOR_CLEAR].direct = clear_color;
+    colors[COLOR_CLEAR].value = clear_color;
     renderer.set_clear_color(clear_color);
 }
 
-void tq_graphics_view(float x, float y, float w, float h, float rotation)
-{
-    float projection[16];
+//------------------------------------------------------------------------------
 
-    make_projection(projection, x, y, w, h, rotation);
-    renderer.update_projection(projection);
+void graphics_get_relative_position(float ax, float ay, float *x, float *y)
+{
+    float u = -1.0f + 2.0f * (ax / (float) display_width);
+    float v = +1.0f - 2.0f * (ay / (float) display_height);
+
+    mat4_transform_point(get_inverse_projection(), u, v, x, y);
 }
+
+void graphics_set_view(float x, float y, float w, float h, float rotation)
+{
+    make_projection(matrices.projection, x, y, w, h, rotation);
+    renderer.update_projection(matrices.projection);
+
+    matrices.dirty_inverse_projection = true;
+}
+
+void graphics_reset_view(void)
+{
+    mat4_copy(matrices.projection, matrices.default_projection);
+    renderer.update_projection(matrices.projection);
+
+    matrices.dirty_inverse_projection = true;
+}
+
+void graphics_set_auto_view_reset_enabled(bool enabled)
+{
+    auto_view_reset = enabled;
+}
+
+//------------------------------------------------------------------------------
 
 void graphics_push_matrix(void)
 {
-    unsigned int index = matrices.model_view_index;
+    int index = matrices.current_model_view;
 
     if (index == (MAX_MATRICES - 1)) {
         return;
@@ -173,40 +224,42 @@ void graphics_push_matrix(void)
 
     mat3_copy(matrices.model_view[index + 1], matrices.model_view[index]);
 
-    matrices.model_view_index++;
-    renderer.update_model_view(matrices.model_view[matrices.model_view_index]);
+    matrices.current_model_view++;
+    renderer.update_model_view(matrices.model_view[matrices.current_model_view]);
 }
 
 void graphics_pop_matrix(void)
 {
-    if (matrices.model_view_index == 0) {
+    if (matrices.current_model_view == 0) {
         return;
     }
 
-    matrices.model_view_index--;
-    renderer.update_model_view(matrices.model_view[matrices.model_view_index]);
+    matrices.current_model_view--;
+    renderer.update_model_view(matrices.model_view[matrices.current_model_view]);
 }
 
 void graphics_translate_matrix(float x, float y)
 {
-    unsigned int index = matrices.model_view_index;
+    int index = matrices.current_model_view;
     mat3_translate(matrices.model_view[index], x, y);
     renderer.update_model_view(matrices.model_view[index]);
 }
 
 void graphics_scale_matrix(float x, float y)
 {
-    unsigned int index = matrices.model_view_index;
+    int index = matrices.current_model_view;
     mat3_scale(matrices.model_view[index], x, y);
     renderer.update_model_view(matrices.model_view[index]);
 }
 
 void graphics_rotate_matrix(float a)
 {
-    unsigned int index = matrices.model_view_index;
+    int index = matrices.current_model_view;
     mat3_rotate(matrices.model_view[index], RADIANS(a));
     renderer.update_model_view(matrices.model_view[index]);
 }
+
+//------------------------------------------------------------------------------
 
 void graphics_draw_point(float x, float y)
 {
@@ -214,7 +267,7 @@ void graphics_draw_point(float x, float y)
         x, y,
     };
 
-    renderer.set_draw_color(colors[COLOR_POINT].direct);
+    renderer.set_draw_color(colors[COLOR_POINT].value);
     renderer.draw_solid(PRIMITIVE_POINTS, data, 1);
 }
 
@@ -225,7 +278,7 @@ void graphics_draw_line(float ax, float ay, float bx, float by)
         bx, by,
     };
 
-    renderer.set_draw_color(colors[COLOR_LINE].direct);
+    renderer.set_draw_color(colors[COLOR_LINE].value);
     renderer.draw_solid(PRIMITIVE_LINE_STRIP, data, 2);
 }
 
@@ -255,7 +308,7 @@ void graphics_outline_triangle(float ax, float ay, float bx, float by, float cx,
         cx, cy,
     };
 
-    renderer.set_draw_color(colors[COLOR_OUTLINE].direct);
+    renderer.set_draw_color(colors[COLOR_OUTLINE].value);
     renderer.draw_solid(PRIMITIVE_LINE_LOOP, data, 3);
 }
 
@@ -268,7 +321,7 @@ void graphics_outline_rectangle(float x, float y, float w, float h)
         x,      y + h,
     };
 
-    renderer.set_draw_color(colors[COLOR_OUTLINE].direct);
+    renderer.set_draw_color(colors[COLOR_OUTLINE].value);
     renderer.draw_solid(PRIMITIVE_LINE_LOOP, data, 4);
 }
 
@@ -278,7 +331,7 @@ void graphics_outline_circle(float x, float y, float radius)
 
     float *data = make_circle(x, y, radius, COLOR_OUTLINE, &length);
 
-    renderer.set_draw_color(colors[COLOR_OUTLINE].direct);
+    renderer.set_draw_color(colors[COLOR_OUTLINE].value);
     renderer.draw_solid(PRIMITIVE_LINE_LOOP, data, length);
 
     mem_free(data);
@@ -292,7 +345,7 @@ void graphics_fill_triangle(float ax, float ay, float bx, float by, float cx, fl
         cx, cy,
     };
 
-    renderer.set_draw_color(colors[COLOR_FILL].direct);
+    renderer.set_draw_color(colors[COLOR_FILL].value);
     renderer.draw_solid(PRIMITIVE_TRIANGLE_FAN, data, 3);
 }
 
@@ -305,7 +358,7 @@ void graphics_fill_rectangle(float x, float y, float w, float h)
         x,      y + h,
     };
 
-    renderer.set_draw_color(colors[COLOR_FILL].direct);
+    renderer.set_draw_color(colors[COLOR_FILL].value);
     renderer.draw_solid(PRIMITIVE_TRIANGLE_FAN, data, 4);
 }
 
@@ -315,51 +368,53 @@ void graphics_fill_circle(float x, float y, float radius)
 
     float *data = make_circle(x, y, radius, COLOR_FILL, &length);
 
-    renderer.set_draw_color(colors[COLOR_FILL].direct);
+    renderer.set_draw_color(colors[COLOR_FILL].value);
     renderer.draw_solid(PRIMITIVE_TRIANGLE_FAN, data, length - 1);
 
     mem_free(data);
 }
 
-tq_color_t graphics_get_point_color(void)
+tq_color graphics_get_point_color(void)
 {
-    return colors[COLOR_POINT].direct;
+    return colors[COLOR_POINT].value;
 }
 
-void graphics_set_point_color(tq_color_t point_color)
+void graphics_set_point_color(tq_color point_color)
 {
-    colors[COLOR_POINT].direct = point_color;
+    colors[COLOR_POINT].value = point_color;
 }
 
-tq_color_t graphics_get_line_color(void)
+tq_color graphics_get_line_color(void)
 {
-    return colors[COLOR_LINE].direct;
+    return colors[COLOR_LINE].value;
 }
 
-void graphics_set_line_color(tq_color_t line_color)
+void graphics_set_line_color(tq_color line_color)
 {
-    colors[COLOR_LINE].direct = line_color;
+    colors[COLOR_LINE].value = line_color;
 }
 
-tq_color_t graphics_get_outline_color(void)
+tq_color graphics_get_outline_color(void)
 {
-    return colors[COLOR_OUTLINE].direct;
+    return colors[COLOR_OUTLINE].value;
 }
 
-void graphics_set_outline_color(tq_color_t outline_color)
+void graphics_set_outline_color(tq_color outline_color)
 {
-    colors[COLOR_OUTLINE].direct = outline_color;
+    colors[COLOR_OUTLINE].value = outline_color;
 }
 
-tq_color_t graphics_get_fill_color(void)
+tq_color graphics_get_fill_color(void)
 {
-    return colors[COLOR_FILL].direct;
+    return colors[COLOR_FILL].value;
 }
 
-void graphics_set_fill_color(tq_color_t fill_color)
+void graphics_set_fill_color(tq_color fill_color)
 {
-    colors[COLOR_FILL].direct = fill_color;
+    colors[COLOR_FILL].value = fill_color;
 }
+
+//------------------------------------------------------------------------------
 
 int graphics_load_texture(int stream_id)
 {
@@ -418,7 +473,7 @@ void graphics_draw_texture(int texture_id,
     renderer.draw_textured(PRIMITIVE_TRIANGLE_FAN, data, 4);
 }
 
-void graphics_draw_texture_fragment(int texture_id,
+void graphics_draw_subtexture(int texture_id,
     float x, float y,
     float w, float h,
     float fx, float fy,
@@ -438,18 +493,15 @@ void graphics_draw_texture_fragment(int texture_id,
     renderer.draw_textured(PRIMITIVE_TRIANGLE_FAN, data, 4);
 }
 
-//--------------------------------------
-// tq::graphics::on_display_resized
-//--------------------------------------
-void tq_graphics_on_display_resized(uint32_t width, uint32_t height)
+//------------------------------------------------------------------------------
+
+void graphics_on_display_resized(int width, int height)
 {
-    // This function is called when the user resizes the window.
-    // Here we just replace the default projection with the new one
-    // and tell the renderer to update its viewport
-    // (basically call glViewport).
+    display_width = width;
+    display_height = height;
 
     make_default_projection(matrices.default_projection, width, height);
-    renderer.update_viewport(0, 0, (int) width, (int) height);
+    renderer.update_viewport(0, 0, width, height);
 }
 
 //------------------------------------------------------------------------------

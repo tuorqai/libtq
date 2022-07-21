@@ -6,6 +6,7 @@
 #include "tq_core.h"
 #include "tq_graphics.h"
 #include "tq_log.h"
+#include "tq_math.h"
 
 //------------------------------------------------------------------------------
 // Declarations
@@ -16,8 +17,8 @@ typedef struct tq_core
     tq_threads_impl_t   threads;
     tq_display_t        display;
 
-    uint32_t            display_width;
-    uint32_t            display_height;
+    int                 display_width;
+    int                 display_height;
     char                title[256];
     int                 key_autorepeat; /* -1: false, 0: undefined, 1: true */
 
@@ -163,23 +164,13 @@ bool tq_core_process(void)
     return core.display.process_events();
 }
 
-uint32_t tq_core_get_display_width(void)
-{
-    return core.display_width;
-}
-
-uint32_t tq_core_get_display_height(void)
-{
-    return core.display_height;
-}
-
-void tq_core_get_display_size(uint32_t *width, uint32_t *height)
+void tq_core_get_display_size(int *width, int *height)
 {
     *width = core.display_width;
     *height = core.display_height;
 }
 
-void tq_core_set_display_size(uint32_t width, uint32_t height)
+void tq_core_set_display_size(int width, int height)
 {
     core.display_width = width;
     core.display_height = height;
@@ -227,14 +218,10 @@ bool tq_core_is_mouse_button_pressed(tq_mouse_button_t mouse_button)
     return (core.mouse_button_state & (1 << mouse_button));
 }
 
-int32_t tq_core_get_mouse_cursor_x(void)
+void tq_core_get_mouse_cursor_position(int *x, int *y)
 {
-    return core.mouse_cursor_x;
-}
-
-int32_t tq_core_get_mouse_cursor_y(void)
-{
-    return core.mouse_cursor_y;
+    *x = core.mouse_cursor_x;
+    *y = core.mouse_cursor_y;
 }
 
 float tq_core_get_time_mediump(void)
@@ -280,8 +267,8 @@ void tq_core_on_mouse_button_pressed(tq_mouse_button_t mouse_button)
     core.mouse_button_state |= (1 << mouse_button);
 
     if (core.mouse_button_press_callback) {
-        core.mouse_button_press_callback(mouse_button,
-            core.mouse_cursor_x, core.mouse_cursor_y);
+        tq_vec2i cursor = {core.mouse_cursor_x, core.mouse_cursor_y};
+        core.mouse_button_press_callback(cursor, mouse_button);
     }
 }
 
@@ -290,8 +277,8 @@ void tq_core_on_mouse_button_released(tq_mouse_button_t mouse_button)
     core.mouse_button_state &= ~(1 << mouse_button);
 
     if (core.mouse_button_release_callback) {
-        core.mouse_button_release_callback(mouse_button,
-            core.mouse_cursor_x, core.mouse_cursor_y);
+        tq_vec2i cursor = {core.mouse_cursor_x, core.mouse_cursor_y};
+        core.mouse_button_release_callback(cursor, mouse_button);
     }
 }
 
@@ -301,23 +288,26 @@ void tq_core_on_mouse_cursor_moved(int32_t x, int32_t y)
     core.mouse_cursor_y = y;
 
     if (core.mouse_cursor_move_callback) {
-        core.mouse_cursor_move_callback(x, y);
+        tq_vec2i cursor = {core.mouse_cursor_x, core.mouse_cursor_y};
+        core.mouse_cursor_move_callback(cursor);
     }
 }
 
-void tq_core_on_mouse_wheel_scrolled(float delta, int32_t x, int32_t y)
+void tq_core_on_mouse_wheel_scrolled(float x_delta, float y_delta)
 {
     if (core.mouse_wheel_scroll_callback) {
-        core.mouse_wheel_scroll_callback(delta, core.mouse_cursor_x, core.mouse_cursor_y);
+        tq_vec2i cursor = {core.mouse_cursor_x, core.mouse_cursor_y};
+        tq_vec2f wheel = {x_delta, y_delta};
+        core.mouse_wheel_scroll_callback(cursor, wheel);
     }
 }
 
-void tq_core_on_display_resized(uint32_t width, uint32_t height)
+void tq_core_on_display_resized(int width, int height)
 {
     core.display_width = width;
     core.display_height = height;
 
-    tq_graphics_on_display_resized(width, height);
+    graphics_on_display_resized(width, height);
 }
 
 void tq_core_set_key_press_callback(tq_key_callback_t callback)

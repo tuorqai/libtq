@@ -16,13 +16,15 @@ static tq_channel   music_channel = { -1 };
 
 void draw_button(int index, float x, float y)
 {
-    tq_set_outline_color((index == selected_index) ? 0xFFFFFFFF : 0x808080FF);
+    tq_set_outline_color((index == selected_index)
+        ? tq_c24(0xFF, 0xFF, 0xFF)
+        : tq_c24(0x80, 0x80, 0x80));
 
     tq_push_matrix();
         tq_translate_matrix(TQ_VEC2F(x, y));
-        tq_draw_texture_fragment_f(texture,
-            -16.0f, -16.0f, 32.0f, 32.0f,
-            index * 16.0f, 0.0f, 16.0f, 16.0f);
+        tq_draw_subtexture(texture,
+            TQ_RECTF(index * 16.0f, 0.0f, 16.0f, 16.0f),
+            TQ_RECTF(-16.0f, -16.0f, 32.0f, 32.0f));
         tq_outline_rectangle(TQ_RECTF(-32.0f, -32.0f, 64.0f, 64.0f));
     tq_pop_matrix();
 }
@@ -56,7 +58,7 @@ void on_key_pressed(tq_key_t key)
     }
 }
 
-void on_mouse_button_pressed(tq_mouse_button_t button, int32_t x, int32_t y)
+void on_mouse_button_pressed(tq_vec2i cursor, tq_mouse_button_t button)
 {
     if (button == TQ_MOUSE_BUTTON_LEFT) {
         if (selected_index != -1) {
@@ -65,18 +67,18 @@ void on_mouse_button_pressed(tq_mouse_button_t button, int32_t x, int32_t y)
     }
 }
 
-void on_mouse_cursor_moved(int32_t x, int32_t y)
+void on_mouse_cursor_moved(tq_vec2i cursor)
 {
     selected_index = -1;
 
-    if (y >= 224 && y <= 288) {
-        if (x >= 32 && x <= 96) {
+    if (cursor.y >= 224 && cursor.y <= 288) {
+        if (cursor.x >= 32 && cursor.x <= 96) {
             selected_index = 0;
-        } else if (x >= 160 && x <= 224) {
+        } else if (cursor.x >= 160 && cursor.x <= 224) {
             selected_index = 1;
-        } else if (x >= 288 && x <= 352) {
+        } else if (cursor.x >= 288 && cursor.x <= 352) {
             selected_index = 2;
-        } else if (x >= 416 && x <= 480) {
+        } else if (cursor.x >= 416 && cursor.x <= 480) {
             selected_index = 3;
         }
     }
@@ -84,7 +86,7 @@ void on_mouse_cursor_moved(int32_t x, int32_t y)
 
 int main(int argc, char *argv[])
 {
-    tq_set_display_size(512, 512);
+    tq_set_display_size(TQ_VEC2I(512, 512));
     tq_set_title("[tq library] sounds.c");
 
     tq_initialize();
@@ -101,7 +103,7 @@ int main(int argc, char *argv[])
     tq_on_mouse_button_pressed(on_mouse_button_pressed);
     tq_on_mouse_cursor_moved(on_mouse_cursor_moved);
 
-    tq_set_clear_color(0x00082eff);
+    tq_set_clear_color(tq_c24(0x00, 0x08, 0x2E));
 
     while (tq_process()) {
         tq_clear();

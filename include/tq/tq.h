@@ -17,7 +17,7 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
-// tq library                                                     version 0.2.0
+// tq library
 //------------------------------------------------------------------------------
 
 #ifndef TQ_PUBLIC_H_INC
@@ -35,59 +35,56 @@
 // Compiler-dependent macros
 
 #if defined(__cplusplus)
-#   define TQ_EXPORT    extern "C"
+#   define TQ_LINKAGE       extern "C"
 #else
-#   define TQ_EXPORT    extern
+#   define TQ_LINKAGE       extern
 #endif
 
 #if defined(__GNUC__)
-#   define TQ_API       __attribute__((visibility("default")))
+#   define TQ_EXPORT        __attribute__((visibility("default")))
 #   define TQ_CALL
-#   define TQ_NO_RET    __attribute__((__noreturn__))
+#   define TQ_NO_RET        __attribute__((__noreturn__))
 #elif defined(_MSC_VER)
 #   if defined(TQ_BUILD)
-#       define TQ_API   __declspec(dllexport)
+#       define TQ_EXPORT    __declspec(dllexport)
 #   else
-#       define TQ_API   __declspec(dllimport)
+#       define TQ_EXPORT    __declspec(dllimport)
 #   endif
-#   define TQ_CALL      __cdecl
-#   define TQ_NO_RET    __declspec(noreturn)
+#   define TQ_CALL          __cdecl
+#   define TQ_NO_RET        __declspec(noreturn)
 #else
-#   define TQ_API
+#   define TQ_ENTRY
 #   define TQ_CALL
 #   define TQ_NO_RET
 #endif
+
+#define TQ_API          TQ_LINKAGE TQ_EXPORT
 
 //------------------------------------------------------------------------------
 // Constants
 
 /**
- * @brief π number.
+ * π number.
  */
 #define TQ_PI                           (3.14159265358979323846)
 
 /**
- * @brief Maximum number of textures.
+ * Maximum number of textures.
  */
 #define TQ_TEXTURE_LIMIT                (256)
 
 /**
- * Maximum number of fonts.
- */
-#define TQ_MAX_FONTS                    (16)
-
-/**
- * @brief Maximum number of open music tracks.
+ * Maximum number of open music tracks.
  */
 #define TQ_MUSIC_LIMIT                  (32)
 
 /**
- * @brief Maximum number of sounds.
+ * Maximum number of sounds.
  */
 #define TQ_SOUND_LIMIT                  (256)
 
 /**
- * @brief Maximum number of playing audio channels.
+ * Maximum number of playing audio channels.
  */
 #define TQ_CHANNEL_LIMIT                (16)
 
@@ -97,7 +94,7 @@
 #define TQ_FONT_NORMAL                  (400)
 
 /**
- * Cx.
+ * Bold font weight.
  */
 #define TQ_FONT_BOLD                    (700)
 
@@ -105,7 +102,7 @@
 // Enumerations
 
 /**
- * @brief Enumeration of keyboard keys.
+ * Enumeration of keyboard keys.
  */
 typedef enum tq_key
 {
@@ -217,7 +214,7 @@ typedef enum tq_key
 } tq_key_t;
 
 /**
- * @brief Enumeration of mouse buttons.
+ * Enumeration of mouse buttons.
  */
 typedef enum tq_mouse_button
 {
@@ -228,7 +225,7 @@ typedef enum tq_mouse_button
 } tq_mouse_button_t;
 
 /**
- * @brief Enumeration of joystick axes.
+ * Enumeration of joystick axes.
  */
 typedef enum tq_joystick_axis
 {
@@ -236,7 +233,7 @@ typedef enum tq_joystick_axis
 } tq_joystick_axis_t;
 
 /**
- * @brief Enumeration of joystick buttons.
+ * Enumeration of joystick buttons.
  */
 typedef enum tq_joystick_button
 {
@@ -244,7 +241,7 @@ typedef enum tq_joystick_button
 } tq_joystick_button_t;
 
 /**
- * @brief Enumeration of audio channel states.
+ * Enumeration of audio channel states.
  */
 typedef enum tq_channel_state
 {
@@ -257,62 +254,37 @@ typedef enum tq_channel_state
 // Typedefs and structs
 
 /**
- * @brief 32-bit color value.
- */
-typedef uint32_t tq_color_t;
-
-/**
  * Texture identifier.
  */
-typedef struct { int32_t id; } tq_texture;
+typedef struct { int id; } tq_texture;
 
 /**
  * Font identifier.
  */
-typedef struct { int32_t id; } tq_font;
+typedef struct { int id; } tq_font;
 
 /**
  * Sound identifier.
  */
-typedef struct { int32_t id; } tq_sound;
+typedef struct { int id; } tq_sound;
 
 /**
  * Music identifier.
  */
-typedef struct { int32_t id; } tq_music;
+typedef struct { int id; } tq_music;
 
 /**
  * Channel identifier.
  */
-typedef struct { int32_t id; } tq_channel;
-
-/**
- * @brief Keyboard event callback.
- */
-typedef void (*tq_key_callback_t)(tq_key_t key);
-
-/**
- * @brief Mouse button event callback.
- */
-typedef void (*tq_mouse_button_callback_t)(tq_mouse_button_t mouse_button, int32_t x, int32_t y);
-
-/**
- * @brief Mouse cursor event callback.
- */
-typedef void (*tq_mouse_cursor_callback_t)(int32_t x, int32_t y);
-
-/**
- * @brief Mouse wheel event callback.
- */
-typedef void (*tq_mouse_wheel_callback_t)(float delta, int32_t x, int32_t y);
+typedef struct { int id; } tq_channel;
 
 /**
  * Two-dimensional vector of integer numbers.
  */
 typedef struct tq_vec2i
 {
-    int32_t x;
-    int32_t y;
+    int x;
+    int y;
 } tq_vec2i;
 
 /**
@@ -346,117 +318,165 @@ typedef struct tq_rectf
     float h;
 } tq_rectf;
 
+/**
+ * 32 bit color value.
+ */
+typedef struct tq_color
+{
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
+    unsigned char a;
+} tq_color;
+
+/**
+ * Keyboard event callback.
+ */
+typedef void (*tq_key_callback_t)(tq_key_t key);
+
+/**
+ * Mouse button event callback.
+ */
+typedef void (*tq_mouse_button_callback_t)(tq_vec2i cursor, tq_mouse_button_t mouse_button);
+
+/**
+ * Mouse cursor event callback.
+ */
+typedef void (*tq_mouse_cursor_callback_t)(tq_vec2i cursor);
+
+/**
+ * Mouse wheel event callback.
+ */
+typedef void (*tq_mouse_wheel_callback_t)(tq_vec2i cursor, tq_vec2f wheel);
+
 //------------------------------------------------------------------------------
 
-typedef struct tq_vec2i tq_vec2i_t;
-typedef struct tq_vec2f tq_vec2f_t;
-
-//------------------------------------------------------------------------------
+/**
+ * Initialize the library.
+ */
+TQ_API void TQ_CALL tq_initialize(void);
 
 /**
- * @brief Initialize the library.
+ * Terminate the library and release all resources.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_initialize(void);
+TQ_API void TQ_CALL tq_terminate(void);
 
 /**
- * @brief Terminate the library and release all resources.
+ * Process user input and do other important things.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_terminate(void);
-
-/**
- * @brief Process user input and do other important things.
- */
-TQ_EXPORT TQ_API bool TQ_CALL tq_process(void);
+TQ_API bool TQ_CALL tq_process(void);
 
 //------------------------------------------------------------------------------
 // Core
 
-/* Returns display (window) width. */
-TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_display_width(void);
+//----------------------------------------------------------
+// Display
 
-/* Returns display (window) height. */
-TQ_EXPORT TQ_API uint32_t TQ_CALL tq_get_display_height(void);
+/**
+ * Get display (or window) size.
+ */
+TQ_API tq_vec2i TQ_CALL tq_get_display_size(void);
 
-/* Returns display size. */
-TQ_EXPORT TQ_API void TQ_CALL tq_get_display_size(uint32_t *width, uint32_t *height);
+/**
+ * Changes or sets display (window) size. Can be called before initialization.
+ */
+TQ_API void TQ_CALL tq_set_display_size(tq_vec2i size);
 
-/* Changes or sets display (window) size. Can be called before initialization. */
-TQ_EXPORT TQ_API void TQ_CALL tq_set_display_size(uint32_t width, uint32_t height);
+/**
+ * Get current application title.
+ */
+TQ_API char const * TQ_CALL tq_get_title(void);
 
-/* Returns current application title. */
-TQ_EXPORT TQ_API char const * TQ_CALL tq_get_title(void);
+/**
+ * Changes or sets the application title. Can be called before initialization.
+ */
+TQ_API void TQ_CALL tq_set_title(char const *title);
 
-/* Changes or sets the application title. Can be called before initialization. */
-TQ_EXPORT TQ_API void TQ_CALL tq_set_title(char const *title);
+//----------------------------------------------------------
+// Keyboard
 
 /**
  * Check if keyboard auto-repeat feature is enabled.
  */
-TQ_EXPORT TQ_API bool TQ_CALL tq_is_key_autorepeat_enabled(void);
+TQ_API bool TQ_CALL tq_is_key_autorepeat_enabled(void);
 
 /**
  * Set keyboard auto-repeat feature. If enabled, your key-press callback
  * will be called repeatedly when a key is hold. This feature is enabled by
  * default.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_set_key_autorepeat_enabled(bool enabled);
-
-/* Checks if a key is pressed. */
-TQ_EXPORT TQ_API bool TQ_CALL tq_is_key_pressed(tq_key_t key);
-
-/* Checks if a mouse button is pressed. */
-TQ_EXPORT TQ_API bool TQ_CALL tq_is_mouse_button_pressed(tq_mouse_button_t mouse_button);
-
-/* Returns mouse cursor X position. */
-TQ_EXPORT TQ_API int32_t TQ_CALL tq_get_mouse_cursor_x(void);
-
-/* Returns mouse cursor Y position. */
-TQ_EXPORT TQ_API int32_t TQ_CALL tq_get_mouse_cursor_y(void);
-
-/* Returns mouse cursor position to the given arguments. Both should be valid pointers. */
-TQ_EXPORT TQ_API void TQ_CALL tq_get_mouse_cursor_position(int32_t *x, int32_t *y);
+TQ_API void TQ_CALL tq_set_key_autorepeat_enabled(bool enabled);
 
 /**
- * @brief Set callback function that will be called when a key is pressed.
+ * Check if a key is pressed.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_on_key_pressed(tq_key_callback_t callback);
+TQ_API bool TQ_CALL tq_is_key_pressed(tq_key_t key);
 
 /**
- * @brief Set callback function that will be called when a key is released.
+ * Set callback function that will be called when a key is pressed.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_on_key_released(tq_key_callback_t callback);
+TQ_API void TQ_CALL tq_on_key_pressed(tq_key_callback_t callback);
 
 /**
- * @brief Set callback function that will be called when a mouse button is pressed.
+ * Set callback function that will be called when a key is released.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_on_mouse_button_pressed(tq_mouse_button_callback_t callback);
+TQ_API void TQ_CALL tq_on_key_released(tq_key_callback_t callback);
+
+//----------------------------------------------------------
+// Mouse
 
 /**
- * @brief Set callback function that will be called when a mouse button is released.
+ * Check if a mouse button is pressed.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_on_mouse_button_released(tq_mouse_button_callback_t callback);
+TQ_API bool TQ_CALL tq_is_mouse_button_pressed(tq_mouse_button_t mouse_button);
 
 /**
- * @brief Set callback function that will be called when a mouse cursor is moved.
+ * Get mouse cursor position.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_on_mouse_cursor_moved(tq_mouse_cursor_callback_t callback);
+TQ_API tq_vec2i TQ_CALL tq_get_mouse_cursor_position(void);
+
+/**
+ * Set callback function that will be called when a mouse button is pressed.
+ */
+TQ_API void TQ_CALL tq_on_mouse_button_pressed(tq_mouse_button_callback_t callback);
+
+/**
+ * Set callback function that will be called when a mouse button is released.
+ */
+TQ_API void TQ_CALL tq_on_mouse_button_released(tq_mouse_button_callback_t callback);
+
+/**
+ * Set callback function that will be called when a mouse cursor is moved.
+ */
+TQ_API void TQ_CALL tq_on_mouse_cursor_moved(tq_mouse_cursor_callback_t callback);
 
 /**
  * Register a function that will be called when a mouse wheel is scrolled.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback_t callback);
+TQ_API void TQ_CALL tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback_t callback);
 
-/* Returns how many seconds passed since the library initialization (millisecond precision). */
-TQ_EXPORT TQ_API float TQ_CALL tq_get_time_mediump(void);
+//----------------------------------------------------------
+// Time and other
 
-/* Returns how many seconds passed since the library initialization (nanosecond precision). */
-TQ_EXPORT TQ_API double TQ_CALL tq_get_time_highp(void);
+/**
+ * Get amount of seconds passed since the library initialization (millisecond precision).
+ */
+TQ_API float TQ_CALL tq_get_time_mediump(void);
 
-/* Returns delta time between current and previous frames. */
-TQ_EXPORT TQ_API double TQ_CALL tq_get_delta_time(void);
+/**
+ * Get amount of seconds passed since the library initialization (nanosecond precision).
+ */
+TQ_API double TQ_CALL tq_get_time_highp(void);
 
-/* Get the current framerate in frames per second. */
-TQ_EXPORT TQ_API unsigned int TQ_CALL tq_get_framerate(void);
+/**
+ * Get delta time between current and previous frames.
+ */
+TQ_API double TQ_CALL tq_get_delta_time(void);
+
+/**
+ * Get the current framerate in frames per second.
+ */
+TQ_API unsigned int TQ_CALL tq_get_framerate(void);
 
 //------------------------------------------------------------------------------
 // Graphics
@@ -465,285 +485,267 @@ TQ_EXPORT TQ_API unsigned int TQ_CALL tq_get_framerate(void);
 // Colors
 
 /**
- * Get single color value from red, green and blue values.
+ * Construct color struct from RGB values.
  */
-#define TQ_COLOR24(r, g, b) \
-    ((tq_color_t) ((r) << 24) | ((g) << 16) | ((b) << 8) | (255))
+static inline tq_color tq_c24(unsigned char r, unsigned char g, unsigned char b)
+{
+    return (tq_color) {
+        .r = r,
+        .g = g,
+        .b = b,
+        .a = 255,
+    };
+}
 
 /**
- * Get single color value from red, green, blue and alpha values.
+ * Construct color struct from RGBA values.
  */
-#define TQ_COLOR32(r, g, b, a) \
-    ((tq_color_t) ((r) << 24) | ((g) << 16) | ((b) << 8) | (a))
-
-/**
- * Extract RED channel from a color value.
- */
-#define TQ_EXTRACT_R(c) \
-    (((c) >> 24) & 255)
-
-/**
- * Extract GREEN channel from a color value.
- */
-#define TQ_EXTRACT_G(c) \
-    (((c) >> 16) & 255)
-
-/**
- * Extract BLUE channel from a color value.
- */
-#define TQ_EXTRACT_B(c) \
-    (((c) >> 8) & 255)
-
-/**
- * Extract ALPHA channel from a color value.
- */
-#define TQ_EXTRACT_A(c) \
-    (((c) >> 0) & 255)
+static inline tq_color tq_c32(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+{
+    return (tq_color) {
+        .r = r,
+        .g = g,
+        .b = b,
+        .a = a,
+    };
+}
 
 //----------------------------------------------------------
 // Background
 
-/* Clear the screen. */
-TQ_EXPORT TQ_API void TQ_CALL tq_clear(void);
+/**
+ * Fill the screen with background color.
+ */
+TQ_API void TQ_CALL tq_clear(void);
 
-/* Get the current background color. */
-TQ_EXPORT TQ_API tq_color_t TQ_CALL tq_get_clear_color(void);
+/**
+ * Get background color.
+ */
+TQ_API tq_color TQ_CALL tq_get_clear_color(void);
 
-/* Set the current background color. */
-TQ_EXPORT TQ_API void TQ_CALL tq_set_clear_color(tq_color_t clear_color);
+/**
+ * Set background color.
+ */
+TQ_API void TQ_CALL tq_set_clear_color(tq_color clear_color);
 
 //----------------------------------------------------------
 // Views
 
-/** @brief Set the view rectangle.
- *
- * @note The view is reset every frame.
- *
- * @param x,y      Center of the view.
- * @param w,h      Size of the view rectangle.
- * @param rotation Rotation of the view, in degrees.
+/**
+ * Convert a point in display coordinates to current view coordinates.
+ * For example, this can be used to convert coordinates
+ * from `tq_get_mouse_cursor_position()`.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_view(
-    float x, float y,
-    float w, float h,
-    float rotation
-);
+TQ_API tq_vec2f TQ_CALL tq_get_relative_position(tq_vec2f absolute);
 
-/** @brief Set the view rectangle (vector arguments).
- *
- * @note The view is reset every frame.
- *
- * @param center    Center of the view.
- * @param size      Size of the view rectangle.
- * @param rotation  Rotation of the view, in degrees.
+/**
+ * Set the view rectangle and rotation.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_view_v(
-    tq_vec2f_t center,
-    tq_vec2f_t size,
-    float rotation
-);
+TQ_API void TQ_CALL tq_set_view(tq_rectf rect, float rotation);
+
+/**
+ * Reset the view to its default state.
+ * Default view is an area from top-left corner of the screen to
+ * its bottom-right corner.
+ * Note that the view is always reset when the window is resized.
+ * To disable this behavior, use `tq_set_auto_view_reset_enabled()`.
+ */
+TQ_API void TQ_CALL tq_reset_view(void);
+
+/**
+ * If this option is enabled, then the view will resize with the window.
+ * Default state: enabled.
+ */
+TQ_API void TQ_CALL tq_set_auto_view_reset_enabled(bool enabled);
 
 //----------------------------------------------------------
 // Transformation matrix
 
-/* Duplicate current transformation matrix and push it to the matrix stack. */
-TQ_EXPORT TQ_API void TQ_CALL tq_push_matrix(void);
+/**
+ * Duplicate current transformation matrix and push it to the matrix stack.
+ */
+TQ_API void TQ_CALL tq_push_matrix(void);
 
-/* Replace current transformation matrix by the first matrix in the stack, popping it from there. */
-TQ_EXPORT TQ_API void TQ_CALL tq_pop_matrix(void);
+/**
+ * Replace current transformation matrix by the first matrix in the stack, popping it from there.
+ */
+TQ_API void TQ_CALL tq_pop_matrix(void);
 
-/* Translate current transformation matrix. */
-TQ_EXPORT TQ_API void TQ_CALL tq_translate_matrix(tq_vec2f translate);
+/**
+ * Translate current transformation matrix.
+ */
+TQ_API void TQ_CALL tq_translate_matrix(tq_vec2f translate);
 
-/* Scale current transformation matrix. */
-TQ_EXPORT TQ_API void TQ_CALL tq_scale_matrix(tq_vec2f scale);
+/**
+ * Scale current transformation matrix.
+ */
+TQ_API void TQ_CALL tq_scale_matrix(tq_vec2f scale);
 
-/* Rotate current transformation matrix. */
-TQ_EXPORT TQ_API void TQ_CALL tq_rotate_matrix(float degrees);
+/**
+ * Rotate current transformation matrix.
+ */
+TQ_API void TQ_CALL tq_rotate_matrix(float degrees);
 
-//--------------------------------------
+//----------------------------------------------------------
 // Primitives
 
 /**
  * Draw a point.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_point(tq_vec2f position);
+TQ_API void TQ_CALL tq_draw_point(tq_vec2f position);
 
 /**
  * Draw a line.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_line(tq_vec2f a, tq_vec2f b);
+TQ_API void TQ_CALL tq_draw_line(tq_vec2f a, tq_vec2f b);
 
 /**
  * Fill and outline a triangle.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c);
+TQ_API void TQ_CALL tq_draw_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c);
 
 /**
  * Fill and outline a rectangle.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_rectangle(tq_rectf rect);
+TQ_API void TQ_CALL tq_draw_rectangle(tq_rectf rect);
 
 /**
  * Fill and outline a circle.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_circle(tq_vec2f position, float radius);
+TQ_API void TQ_CALL tq_draw_circle(tq_vec2f position, float radius);
 
 /**
  * Outline a triangle.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c);
+TQ_API void TQ_CALL tq_outline_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c);
 
 /**
  * Outline a rectangle.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_rectangle(tq_rectf rect);
+TQ_API void TQ_CALL tq_outline_rectangle(tq_rectf rect);
 
 /**
  * Outline a circle.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_outline_circle(tq_vec2f position, float radius);
+TQ_API void TQ_CALL tq_outline_circle(tq_vec2f position, float radius);
 
 /**
  * Fill a triangle.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c);
+TQ_API void TQ_CALL tq_fill_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c);
 
 /**
  * Fill a rectangle.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_rectangle(tq_rectf rect);
+TQ_API void TQ_CALL tq_fill_rectangle(tq_rectf rect);
 
 /**
  * Fill a circle.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_fill_circle(tq_vec2f position, float radius);
+TQ_API void TQ_CALL tq_fill_circle(tq_vec2f position, float radius);
 
 /**
  * Get current point color (used by draw_point).
  */
-TQ_EXPORT TQ_API tq_color_t TQ_CALL tq_get_point_color(void);
+TQ_API tq_color TQ_CALL tq_get_point_color(void);
 
 /**
  * Set current point color (used by draw_point).
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_set_point_color(tq_color_t point_color);
+TQ_API void TQ_CALL tq_set_point_color(tq_color point_color);
 
 /**
  * Get current line color (used by draw_line).
  */
-TQ_EXPORT TQ_API tq_color_t TQ_CALL tq_get_line_color(void);
+TQ_API tq_color TQ_CALL tq_get_line_color(void);
 
 /**
  * Set current line color (used by draw_line).
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_set_line_color(tq_color_t line_color);
+TQ_API void TQ_CALL tq_set_line_color(tq_color line_color);
 
 /**
  * Get current outline color.
  */
-TQ_EXPORT TQ_API tq_color_t TQ_CALL tq_get_outline_color(void);
+TQ_API tq_color TQ_CALL tq_get_outline_color(void);
 
 /**
  * Set current outline color.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_set_outline_color(tq_color_t outline_color);
+TQ_API void TQ_CALL tq_set_outline_color(tq_color outline_color);
 
 /**
  * Get current fill color.
  */
-TQ_EXPORT TQ_API tq_color_t TQ_CALL tq_get_fill_color(void);
+TQ_API tq_color TQ_CALL tq_get_fill_color(void);
 
 /**
  * Set current fill color.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_set_fill_color(tq_color_t fill_color);
+TQ_API void TQ_CALL tq_set_fill_color(tq_color fill_color);
 
-//--------------------------------------
+//----------------------------------------------------------
 // Textures
 
-/* Load texture from a file. */
-TQ_EXPORT TQ_API tq_texture TQ_CALL tq_load_texture_from_file(char const *path);
+/**
+ * Load texture from a file.
+ */
+TQ_API tq_texture TQ_CALL tq_load_texture_from_file(char const *path);
 
-/* Load texture from a memory buffer. */
-TQ_EXPORT TQ_API tq_texture TQ_CALL tq_load_texture_from_memory(uint8_t const *buffer, size_t length);
+/**
+ * Load texture from a memory buffer.
+ */
+TQ_API tq_texture TQ_CALL tq_load_texture_from_memory(uint8_t const *buffer, size_t length);
 
-/* Delete a texture from video memory. */
-TQ_EXPORT TQ_API void TQ_CALL tq_delete_texture(tq_texture texture);
+/**
+ * Delete a texture from video memory.
+ */
+TQ_API void TQ_CALL tq_delete_texture(tq_texture texture);
 
-/* Get the width of a texture. */
-TQ_EXPORT TQ_API int TQ_CALL tq_get_texture_width(tq_texture texture);
+/**
+ * Get size of a texture.
+ */
+TQ_API tq_vec2i TQ_CALL tq_get_texture_size(tq_texture texture);
 
-/* Get the height of a texture. */
-TQ_EXPORT TQ_API int TQ_CALL tq_get_texture_height(tq_texture texture);
+/**
+ * Draw a texture inside a rectangle.
+ */
+TQ_API void TQ_CALL tq_draw_texture(tq_texture texture, tq_rectf rect);
 
-/* Get both width and height of a texture. Both pointers should be valid. */
-TQ_EXPORT TQ_API void TQ_CALL tq_get_texture_size(tq_texture texture, int *width, int *height);
+/**
+ * Draw a part of a texture inside a rectangle.
+ * Texture coordinates should be in pixel space.
+ */
+TQ_API void TQ_CALL tq_draw_subtexture(tq_texture texture, tq_rectf sub, tq_rectf rect);
 
-/* Draw the texture inside a rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_f(
-    tq_texture texture,
-    float x, float y,
-    float w, float h
-);
-
-/* Draw the texture inside a rectangle. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_v(
-    tq_texture texture,
-    tq_vec2f_t position,
-    tq_vec2f_t size
-);
-
-/* Draw a part of the texture inside a rectangle. Texture coordinates should be in pixel space. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_f(
-    tq_texture texture,
-    float x, float y,
-    float w, float h,
-    float fx, float fy,
-    float fw, float fh
-);
-
-/* Draw a part of the texture inside a rectangle. Texture coordinates should be in pixel space. */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_texture_fragment_v(
-    tq_texture texture,
-    tq_vec2f_t position,
-    tq_vec2f_t size,
-    tq_vec2f_t fragment_position,
-    tq_vec2f_t fragment_size
-);
-
-//--------------------------------------
-// Fonts
+//----------------------------------------------------------
+// Fonts and text
 
 /**
  * Load font from file.
  */
-TQ_EXPORT TQ_API tq_font TQ_CALL tq_load_font_from_file(
-    char const *path,
-    float pt, int weight);
+TQ_API tq_font TQ_CALL tq_load_font_from_file(char const *path, float pt, int weight);
 
 /**
  * Load font from memory buffer.
  */
-TQ_EXPORT TQ_API tq_font TQ_CALL tq_load_font_from_memory(
-    uint8_t const *buffer, size_t size,
-    float pt, int weight);
+TQ_API tq_font TQ_CALL tq_load_font_from_memory(uint8_t const *buffer, size_t size, float pt, int weight);
 
 /**
  * Delete previously loaded font.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_delete_font(tq_font font);
+TQ_API void TQ_CALL tq_delete_font(tq_font font);
 
 /**
  * Draw simple text using specified font.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_draw_text(tq_font font, tq_vec2f_t position, char const *text);
+TQ_API void TQ_CALL tq_draw_text(tq_font font, tq_vec2f position, char const *text);
 
 /**
  * Draw formatted text using specified font.
  * See also: tq_set_fill_color(), tq_set_outline_color().
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_print_text(tq_font font, tq_vec2f_t position, char const *fmt, ...);
+TQ_API void TQ_CALL tq_print_text(tq_font font, tq_vec2f position, char const *fmt, ...);
 
 //------------------------------------------------------------------------------
 // Audio
@@ -751,112 +753,112 @@ TQ_EXPORT TQ_API void TQ_CALL tq_print_text(tq_font font, tq_vec2f_t position, c
 /**
  * Decode and load sound to memory from a file.
  */
-TQ_EXPORT TQ_API tq_sound TQ_CALL tq_load_sound_from_file(char const *path);
+TQ_API tq_sound TQ_CALL tq_load_sound_from_file(char const *path);
 
 /**
  * Decode sound from a memory buffer.
  */
-TQ_EXPORT TQ_API tq_sound TQ_CALL tq_load_sound_from_memory(uint8_t const *buffer, size_t length);
+TQ_API tq_sound TQ_CALL tq_load_sound_from_memory(uint8_t const *buffer, size_t length);
 
 /**
  * Delete sound from memory.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_delete_sound(tq_sound sound);
+TQ_API void TQ_CALL tq_delete_sound(tq_sound sound);
 
 /**
  * Play sound.
  */
-TQ_EXPORT TQ_API tq_channel TQ_CALL tq_play_sound(tq_sound sound, int loop);
+TQ_API tq_channel TQ_CALL tq_play_sound(tq_sound sound, int loop);
 
 /**
  * Open music stream from a file.
  */
-TQ_EXPORT TQ_API tq_music TQ_CALL tq_open_music_from_file(char const *path);
+TQ_API tq_music TQ_CALL tq_open_music_from_file(char const *path);
 
 /**
  * Open music stream from memory buffer.
  */
-TQ_EXPORT TQ_API tq_music TQ_CALL tq_open_music_from_memory(uint8_t const *buffer, size_t length);
+TQ_API tq_music TQ_CALL tq_open_music_from_memory(uint8_t const *buffer, size_t length);
 
 /**
  * Close music stream.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_close_music(tq_music music);
+TQ_API void TQ_CALL tq_close_music(tq_music music);
 
 /**
  * Choose any unused channel and play music on it.
  */
-TQ_EXPORT TQ_API tq_channel TQ_CALL tq_play_music(tq_music music, int loop);
+TQ_API tq_channel TQ_CALL tq_play_music(tq_music music, int loop);
 
 /**
  * Get current state of the audio channel.
  */
-TQ_EXPORT TQ_API tq_channel_state_t TQ_CALL tq_get_channel_state(tq_channel channel);
+TQ_API tq_channel_state_t TQ_CALL tq_get_channel_state(tq_channel channel);
 
 /**
  * Pause the audio channel.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_pause_channel(tq_channel channel);
+TQ_API void TQ_CALL tq_pause_channel(tq_channel channel);
 
 /**
  * Continue playback of the audio channel.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_unpause_channel(tq_channel channel);
+TQ_API void TQ_CALL tq_unpause_channel(tq_channel channel);
 
 /**
  * Stop the audio channel and mark it inactive.
  */
-TQ_EXPORT TQ_API void TQ_CALL tq_stop_channel(tq_channel channel);
+TQ_API void TQ_CALL tq_stop_channel(tq_channel channel);
 
 //------------------------------------------------------------------------------
 // Math
 
 /**
- * @brief Get smallest value.
+ * Get smallest value.
  */
 #define TQ_MIN(a, b)                (((a) < (b)) ? (a) : (b))
 
 /**
- * @brief Get largest value.
+ * Get largest value.
  */
 #define TQ_MAX(a, b)                (((a) > (b)) ? (a) : (b))
 
 /**
- * @brief Converts degrees to radians.
+ * Converts degrees to radians.
  */
 #define TQ_DEG2RAD(deg)             ((deg) * (TQ_PI / 180.0))
 
 /**
- * @brief Converts radians to degrees.
+ * Converts radians to degrees.
  */
 #define TQ_RAD2DEG(rad)             ((rad) * (180.0 / TQ_PI))
 
 /**
  * Construct 2-component integer vector.
  */
-#define TQ_VEC2I(x, y)              ((tq_vec2i_t) { (x), (y) })
+#define TQ_VEC2I(x, y)              ((tq_vec2i) {(x), (y)})
 
 /**
  * Construct 2-component floating-point vector.
  */
-#define TQ_VEC2F(x, y)              ((tq_vec2f_t) { (x), (y) })
+#define TQ_VEC2F(x, y)              ((tq_vec2f) {(x), (y)})
 
 /**
  * Construct rectangle (integer).
  */
-#define TQ_RECTI(x, y, w, h)        ((tq_recti) { (x), (y), (w), (h) })
+#define TQ_RECTI(x, y, w, h)        ((tq_recti) {(x), (y), (w), (h)})
 
 /**
  * Construct rectangle (floating point).
  */
-#define TQ_RECTF(x, y, w, h)        ((tq_rectf) { (x), (y), (w), (h) })
+#define TQ_RECTF(x, y, w, h)        ((tq_rectf) {(x), (y), (w), (h)})
 
 /**
  * Cast 2-component integer vector to floating-point vector.
  */
-static inline tq_vec2f_t tq_vec2i_cast(tq_vec2i_t ivec)
+static inline tq_vec2f tq_vec2i_cast(tq_vec2i ivec)
 {
-    return (tq_vec2f_t) {
+    return (tq_vec2f) {
         .x = (float) ivec.x,
         .y = (float) ivec.y,
     };
@@ -865,9 +867,9 @@ static inline tq_vec2f_t tq_vec2i_cast(tq_vec2i_t ivec)
 /**
  * Add two floating-point 2D vectors.
  */
-static inline tq_vec2f_t tq_vec2f_add(tq_vec2f_t v0, tq_vec2f_t v1)
+static inline tq_vec2f tq_vec2f_add(tq_vec2f v0, tq_vec2f v1)
 {
-    return (tq_vec2f_t) {
+    return (tq_vec2f) {
         .x = v0.x + v1.x,
         .y = v0.y + v1.y,
     };
@@ -876,9 +878,9 @@ static inline tq_vec2f_t tq_vec2f_add(tq_vec2f_t v0, tq_vec2f_t v1)
 /**
  * Subtract two floating-point 2D vectors.
  */
-static inline tq_vec2f_t tq_vec2f_subtract(tq_vec2f_t v0, tq_vec2f_t v1)
+static inline tq_vec2f tq_vec2f_subtract(tq_vec2f v0, tq_vec2f v1)
 {
-    return (tq_vec2f_t) {
+    return (tq_vec2f) {
         .x = v0.x - v1.x,
         .y = v0.y - v1.y,
     };
@@ -887,9 +889,9 @@ static inline tq_vec2f_t tq_vec2f_subtract(tq_vec2f_t v0, tq_vec2f_t v1)
 /**
  * Multiply two floating-point 2D vectors.
  */
-static inline tq_vec2f_t tq_vec2f_multiply(tq_vec2f_t v0, tq_vec2f_t v1)
+static inline tq_vec2f tq_vec2f_multiply(tq_vec2f v0, tq_vec2f v1)
 {
-    return (tq_vec2f_t) {
+    return (tq_vec2f) {
         .x = v0.x * v1.x,
         .y = v0.y * v1.y,
     };
@@ -898,9 +900,9 @@ static inline tq_vec2f_t tq_vec2f_multiply(tq_vec2f_t v0, tq_vec2f_t v1)
 /**
  * Scale a floating-point 2D vector.
  */
-static inline tq_vec2f_t tq_vec2f_scale(tq_vec2f_t vec, float f)
+static inline tq_vec2f tq_vec2f_scale(tq_vec2f vec, float f)
 {
-    return (tq_vec2f_t) {
+    return (tq_vec2f) {
         .x = vec.x * f,
         .y = vec.y * f,
     };
@@ -909,7 +911,7 @@ static inline tq_vec2f_t tq_vec2f_scale(tq_vec2f_t vec, float f)
 /**
  * Get length of a floating-point 2D vector.
  */
-static inline float tq_vec2f_length(tq_vec2f_t vec)
+static inline float tq_vec2f_length(tq_vec2f vec)
 {
     return sqrtf((vec.x * vec.x) + (vec.y * vec.y));
 }
@@ -917,11 +919,11 @@ static inline float tq_vec2f_length(tq_vec2f_t vec)
 /**
  * Normalize a floating-point 2D vector.
  */
-static inline tq_vec2f_t tq_vec2f_normalize(tq_vec2f_t vec)
+static inline tq_vec2f tq_vec2f_normalize(tq_vec2f vec)
 {
     float const length = tq_vec2f_length(vec);
 
-    return (tq_vec2f_t) {
+    return (tq_vec2f) {
         .x = vec.x / length,
         .y = vec.y / length,
     };
@@ -930,7 +932,7 @@ static inline tq_vec2f_t tq_vec2f_normalize(tq_vec2f_t vec)
 /**
  * Calculate the distance between two vectors.
  */
-static inline float tq_vec2f_distance(tq_vec2f_t v0, tq_vec2f_t v1)
+static inline float tq_vec2f_distance(tq_vec2f v0, tq_vec2f v1)
 {
     return sqrtf(((v1.y - v0.y) * (v1.y - v0.y)) + ((v1.x - v0.x) * (v1.x - v0.x)));
 }
@@ -938,7 +940,7 @@ static inline float tq_vec2f_distance(tq_vec2f_t v0, tq_vec2f_t v1)
 /**
  * Calculate an angle needed to aim to the target.
  */
-static inline float tq_vec2f_look_at(tq_vec2f_t observer, tq_vec2f_t target)
+static inline float tq_vec2f_look_at(tq_vec2f observer, tq_vec2f target)
 {
     float const u = target.x - observer.x;
     float const v = target.y - observer.y;

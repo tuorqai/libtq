@@ -261,8 +261,9 @@ int spawn_turret(struct turrets *turrets)
 
 void turret_human_control(struct turrets *self, int id)
 {
-    self->aim_x[id] = (float) tq_get_mouse_cursor_x() - (CANVAS_WIDTH / 2.0f);
-    self->aim_y[id] = (float) tq_get_mouse_cursor_y() - (CANVAS_HEIGHT / 2.0f);
+    tq_vec2i cursor = tq_get_mouse_cursor_position();
+    self->aim_x[id] = (float) cursor.x - (CANVAS_WIDTH / 2.0f);
+    self->aim_y[id] = (float) cursor.y - (CANVAS_HEIGHT / 2.0f);
     
     if (tq_is_mouse_button_pressed(TQ_MOUSE_BUTTON_LEFT)) {
         self->bits[id] |= TURRET_BIT_TRIGGER;
@@ -841,7 +842,7 @@ void switch_to_title(struct world *world)
     world->turrets.y[beta] = 0.0f;
 }
 
-void set_color_theme(tq_color_t background, tq_color_t foreground)
+void set_color_theme(tq_color background, tq_color foreground)
 {
     tq_set_clear_color(background);
     tq_set_fill_color(background);
@@ -853,8 +854,7 @@ void set_color_theme(tq_color_t background, tq_color_t foreground)
 
 void spawn_world(struct world *world)
 {
-    // set_color_theme(tq_rgb(40, 40, 40), tq_rgb(192, 192, 192));
-    set_color_theme(TQ_COLOR24(28, 28, 40), TQ_COLOR24(192, 160, 192));
+    set_color_theme(tq_c24(28, 28, 40), tq_c24(192, 160, 192));
 
     world->turrets.fire_sound = tq_load_sound_from_file("assets/defense/turret_attack.ogg");
 
@@ -1335,7 +1335,7 @@ void draw_string(float x, float y, float sx, float sy, int align, char const *fm
 
 int main(int argc, char *argv[])
 {
-    tq_set_display_size(CANVAS_WIDTH, CANVAS_HEIGHT);
+    tq_set_display_size(TQ_VEC2I(CANVAS_WIDTH, CANVAS_HEIGHT));
     tq_set_title("[tq library] defense.c");
 
     tq_initialize();

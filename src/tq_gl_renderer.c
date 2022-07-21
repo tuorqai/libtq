@@ -125,7 +125,8 @@ static char const *fs_src_font =
     "uniform sampler2D u_texture;\n"
     "void main() {\n"
     "    vec4 texColor = texture2D(u_texture, v_texCoord);\n"
-    "    gl_FragColor = vec4(texColor.rgb, texColor.g);\n"
+    "    float alpha = texColor.r;\n"
+    "    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);\n"
     "}\n";
 
 //------------------------------------------------------------------------------
@@ -226,20 +227,19 @@ static void delete_texture(int texture_id);
 
 //------------------------------------------------------------------------------
 
-static void decode_color24(GLfloat *dst, tq_color_t color)
+static void decode_color24(GLfloat *dst, tq_color color)
 {
-    dst[0] = ((color >> 24) & 255) / 255.0f;
-    dst[1] = ((color >> 16) & 255) / 255.0f;
-    dst[2] = ((color >>  8) & 255) / 255.0f;
-    dst[3] = 1.0f;
+    dst[0] = color.r / 255.0f;
+    dst[1] = color.g / 255.0f;
+    dst[2] = color.b / 255.0f;
 }
 
-static void decode_color32(GLfloat *dst, tq_color_t color)
+static void decode_color32(GLfloat *dst, tq_color color)
 {
-    dst[0] = ((color >> 24) & 255) / 255.0f;
-    dst[1] = ((color >> 16) & 255) / 255.0f;
-    dst[2] = ((color >>  8) & 255) / 255.0f;
-    dst[3] = ((color <<  0) & 255) / 255.0f;
+    dst[0] = color.r / 255.0f;
+    dst[1] = color.g / 255.0f;
+    dst[2] = color.b / 255.0f;
+    dst[3] = color.a / 255.0f;
 }
 
 static int get_texture_id(void)
@@ -719,13 +719,13 @@ static void bind_texture(int texture_id)
     glBindTexture(GL_TEXTURE_2D, textures[texture_id].handle);
 }
 
-static void set_clear_color(tq_color_t clear_color)
+static void set_clear_color(tq_color clear_color)
 {
     decode_color24(colors.clear, clear_color);
     CHECK_GL(glClearColor(colors.clear[0], colors.clear[1], colors.clear[2], 1.0f));
 }
 
-static void set_draw_color(tq_color_t draw_color)
+static void set_draw_color(tq_color draw_color)
 {
     decode_color32(colors.draw, draw_color);
 

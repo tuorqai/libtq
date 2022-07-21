@@ -167,12 +167,10 @@ void draw_stage(stage_t const *self)
 
             tq_push_matrix();
             tq_translate_matrix(TQ_VEC2F(p * 16.0f, q * 16.0f));
-            tq_draw_texture_fragment_f(
+            tq_draw_subtexture(
                 self->texture,
-                0.0f, 0.0f,
-                16.0f, 16.0f,
-                x * 16.0f, y * 16.0f,
-                16.0f, 16.0f
+                TQ_RECTF(x * 16.0f, y * 16.0f, 16.0f, 16.0f),
+                TQ_RECTF(0.0f, 0.0f, 16.0f, 16.0f)
             );
             tq_pop_matrix();
         }
@@ -377,12 +375,10 @@ void draw_players(players_t const *self)
         tq_push_matrix();
         tq_translate_matrix(TQ_VEC2F(self->x[id], self->y[id]));
         tq_outline_rectangle(TQ_RECTF(0.0f, 0.0f, 16.0f, 18.0f));
-        tq_draw_texture_fragment_f(
+        tq_draw_subtexture(
             self->texture,
-            0.0f, 0.0f,
-            16.0f, 18.0f,
-            self->frame[id] * 16.0f, y_frame * 18.0f,
-            16.0f, 18.0f
+            TQ_RECTF(self->frame[id] * 16.0f, y_frame * 18.0f, 16.0f, 18.0f),
+            TQ_RECTF(0.0f, 0.0f, 16.0f, 18.0f)
         );
         tq_pop_matrix();
     }
@@ -439,30 +435,27 @@ void draw_world(world_t const *world)
 {
     tq_clear();
 
-    uint32_t width, height;
-    tq_get_display_size(&width, &height);
+    tq_vec2i display_size = tq_get_display_size();
 
-    float aspect = width / (float) height;
+    float aspect = display_size.x / (float) display_size.y;
     
     if (!tq_is_key_pressed(TQ_KEY_P)) {
         if (aspect > 1.0f) {
-            tq_view(
-                world->camera.x, world->camera.y,
-                CAMERA_HEIGHT * aspect, CAMERA_HEIGHT,
+            tq_set_view(
+                TQ_RECTF(world->camera.x, world->camera.y, CAMERA_HEIGHT * aspect, CAMERA_HEIGHT),
                 world->camera.rotation
             );
         } else {
-            tq_view(
-                world->camera.x, world->camera.y,
-                CAMERA_WIDTH, CAMERA_WIDTH / aspect,
+            tq_set_view(
+                TQ_RECTF(world->camera.x, world->camera.y, CAMERA_WIDTH, CAMERA_WIDTH / aspect),
                 world->camera.rotation
             );
         }
     }
 
-    tq_set_line_color(TQ_COLOR24(255, 255, 255));
-    tq_set_outline_color(TQ_COLOR24(255, 255, 255));
-    tq_set_fill_color(TQ_COLOR24(130, 170, 40));
+    tq_set_line_color(tq_c24(255, 255, 255));
+    tq_set_outline_color(tq_c24(255, 255, 255));
+    tq_set_fill_color(tq_c24(130, 170, 40));
 
     draw_stage(&world->stage);
     draw_objects(&world->objects);
@@ -471,28 +464,33 @@ void draw_world(world_t const *world)
     tq_draw_line(TQ_VEC2F(world->camera.x - 2.0f, world->camera.y), TQ_VEC2F(world->camera.x + 2.0f, world->camera.y));
     tq_draw_line(TQ_VEC2F(world->camera.x, world->camera.y - 2.0f), TQ_VEC2F(world->camera.x, world->camera.y + 2.0f));
 
-    tq_set_fill_color(TQ_COLOR24(255, 255, 255));
+    tq_set_fill_color(tq_c24(255, 255, 255));
 
-    tq_view(
-        width / 2.0f, height / 2.0f,
-        width, height, 0.0f
-    );
+    tq_vec2i cursor = tq_get_mouse_cursor_position();
+    tq_vec2f mrel = tq_get_relative_position(tq_vec2i_cast(cursor));
 
-    tq_print_text(world->font, TQ_VEC2F(32, 80), "[%.2f, %.2f]",
+    tq_vec2f prel = TQ_VEC2F(
         world->players.x[world->player_id],
         world->players.y[world->player_id]);
+
+    tq_reset_view();
+
+    tq_print_text(world->font, TQ_VEC2F(32, 80), "mouse abs: [%d, %d]", cursor.x, cursor.y);
+    tq_print_text(world->font, TQ_VEC2F(32, 120), "mouse rel: [%.2f, %.2f]", mrel.x, mrel.y);
+    tq_print_text(world->font, TQ_VEC2F(32, 160), "player rel: [%.2f, %.2f]", prel.x, prel.y);
 }
 
 //------------------------------------------------------------------------------
 
 int main(int argc, char *argv[])
 {
-    tq_set_display_size(800, 600);
+    tq_set_display_size(TQ_VEC2I(800, 600));
     tq_set_title("[tq library] jestan.c");
 
     tq_initialize();
 
-    tq_set_clear_color(TQ_COLOR24(0, 0, 0));
+    tq_set_auto_view_reset_enabled(false);
+    tq_set_clear_color(tq_c24(0, 0, 0));
 
     world_t *world = malloc(sizeof(world_t));
 
