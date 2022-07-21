@@ -197,6 +197,7 @@ struct gl_texture
     GLsizei height;
     GLenum format;
     int channels;
+    bool smooth;
 };
 
 struct gl_program
@@ -637,6 +638,7 @@ static int create_texture(int width, int height, int channels)
     textures[texture_id].height = height;
     textures[texture_id].format = format;
     textures[texture_id].channels = channels;
+    textures[texture_id].smooth = false;
 
     return texture_id;
 }
@@ -652,6 +654,22 @@ static void delete_texture(int texture_id)
 
     CHECK_GL(glDeleteTextures(1, &textures[texture_id].handle));
     textures[texture_id].handle = 0;
+}
+
+static void set_texture_smooth(int texture_id, bool smooth)
+{
+    if (texture_id < 0 || texture_id > texture_count || textures[texture_id].handle == 0) {
+        return;
+    }
+
+    if (textures[texture_id].smooth == smooth) {
+        return;
+    }
+
+    textures[texture_id].smooth = smooth;
+
+    CHECK_GL(glBindTexture(GL_TEXTURE_2D, textures[texture_id].handle));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST));
 }
 
 static void get_texture_size(int texture_id, int *width, int *height)
@@ -801,6 +819,7 @@ void construct_gl_renderer(struct renderer_impl *renderer)
 
         .create_texture = create_texture,
         .delete_texture = delete_texture,
+        .set_texture_smooth = set_texture_smooth,
         .get_texture_size = get_texture_size,
         .update_texture = update_texture,
         .resize_texture = resize_texture,

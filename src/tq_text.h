@@ -21,6 +21,8 @@ int text_load_font_from_memory(void const *buffer, size_t size, float pt, int we
 
 void text_delete_font(int font_id);
 
+int text_get_font_texture(int font_id);
+
 void text_draw_text(int font_id, float x, float y, char const *text);
 
 //------------------------------------------------------------------------------

@@ -458,6 +458,11 @@ void graphics_get_texture_size(int texture_id, int *width, int *height)
     renderer.get_texture_size(texture_id, width, height);
 }
 
+void graphics_set_texture_smooth(int texture_id, bool smooth)
+{
+    renderer.set_texture_smooth(texture_id, smooth);
+}
+
 void graphics_draw_texture(int texture_id,
     float x, float y,
     float w, float h)

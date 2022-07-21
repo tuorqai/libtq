@@ -352,6 +352,11 @@ tq_vec2i tq_get_texture_size(tq_texture texture)
     return size;
 }
 
+void tq_set_texture_smooth(tq_texture texture, bool smooth)
+{
+    graphics_set_texture_smooth(texture.id, smooth);
+}
+
 void tq_draw_texture(tq_texture texture, tq_rectf rect)
 {
     graphics_draw_texture(texture.id, rect.x, rect.y, rect.w, rect.h);
@@ -380,6 +385,11 @@ tq_font tq_load_font_from_memory(uint8_t const *buffer, size_t size, float pt, i
 void tq_delete_font(tq_font font)
 {
     text_delete_font(font.id);
+}
+
+tq_texture tq_get_font_texture(tq_font font)
+{
+    return (tq_texture) { .id = text_get_font_texture(font.id) };
 }
 
 void tq_draw_text(tq_font font, tq_vec2f position, char const *text)

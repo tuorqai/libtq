@@ -708,6 +708,12 @@ TQ_API void TQ_CALL tq_delete_texture(tq_texture texture);
 TQ_API tq_vec2i TQ_CALL tq_get_texture_size(tq_texture texture);
 
 /**
+ * If enabled, this option will make texture look blurry when magnified.
+ * Default value: disabled.
+ */
+TQ_API void TQ_CALL tq_set_texture_smooth(tq_texture texture, bool smooth);
+
+/**
  * Draw a texture inside a rectangle.
  */
 TQ_API void TQ_CALL tq_draw_texture(tq_texture texture, tq_rectf rect);
@@ -735,6 +741,11 @@ TQ_API tq_font TQ_CALL tq_load_font_from_memory(uint8_t const *buffer, size_t si
  * Delete previously loaded font.
  */
 TQ_API void TQ_CALL tq_delete_font(tq_font font);
+
+/**
+ * Access underlying texture atlas of a font.
+ */
+TQ_API tq_texture TQ_CALL tq_get_font_texture(tq_font font);
 
 /**
  * Draw simple text using specified font.

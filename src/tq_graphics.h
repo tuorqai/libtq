@@ -96,6 +96,7 @@ int graphics_load_texture_from_memory(void const *buffer, size_t length);
 void graphics_delete_texture(int texture_id);
 
 void graphics_get_texture_size(int texture_id, int *width, int *height);
+void graphics_set_texture_smooth(int texture_id, bool smooth);
 
 void graphics_draw_texture(int texture_id,
     float x, float y,
@@ -132,6 +133,7 @@ struct renderer_impl
 
     int32_t (*create_texture)(int width, int height, int channels);
     void (*delete_texture)(int32_t texture_id);
+    void (*set_texture_smooth)(int texture_id, bool smooth);
     void (*get_texture_size)(int texture_id, int *width, int *height);
     void (*update_texture)(int texture_id, int x_offset, int y_offset, int width, int height, unsigned char *pixels);
     void (*resize_texture)(int texture_id, int new_width, int new_height);

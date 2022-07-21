@@ -423,6 +423,15 @@ void text_delete_font(int font_id)
     fonts[font_id].font = NULL;
 }
 
+int text_get_font_texture(int font_id)
+{
+    if (font_id < 0 || font_id >= font_count || !fonts[font_id].face) {
+        return -1;
+    }
+
+    return fonts[font_id].atlas.texture_id;
+}
+
 void text_draw_text(int font_id, float x, float y, char const *text)
 {
     if (font_id < 0 || font_id >= font_count || !fonts[font_id].face) {
