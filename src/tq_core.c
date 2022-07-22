@@ -19,6 +19,8 @@ typedef struct tq_core
 
     int                 display_width;
     int                 display_height;
+    float               display_aspect_ratio;
+
     char                title[256];
     int                 key_autorepeat; /* -1: false, 0: undefined, 1: true */
 
@@ -174,10 +176,16 @@ void tq_core_set_display_size(int width, int height)
 {
     core.display_width = width;
     core.display_height = height;
+    core.display_aspect_ratio = (float) width / (float) height;
 
     if (core.display.set_size) {
         core.display.set_size(width, height);
     }
+}
+
+float core_get_display_aspect_ratio(void)
+{
+    return core.display_aspect_ratio;
 }
 
 char const *tq_core_get_title(void)
@@ -284,8 +292,7 @@ void tq_core_on_mouse_button_released(tq_mouse_button_t mouse_button)
 
 void tq_core_on_mouse_cursor_moved(int32_t x, int32_t y)
 {
-    core.mouse_cursor_x = x;
-    core.mouse_cursor_y = y;
+    graphics_conv_display_coord_to_canvas_coord(x, y, &core.mouse_cursor_x, &core.mouse_cursor_y);
 
     if (core.mouse_cursor_move_callback) {
         tq_vec2i cursor = {core.mouse_cursor_x, core.mouse_cursor_y};
@@ -306,8 +313,7 @@ void tq_core_on_display_resized(int width, int height)
 {
     core.display_width = width;
     core.display_height = height;
-
-    graphics_on_display_resized(width, height);
+    core.display_aspect_ratio = (float) width / (float) height;
 }
 
 void tq_core_set_key_press_callback(tq_key_callback_t callback)

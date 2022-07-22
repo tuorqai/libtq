@@ -46,11 +46,12 @@ struct color
 };
 
 static struct renderer_impl renderer;
-static int display_width;
-static int display_height;
 static struct matrices matrices;
 static struct color colors[COLOR_COUNT];
-static bool auto_view_reset;
+
+static int canvas_width;
+static int canvas_height;
+static float canvas_aspect_ratio;
 
 //------------------------------------------------------------------------------
 // Utility functions
@@ -113,15 +114,23 @@ void tq_graphics_initialize(void)
     #error Invalid configuration. Check your build settings.
 #endif
 
-    tq_core_get_display_size(&display_width, &display_height);
+    int width, height;
+    tq_core_get_display_size(&width, &height);
 
-    make_default_projection(matrices.default_projection, display_width, display_height);
+    if (!canvas_width || !canvas_height) {
+        canvas_width = width;
+        canvas_height = height;
+        canvas_aspect_ratio = (float) width / (float) height;
+
+        make_default_projection(matrices.default_projection, width, height);
+    }
+
     mat4_copy(matrices.projection, matrices.default_projection);
 
     for (int index = 0; index < MAX_MATRICES; index++) {
         mat3_identity(matrices.model_view[index]);
     }
-    
+
     matrices.current_model_view = 0;
     matrices.dirty_inverse_projection = true;
 
@@ -131,11 +140,11 @@ void tq_graphics_initialize(void)
     graphics_set_outline_color(tq_c24(255, 255, 255));
     graphics_set_fill_color(tq_c24(0, 0, 0));
 
-    auto_view_reset = true;
-
     renderer.initialize();
 
-    renderer.update_viewport(0, 0, display_width, display_height);
+    renderer.on_display_resized(width, height);
+    renderer.on_canvas_resized(canvas_width, canvas_height);
+
     renderer.update_projection(matrices.projection);
     renderer.update_model_view(matrices.model_view[0]);
 
@@ -156,11 +165,6 @@ void tq_graphics_process(void)
     renderer.update_model_view(matrices.model_view[0]);
 
     matrices.current_model_view = 0;
-
-    if (auto_view_reset) {
-        mat4_copy(matrices.projection, matrices.default_projection);
-        renderer.update_projection(matrices.projection);
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -181,12 +185,64 @@ void graphics_set_clear_color(tq_color clear_color)
     renderer.set_clear_color(clear_color);
 }
 
+void graphics_get_canvas_size(int *width, int *height)
+{
+    *width = canvas_width;
+    *height = canvas_height;
+}
+
+void graphics_set_canvas_size(int width, int height)
+{
+    canvas_width = width;
+    canvas_height = height;
+    canvas_aspect_ratio = (float) width / (float) height;
+
+    if (renderer.on_canvas_resized) {
+        renderer.on_canvas_resized(width, height);
+    }
+
+    make_default_projection(matrices.default_projection, width, height);
+}
+
+float graphics_get_canvas_aspect_ratio(void)
+{
+    return canvas_aspect_ratio;
+}
+
+void graphics_set_canvas_smooth(bool smooth)
+{
+    renderer.set_canvas_smooth(smooth);
+}
+
+void graphics_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v)
+{
+    int display_width, display_height;
+    tq_core_get_display_size(&display_width, &display_height);
+
+    float canvas_aspect = canvas_aspect_ratio;
+    float display_aspect = core_get_display_aspect_ratio();
+
+    if (display_aspect > canvas_aspect) {
+        float x_scale = display_height / (float) canvas_height;
+        float x_offset = (display_width - (canvas_width * x_scale)) / (x_scale * 2.0f);
+
+        *u = (x * (float) canvas_height) / display_height - x_offset;
+        *v = (y / (float) display_height) * canvas_height;
+    } else {
+        float y_scale = display_width / (float) canvas_width;
+        float y_offset = (display_height - (canvas_height * y_scale)) / (y_scale * 2.0f);
+
+        *u = (x / (float) display_width) * canvas_width;
+        *v = (y * (float) canvas_width) / display_width - y_offset;
+    }
+}
+
 //------------------------------------------------------------------------------
 
 void graphics_get_relative_position(float ax, float ay, float *x, float *y)
 {
-    float u = -1.0f + 2.0f * (ax / (float) display_width);
-    float v = +1.0f - 2.0f * (ay / (float) display_height);
+    float u = -1.0f + 2.0f * (ax / (float) canvas_width);
+    float v = +1.0f - 2.0f * (ay / (float) canvas_height);
 
     mat4_transform_point(get_inverse_projection(), u, v, x, y);
 }
@@ -209,7 +265,6 @@ void graphics_reset_view(void)
 
 void graphics_set_auto_view_reset_enabled(bool enabled)
 {
-    auto_view_reset = enabled;
 }
 
 //------------------------------------------------------------------------------
@@ -496,17 +551,6 @@ void graphics_draw_subtexture(int texture_id,
 
     renderer.bind_texture(texture_id);
     renderer.draw_textured(PRIMITIVE_TRIANGLE_FAN, data, 4);
-}
-
-//------------------------------------------------------------------------------
-
-void graphics_on_display_resized(int width, int height)
-{
-    display_width = width;
-    display_height = height;
-
-    make_default_projection(matrices.default_projection, width, height);
-    renderer.update_viewport(0, 0, width, height);
 }
 
 //------------------------------------------------------------------------------

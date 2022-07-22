@@ -43,6 +43,7 @@ bool tq_core_process(void);
 
 void tq_core_get_display_size(int *width, int *height);
 void tq_core_set_display_size(int width, int height);
+float core_get_display_aspect_ratio(void);
 
 char const *tq_core_get_title(void);
 void tq_core_set_title(char const *title);

@@ -409,9 +409,6 @@ void spawn_world(world_t *world)
     world->players.texture = tq_load_texture_from_file("assets/raven.png");
     world->objects.texture = world->stage.texture;
 
-    world->font = tq_load_font_from_file("assets/fonts/sansation-bold-italic.ttf",
-        22.0f, TQ_FONT_NORMAL);
-
     spawn_stage(&world->stage);
 
     world->player_id = spawn_player(&world->players);
@@ -435,23 +432,10 @@ void draw_world(world_t const *world)
 {
     tq_clear();
 
-    tq_vec2i display_size = tq_get_display_size();
-
-    float aspect = display_size.x / (float) display_size.y;
-    
-    if (!tq_is_key_pressed(TQ_KEY_P)) {
-        if (aspect > 1.0f) {
-            tq_set_view(
-                TQ_RECTF(world->camera.x, world->camera.y, CAMERA_HEIGHT * aspect, CAMERA_HEIGHT),
-                world->camera.rotation
-            );
-        } else {
-            tq_set_view(
-                TQ_RECTF(world->camera.x, world->camera.y, CAMERA_WIDTH, CAMERA_WIDTH / aspect),
-                world->camera.rotation
-            );
-        }
-    }
+    tq_set_view(
+        (tq_rectf) {world->camera.x, world->camera.y, CAMERA_WIDTH, CAMERA_HEIGHT},
+        world->camera.rotation
+    );
 
     tq_set_line_color(tq_c24(255, 255, 255));
     tq_set_outline_color(tq_c24(255, 255, 255));
@@ -472,22 +456,19 @@ void draw_world(world_t const *world)
     tq_vec2f prel = TQ_VEC2F(
         world->players.x[world->player_id],
         world->players.y[world->player_id]);
-
-    tq_reset_view();
-
-    tq_print_text(world->font, TQ_VEC2F(32, 80), "mouse abs: [%d, %d]", cursor.x, cursor.y);
-    tq_print_text(world->font, TQ_VEC2F(32, 120), "mouse rel: [%.2f, %.2f]", mrel.x, mrel.y);
-    tq_print_text(world->font, TQ_VEC2F(32, 160), "player rel: [%.2f, %.2f]", prel.x, prel.y);
 }
 
 //------------------------------------------------------------------------------
 
 int main(int argc, char *argv[])
 {
-    tq_set_display_size(TQ_VEC2I(800, 600));
+    tq_set_canvas_size((tq_vec2i) {CAMERA_WIDTH, CAMERA_HEIGHT});
+    tq_set_display_size((tq_vec2i) {720, 480});
     tq_set_title("[tq library] jestan.c");
 
     tq_initialize();
+
+    tq_set_canvas_smooth(false);
 
     tq_set_auto_view_reset_enabled(false);
     tq_set_clear_color(tq_c24(0, 0, 0));
@@ -498,6 +479,12 @@ int main(int argc, char *argv[])
         spawn_world(world);
 
         while (tq_process()) {
+            if (tq_is_key_pressed(TQ_KEY_L)) {
+                tq_set_canvas_smooth(true);
+            } else {
+                tq_set_canvas_smooth(false);
+            }
+
             update_world(world);
             draw_world(world);
         }

@@ -159,6 +159,9 @@ unsigned int tq_get_framerate(void)
 //------------------------------------------------------------------------------
 // Graphics
 
+//----------------------------------------------------------
+// Canvas
+
 void tq_clear(void)
 {
     graphics_clear();
@@ -172,6 +175,24 @@ tq_color tq_get_clear_color(void)
 void tq_set_clear_color(tq_color clear_color)
 {
     graphics_set_clear_color(clear_color);
+}
+
+tq_vec2i tq_get_canvas_size(void)
+{
+    tq_vec2i size;
+    graphics_get_canvas_size(&size.x, &size.y);
+
+    return size;
+}
+
+void tq_set_canvas_size(tq_vec2i size)
+{
+    graphics_set_canvas_size(size.x, size.y);
+}
+
+void tq_set_canvas_smooth(bool smooth)
+{
+    graphics_set_canvas_smooth(smooth);
 }
 
 //----------------------------------------------------------

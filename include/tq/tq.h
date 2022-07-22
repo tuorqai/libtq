@@ -511,10 +511,10 @@ static inline tq_color tq_c32(unsigned char r, unsigned char g, unsigned char b,
 }
 
 //----------------------------------------------------------
-// Background
+// Canvas
 
 /**
- * Fill the screen with background color.
+ * Clear the canvas with background color.
  */
 TQ_API void TQ_CALL tq_clear(void);
 
@@ -527,6 +527,23 @@ TQ_API tq_color TQ_CALL tq_get_clear_color(void);
  * Set background color.
  */
 TQ_API void TQ_CALL tq_set_clear_color(tq_color clear_color);
+
+/**
+ * Get canvas size.
+ */
+TQ_API tq_vec2i TQ_CALL tq_get_canvas_size(void);
+
+/**
+ * Resize the canvas. By default, canvas is initialized with
+ * display size.
+ */
+TQ_API void TQ_CALL tq_set_canvas_size(tq_vec2i size);
+
+/**
+ * This option sets if canvas is antialiased when resized.
+ * Default value: enabled.
+ */
+TQ_API void TQ_CALL tq_set_canvas_smooth(bool smooth);
 
 //----------------------------------------------------------
 // Views
@@ -547,16 +564,8 @@ TQ_API void TQ_CALL tq_set_view(tq_rectf rect, float rotation);
  * Reset the view to its default state.
  * Default view is an area from top-left corner of the screen to
  * its bottom-right corner.
- * Note that the view is always reset when the window is resized.
- * To disable this behavior, use `tq_set_auto_view_reset_enabled()`.
  */
 TQ_API void TQ_CALL tq_reset_view(void);
-
-/**
- * If this option is enabled, then the view will resize with the window.
- * Default state: enabled.
- */
-TQ_API void TQ_CALL tq_set_auto_view_reset_enabled(bool enabled);
 
 //----------------------------------------------------------
 // Transformation matrix

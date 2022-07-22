@@ -25,6 +25,13 @@ void graphics_clear(void);
 tq_color graphics_get_clear_color(void);
 void graphics_set_clear_color(tq_color clear_color);
 
+void graphics_get_canvas_size(int *width, int *height);
+void graphics_set_canvas_size(int width, int height);
+float graphics_get_canvas_aspect_ratio(void);
+void graphics_set_canvas_smooth(bool smooth);
+
+void graphics_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v);
+
 void graphics_get_relative_position(float ax, float ay, float *x, float *y);
 void graphics_set_view(float x, float y, float w, float h, float rotation);
 void graphics_reset_view(void);
@@ -108,8 +115,6 @@ void graphics_draw_subtexture(int texture_id,
     float fx, float fy,
     float fw, float fh);
 
-void graphics_on_display_resized(int width, int height);
-
 //------------------------------------------------------------------------------
 
 enum
@@ -127,7 +132,10 @@ struct renderer_impl
     void (*terminate)(void);
     void (*process)(void);
 
-    void (*update_viewport)(int x, int y, int w, int h);
+    void (*on_display_resized)(int width, int height);
+    void (*on_canvas_resized)(int width, int height);
+    void (*set_canvas_smooth)(bool smooth);
+
     void (*update_projection)(float const *mat4);
     void (*update_model_view)(float const *mat3);
 
