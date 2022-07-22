@@ -45,13 +45,20 @@ struct color
     tq_color value;
 };
 
+struct graphics
+{
+    int ready;
+
+    int canvas_surface_id;
+    int canvas_width;
+    int canvas_height;
+    float canvas_aspect_ratio;
+};
+
+static struct graphics graphics;
 static struct renderer_impl renderer;
 static struct matrices matrices;
 static struct color colors[COLOR_COUNT];
-
-static int canvas_width;
-static int canvas_height;
-static float canvas_aspect_ratio;
 
 //------------------------------------------------------------------------------
 // Utility functions
@@ -114,17 +121,17 @@ void tq_graphics_initialize(void)
     #error Invalid configuration. Check your build settings.
 #endif
 
-    int width, height;
-    tq_core_get_display_size(&width, &height);
+    int display_width, display_height;
+    tq_core_get_display_size(&display_width, &display_height);
 
-    if (!canvas_width || !canvas_height) {
-        canvas_width = width;
-        canvas_height = height;
-        canvas_aspect_ratio = (float) width / (float) height;
-
-        make_default_projection(matrices.default_projection, width, height);
+    if (!graphics.canvas_width || !graphics.canvas_height) {
+        graphics.canvas_width = display_width;
+        graphics.canvas_height = display_height;
+        graphics.canvas_aspect_ratio = (float) display_width / (float) display_height;
     }
 
+    make_default_projection(matrices.default_projection,
+        graphics.canvas_width, graphics.canvas_height);
     mat4_copy(matrices.projection, matrices.default_projection);
 
     for (int index = 0; index < MAX_MATRICES; index++) {
@@ -142,24 +149,62 @@ void tq_graphics_initialize(void)
 
     renderer.initialize();
 
-    renderer.on_display_resized(width, height);
-    renderer.on_canvas_resized(canvas_width, canvas_height);
+    graphics.canvas_surface_id = renderer.create_surface(
+        graphics.canvas_width,
+        graphics.canvas_height
+    );
 
     renderer.update_projection(matrices.projection);
     renderer.update_model_view(matrices.model_view[0]);
 
     text_initialize(&renderer);
+
+    graphics.ready = 1;
 }
 
 void tq_graphics_terminate(void)
 {
     text_terminate();
     renderer.terminate();
+
+    graphics.ready = 0;
 }
 
 void tq_graphics_process(void)
 {
     renderer.process();
+
+    int canvas_texture_id = renderer.get_surface_texture_id(graphics.canvas_surface_id);
+
+    renderer.bind_surface(-1);
+    renderer.bind_texture(canvas_texture_id);
+
+    float canvas_aspect_ratio = graphics.canvas_aspect_ratio;
+    float display_aspect_ratio = core_get_display_aspect_ratio();
+
+    float x0, x1, y0, y1;
+
+    if (display_aspect_ratio > graphics.canvas_aspect_ratio) {
+        x0 = -(canvas_aspect_ratio / display_aspect_ratio);
+        x1 = +(canvas_aspect_ratio / display_aspect_ratio);
+        y0 = -1.0f;
+        y1 = +1.0f;
+    } else {
+        x0 = -1.0f;
+        x1 = +1.0f;
+        y0 = -(display_aspect_ratio / canvas_aspect_ratio);
+        y1 = +(display_aspect_ratio / canvas_aspect_ratio);
+    }
+
+    float data[] = {
+        x0, y0, 0.0f, 0.0f,
+        x1, y0, 1.0f, 0.0f,
+        x1, y1, 1.0f, 1.0f,
+        x0, y1, 0.0f, 1.0f,
+    };
+
+    renderer.draw_canvas(data);
+    renderer.bind_surface(graphics.canvas_surface_id);
 
     mat3_identity(matrices.model_view[0]);
     renderer.update_model_view(matrices.model_view[0]);
@@ -187,18 +232,19 @@ void graphics_set_clear_color(tq_color clear_color)
 
 void graphics_get_canvas_size(int *width, int *height)
 {
-    *width = canvas_width;
-    *height = canvas_height;
+    *width = graphics.canvas_width;
+    *height = graphics.canvas_height;
 }
 
 void graphics_set_canvas_size(int width, int height)
 {
-    canvas_width = width;
-    canvas_height = height;
-    canvas_aspect_ratio = (float) width / (float) height;
+    graphics.canvas_width = width;
+    graphics.canvas_height = height;
+    graphics.canvas_aspect_ratio = (float) width / (float) height;
 
-    if (renderer.on_canvas_resized) {
-        renderer.on_canvas_resized(width, height);
+    if (graphics.ready) {
+        renderer.delete_surface(graphics.canvas_surface_id);
+        graphics.canvas_surface_id = renderer.create_surface(width, height);
     }
 
     make_default_projection(matrices.default_projection, width, height);
@@ -206,12 +252,19 @@ void graphics_set_canvas_size(int width, int height)
 
 float graphics_get_canvas_aspect_ratio(void)
 {
-    return canvas_aspect_ratio;
+    return graphics.canvas_aspect_ratio;
+}
+
+bool graphics_is_canvas_smooth(void)
+{
+    int texture_id = renderer.get_surface_texture_id(graphics.canvas_surface_id);
+    return renderer.is_texture_smooth(texture_id);
 }
 
 void graphics_set_canvas_smooth(bool smooth)
 {
-    renderer.set_canvas_smooth(smooth);
+    int texture_id = renderer.get_surface_texture_id(graphics.canvas_surface_id);
+    renderer.set_texture_smooth(texture_id, smooth);
 }
 
 void graphics_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v)
@@ -219,21 +272,21 @@ void graphics_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v)
     int display_width, display_height;
     tq_core_get_display_size(&display_width, &display_height);
 
-    float canvas_aspect = canvas_aspect_ratio;
+    float canvas_aspect = graphics.canvas_aspect_ratio;
     float display_aspect = core_get_display_aspect_ratio();
 
     if (display_aspect > canvas_aspect) {
-        float x_scale = display_height / (float) canvas_height;
-        float x_offset = (display_width - (canvas_width * x_scale)) / (x_scale * 2.0f);
+        float x_scale = display_height / (float) graphics.canvas_height;
+        float x_offset = (display_width - (graphics.canvas_width * x_scale)) / (x_scale * 2.0f);
 
-        *u = (x * (float) canvas_height) / display_height - x_offset;
-        *v = (y / (float) display_height) * canvas_height;
+        *u = (x * (float) graphics.canvas_height) / display_height - x_offset;
+        *v = (y / (float) display_height) * graphics.canvas_height;
     } else {
-        float y_scale = display_width / (float) canvas_width;
-        float y_offset = (display_height - (canvas_height * y_scale)) / (y_scale * 2.0f);
+        float y_scale = display_width / (float) graphics.canvas_width;
+        float y_offset = (display_height - (graphics.canvas_height * y_scale)) / (y_scale * 2.0f);
 
-        *u = (x / (float) display_width) * canvas_width;
-        *v = (y * (float) canvas_width) / display_width - y_offset;
+        *u = (x / (float) display_width) * graphics.canvas_width;
+        *v = (y * (float) graphics.canvas_width) / display_width - y_offset;
     }
 }
 
@@ -241,8 +294,8 @@ void graphics_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v)
 
 void graphics_get_relative_position(float ax, float ay, float *x, float *y)
 {
-    float u = -1.0f + 2.0f * (ax / (float) canvas_width);
-    float v = +1.0f - 2.0f * (ay / (float) canvas_height);
+    float u = -1.0f + 2.0f * (ax / (float) graphics.canvas_width);
+    float v = +1.0f - 2.0f * (ay / (float) graphics.canvas_height);
 
     mat4_transform_point(get_inverse_projection(), u, v, x, y);
 }
@@ -261,10 +314,6 @@ void graphics_reset_view(void)
     renderer.update_projection(matrices.projection);
 
     matrices.dirty_inverse_projection = true;
-}
-
-void graphics_set_auto_view_reset_enabled(bool enabled)
-{
 }
 
 //------------------------------------------------------------------------------
@@ -551,6 +600,37 @@ void graphics_draw_subtexture(int texture_id,
 
     renderer.bind_texture(texture_id);
     renderer.draw_textured(PRIMITIVE_TRIANGLE_FAN, data, 4);
+}
+
+//------------------------------------------------------------------------------
+
+int graphics_create_surface(int width, int height)
+{
+    return renderer.create_surface(width, height);
+}
+
+void graphics_delete_surface(int surface_id)
+{
+    renderer.delete_surface(surface_id);
+}
+
+void graphics_set_surface(int surface_id)
+{
+    if (surface_id < 0) {
+        return;
+    }
+
+    renderer.bind_surface(surface_id);
+}
+
+void graphics_reset_surface(void)
+{
+    renderer.bind_surface(graphics.canvas_surface_id);
+}
+
+int graphics_get_surface_texture_id(int surface_id)
+{
+    return renderer.get_surface_texture_id(surface_id);
 }
 
 //------------------------------------------------------------------------------

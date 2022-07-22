@@ -28,6 +28,8 @@ void graphics_set_clear_color(tq_color clear_color);
 void graphics_get_canvas_size(int *width, int *height);
 void graphics_set_canvas_size(int width, int height);
 float graphics_get_canvas_aspect_ratio(void);
+
+bool graphics_is_canvas_smooth(void);
 void graphics_set_canvas_smooth(bool smooth);
 
 void graphics_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v);
@@ -35,7 +37,6 @@ void graphics_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v);
 void graphics_get_relative_position(float ax, float ay, float *x, float *y);
 void graphics_set_view(float x, float y, float w, float h, float rotation);
 void graphics_reset_view(void);
-void graphics_set_auto_view_reset_enabled(bool enabled);
 
 // [tq::graphics::push_matrix]
 void graphics_push_matrix(void);
@@ -115,6 +116,15 @@ void graphics_draw_subtexture(int texture_id,
     float fx, float fy,
     float fw, float fh);
 
+int graphics_create_surface(int width, int height);
+void graphics_delete_surface(int surface_id);
+void graphics_set_surface(int surface_id);
+void graphics_reset_surface(void);
+int graphics_get_surface_texture_id(int surface_id);
+bool graphics_is_surface_smooth(int surface_id);
+void graphics_set_surface_smooth(int surface_id, bool smooth);
+void graphics_draw_surface(int surface_id, float x, float y, float w, float h);
+
 //------------------------------------------------------------------------------
 
 enum
@@ -132,20 +142,22 @@ struct renderer_impl
     void (*terminate)(void);
     void (*process)(void);
 
-    void (*on_display_resized)(int width, int height);
-    void (*on_canvas_resized)(int width, int height);
-    void (*set_canvas_smooth)(bool smooth);
-
     void (*update_projection)(float const *mat4);
     void (*update_model_view)(float const *mat3);
 
     int32_t (*create_texture)(int width, int height, int channels);
     void (*delete_texture)(int32_t texture_id);
+    bool (*is_texture_smooth)(int texture_id);
     void (*set_texture_smooth)(int texture_id, bool smooth);
     void (*get_texture_size)(int texture_id, int *width, int *height);
     void (*update_texture)(int texture_id, int x_offset, int y_offset, int width, int height, unsigned char *pixels);
     void (*resize_texture)(int texture_id, int new_width, int new_height);
     void (*bind_texture)(int texture_id);
+
+    int (*create_surface)(int width, int height);
+    void (*delete_surface)(int surface_id);
+    int (*get_surface_texture_id)(int surface_id);
+    void (*bind_surface)(int surface_id);
 
     void (*set_clear_color)(tq_color color);
     void (*set_draw_color)(tq_color color);
@@ -155,6 +167,7 @@ struct renderer_impl
     void (*draw_colored)(int mode, float const *data, int num_vertices);
     void (*draw_textured)(int mode, float const *data, int num_vertices);
     void (*draw_font)(float const *data, unsigned int const *indices, int num_indices);
+    void (*draw_canvas)(float const *data);
 };
 
 //------------------------------------------------------------------------------

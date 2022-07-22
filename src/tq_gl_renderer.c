@@ -217,10 +217,7 @@ struct gl_surface
 {
     GLuint framebuffer;
     GLuint depth;
-    GLuint color;
-    int width;
-    int height;
-    bool smooth;
+    int texture_id;
 };
 
 struct gl_program
@@ -234,9 +231,6 @@ struct gl_state
 {
     int vertex_format;
     int program_id;
-    int surface_id;
-    int canvas_id;
-
     int bound_texture_id;
     int bound_surface_id;
 };
@@ -255,12 +249,7 @@ static int surface_count;
 //------------------------------------------------------------------------------
 
 static void delete_texture(int texture_id);
-
-static int create_surface(int width, int height);
-static void resize_surface(int surface_id, int width, int height);
-static void delete_surface(int screen_id);
-static void bind_surface(int screen_id);
-static void set_surface_smooth(int surface_id, bool smooth);
+static void delete_surface(int surface_id);
 
 //------------------------------------------------------------------------------
 
@@ -595,8 +584,6 @@ static void initialize(void)
     glDeleteShader(fs_textured);
     glDeleteShader(fs_font);
 
-    state.canvas_id = -1;
-
     state.bound_texture_id = -1;
     state.bound_surface_id = -1;
 
@@ -650,78 +637,6 @@ static void terminate(void)
 static void process(void)
 {
     CHECK_GL(glFlush());
-
-    bind_surface(-1);
-    CHECK_GL(glBindTexture(GL_TEXTURE_2D, surfaces[state.canvas_id].color));
-
-    CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
-    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
-
-    set_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
-    set_program_id(PROGRAM_BACKBUF);
-
-    float display_aspect_ratio = core_get_display_aspect_ratio();
-    float canvas_aspect_ratio = graphics_get_canvas_aspect_ratio();
-
-    float x0, x1;
-    float y0, y1;
-
-    if (display_aspect_ratio > canvas_aspect_ratio) {
-        x0 = -(canvas_aspect_ratio / display_aspect_ratio);
-        x1 = +(canvas_aspect_ratio / display_aspect_ratio);
-        y0 = +1.0f;
-        y1 = -1.0f;
-    } else {
-        x0 = -1.0f;
-        x1 = +1.0f;
-        y0 = +(display_aspect_ratio / canvas_aspect_ratio);
-        y1 = -(display_aspect_ratio / canvas_aspect_ratio);
-    }
-
-    GLfloat data[] = {
-        x0, y0, 0.0f, 1.0f,
-        x1, y0, 1.0f, 1.0f,
-        x1, y1, 1.0f, 0.0f,
-        x0, y1, 0.0f, 0.0f,
-    };
-
-    glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, data + 0);
-    glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, data + 2);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    bind_surface(state.canvas_id);
-    state.bound_texture_id = -1;
-}
-
-/**
- * - (void) on_display_resized: (int) width: (int) height;
- */
-static void on_display_resized(int width, int height)
-{
-}
-
-/**
- * - (void) on_canvas_resized: (int) width: (int) height;
- */
-static void on_canvas_resized(int width, int height)
-{
-    if (state.canvas_id == -1) {
-        state.canvas_id = create_surface(width, height);
-    } else {
-        resize_surface(state.canvas_id, width, height);
-    }
-}
-
-/**
- * - (void) set_canvas_smooth: (bool) smooth;
- */
-static void set_canvas_smooth(bool smooth)
-{
-    if (state.canvas_id == -1) {
-        return;
-    }
-
-    set_surface_smooth(state.canvas_id, smooth);
 }
 
 /**
@@ -805,6 +720,15 @@ static void delete_texture(int texture_id)
 
     CHECK_GL(glDeleteTextures(1, &textures[texture_id].handle));
     textures[texture_id].handle = 0;
+}
+
+static bool is_texture_smooth(int texture_id)
+{
+    if (texture_id < 0 || texture_id > texture_count || textures[texture_id].handle == 0) {
+        return false;
+    }
+
+    return textures[texture_id].smooth;
 }
 
 static void set_texture_smooth(int texture_id, bool smooth)
@@ -903,104 +827,43 @@ static void bind_texture(int texture_id)
     state.bound_texture_id = texture_id;
 }
 
-static GLuint gen_surface_depth(int width, int height)
-{
-    GLuint renderbuffer;
-
-    CHECK_GL(glGenRenderbuffers(1, &renderbuffer));
-    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height));
-
-    return renderbuffer;
-}
-
-static GLuint gen_surface_color(int width, int height, bool smooth)
-{
-    GLuint texture;
-
-    CHECK_GL(glGenTextures(1, &texture));
-    CHECK_GL(glBindTexture(GL_TEXTURE_2D, texture));
-
-    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST));
-
-    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-
-    CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
-
-    return texture;
-}
-
 /**
  * - (int) create_surface: (int) width: (int) height;
  */
 static int create_surface(int width, int height)
 {
     int surface_id = get_surface_id();
+    
+    GLuint depth = 0;
+    CHECK_GL(glGenRenderbuffers(1, &depth));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, depth));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height));
 
-    GLuint depth = gen_surface_depth(width, height);
-    GLuint color = gen_surface_color(width, height, true);
+    int texture_id = create_texture(width, height, PIXEL_FORMAT_RGBA);
+    set_texture_smooth(texture_id, true);
+    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
-    GLuint framebuffer;
-    CHECK_GL(glGenFramebuffers(1, &framebuffer));
-
-    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, framebuffer));
+    GLuint handle = 0;
+    CHECK_GL(glGenFramebuffers(1, &handle));
+    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, handle));
     CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth));
-    CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color, 0));
+    CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        GL_TEXTURE_2D, textures[texture_id].handle, 0));
 
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        tq_error("Failed to create screen.\n");
+        tq_error("Failed to create surface.\n");
     }
 
-    surfaces[surface_id].framebuffer = framebuffer;
+    surfaces[surface_id].framebuffer = handle;
     surfaces[surface_id].depth = depth;
-    surfaces[surface_id].color = color;
-    surfaces[surface_id].width = width;
-    surfaces[surface_id].height = height;
-    surfaces[surface_id].smooth = true;
+    surfaces[surface_id].texture_id = texture_id;
 
-    state.bound_texture_id = -1;
     state.bound_surface_id = surface_id;
 
     return surface_id;
-}
-
-/**
- * - (void) resize_surface: (int) surface_id: (int) width: (int) height;
- */
-static void resize_surface(int surface_id, int width, int height)
-{
-    if (surface_id < 0 || surface_id >= surface_count) {
-        return;
-    }
-
-    if (surfaces[surface_id].framebuffer == 0) {
-        return;
-    }
-
-    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, surfaces[surface_id].framebuffer));
-    CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0));
-    CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0));
-
-    CHECK_GL(glDeleteRenderbuffers(1, &surfaces[surface_id].depth));
-    CHECK_GL(glDeleteTextures(1, &surfaces[surface_id].color));
-
-    GLuint depth = gen_surface_depth(width, height);
-    GLuint color = gen_surface_color(width, height, surfaces[surface_id].smooth);
-
-    CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth));
-    CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color, 0));
-
-    surfaces[surface_id].depth = depth;
-    surfaces[surface_id].color = color;
-    surfaces[surface_id].width = width;
-    surfaces[surface_id].height = height;
-
-    state.bound_texture_id = -1;
-    state.bound_surface_id = surface_id;
 }
 
 /**
@@ -1018,11 +881,27 @@ static void delete_surface(int surface_id)
 
     CHECK_GL(glDeleteFramebuffers(1, &surfaces[surface_id].framebuffer));
     CHECK_GL(glDeleteRenderbuffers(1, &surfaces[surface_id].depth));
-    CHECK_GL(glDeleteTextures(1, &surfaces[surface_id].color));
+    delete_texture(surfaces[surface_id].texture_id);
 
     surfaces[surface_id].framebuffer = 0;
     surfaces[surface_id].depth = 0;
-    surfaces[surface_id].color = 0;
+    surfaces[surface_id].texture_id = -1;
+}
+
+/**
+ * - (int) get_surface_texture_id: (int) surface_id;
+ */
+static int get_surface_texture_id(int surface_id)
+{
+    if (surface_id < 0 || surface_id >= surface_count) {
+        return -1;
+    }
+
+    if (surfaces[surface_id].framebuffer == 0) {
+        return -1;
+    }
+
+    return surfaces[surface_id].texture_id;
 }
 
 /**
@@ -1038,39 +917,19 @@ static void bind_surface(int surface_id)
     int width;
     int height;
 
-    if (surface_id < 0 || surface_id >= surface_count) {
+    if (surface_id < 0 || surface_id >= surface_count || surfaces[surface_id].framebuffer == 0) {
         framebuffer = 0;
         tq_core_get_display_size(&width, &height);
     } else {
         framebuffer = surfaces[surface_id].framebuffer;
-        width = surfaces[surface_id].width;
-        height = surfaces[surface_id].height;
+        width = textures[surfaces[surface_id].texture_id].width;
+        height = textures[surfaces[surface_id].texture_id].height;
     }
 
     CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, framebuffer));
     CHECK_GL(glViewport(0, 0, width, height));
 
     state.bound_surface_id = surface_id;
-}
-
-/**
- * - (void) set_surface_smooth: (int) surface_id: (bool) smooth;
- */
-static void set_surface_smooth(int surface_id, bool smooth)
-{
-    if (surface_id < 0 || surface_id >= surface_count) {
-        return;
-    }
-
-    if (surfaces[surface_id].framebuffer == 0) {
-        return;
-    }
-
-    CHECK_GL(glBindTexture(GL_TEXTURE_2D, surfaces[surface_id].color));
-    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST));
-
-    surfaces[surface_id].smooth = smooth;
-    state.bound_texture_id = -1;
 }
 
 static void set_clear_color(tq_color clear_color)
@@ -1136,6 +995,19 @@ static void draw_font(float const *data, unsigned int const *indices, int num_in
     CHECK_GL(glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, indices));
 }
 
+static void draw_canvas(float const *data)
+{
+    CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
+
+    set_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
+    set_program_id(PROGRAM_BACKBUF);
+
+    glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, data + 0);
+    glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, data + 2);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+}
+
 //------------------------------------------------------------------------------
 // Module constructor
 
@@ -1149,20 +1021,22 @@ void construct_gl_renderer(struct renderer_impl *renderer)
         .terminate = terminate,
         .process = process,
         
-        .on_display_resized = on_display_resized,
-        .on_canvas_resized = on_canvas_resized,
-        .set_canvas_smooth = set_canvas_smooth,
-
         .update_projection = update_projection,
         .update_model_view = update_model_view,
 
         .create_texture = create_texture,
         .delete_texture = delete_texture,
+        .is_texture_smooth = is_texture_smooth,
         .set_texture_smooth = set_texture_smooth,
         .get_texture_size = get_texture_size,
         .update_texture = update_texture,
         .resize_texture = resize_texture,
         .bind_texture = bind_texture,
+
+        .create_surface = create_surface,
+        .delete_surface = delete_surface,
+        .get_surface_texture_id = get_surface_texture_id,
+        .bind_surface = bind_surface,
 
         .set_clear_color = set_clear_color,
         .set_draw_color = set_draw_color,
@@ -1172,6 +1046,7 @@ void construct_gl_renderer(struct renderer_impl *renderer)
         .draw_colored = draw_colored,
         .draw_textured = draw_textured,
         .draw_font = draw_font,
+        .draw_canvas = draw_canvas,
     };
 }
 

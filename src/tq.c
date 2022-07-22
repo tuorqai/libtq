@@ -190,6 +190,11 @@ void tq_set_canvas_size(tq_vec2i size)
     graphics_set_canvas_size(size.x, size.y);
 }
 
+bool tq_is_canvas_smooth(void)
+{
+    return graphics_is_canvas_smooth();
+}
+
 void tq_set_canvas_smooth(bool smooth)
 {
     graphics_set_canvas_smooth(smooth);
@@ -214,11 +219,6 @@ void tq_set_view(tq_rectf rect, float rotation)
 void tq_reset_view(void)
 {
     graphics_reset_view();
-}
-
-void tq_set_auto_view_reset_enabled(bool enabled)
-{
-    graphics_set_auto_view_reset_enabled(enabled);
 }
 
 //----------------------------------------------------------
@@ -388,6 +388,34 @@ void tq_draw_subtexture(tq_texture texture, tq_rectf sub, tq_rectf rect)
     graphics_draw_subtexture(texture.id,
         rect.x, rect.y, rect.w, rect.h,
         sub.x, sub.y, sub.w, sub.h);
+}
+
+//----------------------------------------------------------
+// Surfaces
+
+tq_surface tq_create_surface(tq_vec2i size)
+{
+    return (tq_surface) { .id = graphics_create_surface(size.x, size.y) };
+}
+
+void tq_delete_surface(tq_surface surface)
+{
+    graphics_delete_texture(surface.id);
+}
+
+void tq_set_surface(tq_surface surface)
+{
+    graphics_set_surface(surface.id);
+}
+
+void tq_reset_surface(void)
+{
+    graphics_reset_surface();
+}
+
+tq_texture tq_get_surface_texture(tq_surface surface)
+{
+    return (tq_texture) { .id = graphics_get_surface_texture_id(surface.id) };
 }
 
 //----------------------------------------------------------

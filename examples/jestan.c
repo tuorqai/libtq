@@ -10,7 +10,7 @@
 
 //------------------------------------------------------------------------------
 
-#define CAMERA_WIDTH            (256)
+#define CAMERA_WIDTH            (288)
 #define CAMERA_HEIGHT           (240)
 
 #define MAX_PLAYERS             4
@@ -470,7 +470,6 @@ int main(int argc, char *argv[])
 
     tq_set_canvas_smooth(false);
 
-    tq_set_auto_view_reset_enabled(false);
     tq_set_clear_color(tq_c24(0, 0, 0));
 
     world_t *world = malloc(sizeof(world_t));

@@ -259,6 +259,11 @@ typedef enum tq_channel_state
 typedef struct { int id; } tq_texture;
 
 /**
+ * Surface identifier.
+ */
+typedef struct { int id; } tq_surface;
+
+/**
  * Font identifier.
  */
 typedef struct { int id; } tq_font;
@@ -540,6 +545,11 @@ TQ_API tq_vec2i TQ_CALL tq_get_canvas_size(void);
 TQ_API void TQ_CALL tq_set_canvas_size(tq_vec2i size);
 
 /**
+ * Check if canvas is antialiased.
+ */
+TQ_API bool TQ_CALL tq_is_canvas_smooth(void);
+
+/**
  * This option sets if canvas is antialiased when resized.
  * Default value: enabled.
  */
@@ -732,6 +742,36 @@ TQ_API void TQ_CALL tq_draw_texture(tq_texture texture, tq_rectf rect);
  * Texture coordinates should be in pixel space.
  */
 TQ_API void TQ_CALL tq_draw_subtexture(tq_texture texture, tq_rectf sub, tq_rectf rect);
+
+//----------------------------------------------------------
+// Surfaces
+
+/**
+ * Create a new surface with given size.
+ */
+TQ_API tq_surface TQ_CALL tq_create_surface(tq_vec2i size);
+
+/**
+ * Delete a surface.
+ */
+TQ_API void TQ_CALL tq_delete_surface(tq_surface surface);
+
+/**
+ * Switch to surface. All subsequent rendering commands will affect
+ * that surface.
+ * The current surface is reset every frame.
+ */
+TQ_API void TQ_CALL tq_set_surface(tq_surface surface);
+
+/**
+ * Switch back to the canvas.
+ */
+TQ_API void TQ_CALL tq_reset_surface(void);
+
+/**
+ * Get the underlying texture of a surface.
+ */
+TQ_API tq_texture TQ_CALL tq_get_surface_texture(tq_surface surface);
 
 //----------------------------------------------------------
 // Fonts and text
