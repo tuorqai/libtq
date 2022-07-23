@@ -475,6 +475,14 @@ void tq_print_text(tq_font font, tq_vec2f position, char const *fmt, ...)
     text_draw_text(font.id, position.x, position.y, buffer);
 }
 
+//----------------------------------------------------------
+// Blending
+
+void tq_set_blend_mode(tq_blend_mode mode)
+{
+    graphics_set_blend_mode(mode);
+}
+
 //------------------------------------------------------------------------------
 // Audio
 

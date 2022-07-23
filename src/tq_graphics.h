@@ -125,6 +125,8 @@ bool graphics_is_surface_smooth(int surface_id);
 void graphics_set_surface_smooth(int surface_id, bool smooth);
 void graphics_draw_surface(int surface_id, float x, float y, float w, float h);
 
+void graphics_set_blend_mode(tq_blend_mode mode);
+
 //------------------------------------------------------------------------------
 
 enum
@@ -161,6 +163,7 @@ struct renderer_impl
 
     void (*set_clear_color)(tq_color color);
     void (*set_draw_color)(tq_color color);
+    void (*set_blend_mode)(tq_blend_mode mode);
 
     void (*clear)(void);
     void (*draw_solid)(int mode, float const *data, int num_vertices);

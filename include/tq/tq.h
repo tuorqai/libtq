@@ -60,6 +60,21 @@
 
 #define TQ_API          TQ_LINKAGE TQ_EXPORT
 
+/**
+ * C++ lacks C99's compound literals. However, since C++11, plain structures
+ * can be initialized with slightly different syntax:
+ * `xyz_person { "John", "Doe" }`
+ *
+ * The same thing, but without parentheses. Sadly, this doesn't support
+ * designated initializers.
+ */
+
+#ifdef __cplusplus
+    #define TQ_COMPOUND(Type)       Type
+#else
+    #define TQ_COMPOUND(Type)       (Type)
+#endif
+
 //------------------------------------------------------------------------------
 // Constants
 
@@ -241,6 +256,33 @@ typedef enum tq_joystick_button
 } tq_joystick_button_t;
 
 /**
+ * Enumeration of blend mode factors.
+ */
+typedef enum tq_blend_factor
+{
+    TQ_BLEND_ZERO,
+    TQ_BLEND_ONE,
+    TQ_BLEND_SRC_COLOR,
+    TQ_BLEND_ONE_MINUS_SRC_COLOR,
+    TQ_BLEND_DST_COLOR,
+    TQ_BLEND_ONE_MINUS_DST_COLOR,
+    TQ_BLEND_SRC_ALPHA,
+    TQ_BLEND_ONE_MINUS_SRC_ALPHA,
+    TQ_BLEND_DST_ALPHA,
+    TQ_BLEND_ONE_MINUS_DST_ALPHA,
+} tq_blend_factor;
+
+/**
+ * Enumeration of blend mode equations.
+ */
+typedef enum tq_blend_equation
+{
+    TQ_BLEND_ADD,
+    TQ_BLEND_SUB,
+    TQ_BLEND_REV_SUB,
+} tq_blend_equation;
+
+/**
  * Enumeration of audio channel states.
  */
 typedef enum tq_channel_state
@@ -333,6 +375,20 @@ typedef struct tq_color
     unsigned char b;
     unsigned char a;
 } tq_color;
+
+/**
+ * Blend mode structure.
+ */
+typedef struct tq_blend_mode
+{
+    tq_blend_factor color_src_factor;
+    tq_blend_factor color_dst_factor;
+    tq_blend_equation color_equation;
+
+    tq_blend_factor alpha_src_factor;
+    tq_blend_factor alpha_dst_factor;
+    tq_blend_equation alpha_equation;
+} tq_blend_mode;
 
 /**
  * Keyboard event callback.
@@ -806,6 +862,63 @@ TQ_API void TQ_CALL tq_draw_text(tq_font font, tq_vec2f position, char const *te
  * See also: tq_set_fill_color(), tq_set_outline_color().
  */
 TQ_API void TQ_CALL tq_print_text(tq_font font, tq_vec2f position, char const *fmt, ...);
+
+//----------------------------------------------------------
+// Blending
+
+/**
+ * Shortcut macro to quickly define custom blend mode.
+ */
+#define TQ_DEFINE_BLEND_MODE(SrcFactor, DstFactor) \
+    TQ_COMPOUND(tq_blend_mode) { \
+        (SrcFactor), (DstFactor), TQ_BLEND_ADD, \
+        (SrcFactor), (DstFactor), TQ_BLEND_ADD }
+
+/**
+ * Shortcut macro to quickly define custom blend mode with custom equation.
+ */
+#define TQ_DEFINE_BLEND_MODE_EX(SrcFactor, DstFactor, Equation) \
+    TQ_COMPOUND(tq_blend_mode) { \
+        (SrcFactor), (DstFactor), (Equation), \
+        (SrcFactor), (DstFactor), (Equation) }
+
+/**
+ * Predefined blending mode: none.
+ * No blending is done, dst is overwritten by src.
+ */
+#define TQ_BLEND_MODE_NONE \
+    TQ_COMPOUND(tq_blend_mode) { \
+        TQ_BLEND_ONE, TQ_BLEND_ZERO, TQ_BLEND_ADD, \
+        TQ_BLEND_ONE, TQ_BLEND_ZERO, TQ_BLEND_ADD }
+
+/**
+ * Predefined blending mode: alpha.
+ */
+#define TQ_BLEND_MODE_ALPHA \
+    TQ_COMPOUND(tq_blend_mode) { \
+        TQ_BLEND_SRC_ALPHA, TQ_BLEND_ONE_MINUS_SRC_ALPHA, TQ_BLEND_ADD, \
+        TQ_BLEND_SRC_ALPHA, TQ_BLEND_ONE_MINUS_SRC_ALPHA, TQ_BLEND_ADD }
+
+/**
+ * Predefined blending mode: add.
+ */
+#define TQ_BLEND_MODE_ADD \
+    TQ_COMPOUND(tq_blend_mode) { \
+        TQ_BLEND_SRC_ALPHA, TQ_BLEND_ONE, TQ_BLEND_ADD, \
+        TQ_BLEND_SRC_ALPHA, TQ_BLEND_ONE, TQ_BLEND_ADD }
+
+/**
+ * Predefined blending mode: multiply.
+ */
+#define TQ_BLEND_MODE_MUL \
+    TQ_COMPOUND(tq_blend_mode) { \
+        TQ_BLEND_ZERO, TQ_BLEND_SRC_COLOR, TQ_BLEND_ADD, \
+        TQ_BLEND_ZERO, TQ_BLEND_SRC_ALPHA, TQ_BLEND_ADD }
+
+/**
+ * Set current blend mode. The default one is alpha blending.
+ */
+TQ_API void TQ_CALL tq_set_blend_mode(tq_blend_mode mode);
 
 //------------------------------------------------------------------------------
 // Audio

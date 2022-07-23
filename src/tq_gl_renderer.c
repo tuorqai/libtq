@@ -233,6 +233,7 @@ struct gl_state
     int program_id;
     int bound_texture_id;
     int bound_surface_id;
+    tq_blend_mode blend_mode;
 };
 
 //------------------------------------------------------------------------------
@@ -245,11 +246,6 @@ static struct gl_program programs[PROGRAM_COUNT];
 static struct gl_state state;
 static struct gl_surface *surfaces;
 static int surface_count;
-
-//------------------------------------------------------------------------------
-
-static void delete_texture(int texture_id);
-static void delete_surface(int surface_id);
 
 //------------------------------------------------------------------------------
 
@@ -326,9 +322,6 @@ static int get_surface_id(void)
     return surface_id;
 }
 
-//------------------------------------------------------------------------------
-// Utility functions
-
 /**
  * Get OpenGL render mode.
  */
@@ -364,6 +357,45 @@ static GLenum conv_texture_format(int channels)
         return GL_RGB;
     case 4:
         return GL_RGBA;
+    }
+
+    return GL_INVALID_ENUM;
+}
+
+static bool compare_blend_mode(tq_blend_mode const *a, tq_blend_mode const *b)
+{
+    return (a->color_src_factor == b->color_src_factor)
+        && (a->color_dst_factor == b->color_dst_factor)
+        && (a->alpha_src_factor == b->alpha_src_factor)
+        && (a->alpha_dst_factor == b->alpha_dst_factor)
+        && (a->color_equation == b->color_equation)
+        && (a->alpha_equation == b->alpha_equation);
+}
+
+static GLenum conv_blend_factor(tq_blend_factor factor)
+{
+    switch (factor) {
+    case TQ_BLEND_ZERO:                 return GL_ZERO;
+    case TQ_BLEND_ONE:                  return GL_ONE;
+    case TQ_BLEND_SRC_COLOR:            return GL_SRC_COLOR;
+    case TQ_BLEND_ONE_MINUS_SRC_COLOR:  return GL_ONE_MINUS_SRC_COLOR;
+    case TQ_BLEND_DST_COLOR:            return GL_DST_COLOR;
+    case TQ_BLEND_ONE_MINUS_DST_COLOR:  return GL_ONE_MINUS_DST_COLOR;
+    case TQ_BLEND_SRC_ALPHA:            return GL_SRC_ALPHA;
+    case TQ_BLEND_ONE_MINUS_SRC_ALPHA:  return GL_ONE_MINUS_SRC_ALPHA;
+    case TQ_BLEND_DST_ALPHA:            return GL_DST_ALPHA;
+    case TQ_BLEND_ONE_MINUS_DST_ALPHA:  return GL_ONE_MINUS_DST_ALPHA;
+    }
+
+    return GL_INVALID_ENUM;
+}
+
+static GLenum conv_blend_equation(tq_blend_equation equation)
+{
+    switch (equation) {
+    case TQ_BLEND_ADD:                  return GL_FUNC_ADD;
+    case TQ_BLEND_SUB:                  return GL_FUNC_SUBTRACT;
+    case TQ_BLEND_REV_SUB:              return GL_FUNC_REVERSE_SUBTRACT;
     }
 
     return GL_INVALID_ENUM;
@@ -530,6 +562,11 @@ static void set_dirty_uniform(int program_id, int uniform_id)
 
 //------------------------------------------------------------------------------
 
+static void delete_texture(int texture_id);
+static void delete_surface(int surface_id);
+
+//------------------------------------------------------------------------------
+
 /**
  * - (void) initialize;
  */
@@ -586,23 +623,31 @@ static void initialize(void)
 
     state.bound_texture_id = -1;
     state.bound_surface_id = -1;
+    state.blend_mode = TQ_DEFINE_BLEND_MODE(TQ_BLEND_SRC_ALPHA, TQ_BLEND_ONE_MINUS_SRC_ALPHA);
 
-    // Reset OpenGL state.
-    glEnable(GL_BLEND);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
+    /**
+     * Reset OpenGL state.
+     */
+
+    CHECK_GL(glEnable(GL_BLEND));
+    CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    CHECK_GL(glBlendEquation(GL_FUNC_ADD));
+
+    CHECK_GL(glDisable(GL_CULL_FACE));
+    CHECK_GL(glDisable(GL_DEPTH_TEST));
 
     #ifndef TQ_USE_OPENGL_ES
-        glEnable(GL_MULTISAMPLE);
+        CHECK_GL(glEnable(GL_MULTISAMPLE));
     #else
-        glEnable(GL_MULTISAMPLE_EXT);
+        CHECK_GL(glEnable(GL_MULTISAMPLE_EXT));
     #endif
 
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
 
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    /**
+     * Initialization is done.
+     */
 
-    // Initialization is done.
     log_info("OpenGL renderer initialized.\n");
     log_info("GL_VENDOR: %s\n", glGetString(GL_VENDOR));
     log_info("GL_RENDERER: %s\n", glGetString(GL_RENDERER));
@@ -935,6 +980,7 @@ static void bind_surface(int surface_id)
 static void set_clear_color(tq_color clear_color)
 {
     decode_color24(colors.clear, clear_color);
+    CHECK_GL(glClearColor(colors.clear[0], colors.clear[1], colors.clear[2], 1.0f));
 }
 
 static void set_draw_color(tq_color draw_color)
@@ -950,9 +996,29 @@ static void set_draw_color(tq_color draw_color)
     }
 }
 
+static void set_blend_mode(tq_blend_mode mode)
+{
+    if (compare_blend_mode(&state.blend_mode, &mode)) {
+        return;
+    }
+
+    CHECK_GL(glBlendFuncSeparate(
+        conv_blend_factor(mode.color_src_factor),
+        conv_blend_factor(mode.color_dst_factor),
+        conv_blend_factor(mode.alpha_src_factor),
+        conv_blend_factor(mode.alpha_dst_factor)
+    ));
+
+    CHECK_GL(glBlendEquationSeparate(
+        conv_blend_equation(mode.color_equation),
+        conv_blend_equation(mode.alpha_equation)
+    ));
+
+    state.blend_mode = mode;
+}
+
 static void clear(void)
 {
-    CHECK_GL(glClearColor(colors.clear[0], colors.clear[1], colors.clear[2], 1.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
 }
 
@@ -997,6 +1063,7 @@ static void draw_font(float const *data, unsigned int const *indices, int num_in
 
 static void draw_canvas(float const *data)
 {
+    CHECK_GL(glDisable(GL_BLEND));
     CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
 
@@ -1006,6 +1073,9 @@ static void draw_canvas(float const *data)
     glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, data + 0);
     glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, data + 2);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    CHECK_GL(glEnable(GL_BLEND));
+    CHECK_GL(glClearColor(colors.clear[0], colors.clear[1], colors.clear[2], 1.0f));
 }
 
 //------------------------------------------------------------------------------
@@ -1040,6 +1110,7 @@ void construct_gl_renderer(struct renderer_impl *renderer)
 
         .set_clear_color = set_clear_color,
         .set_draw_color = set_draw_color,
+        .set_blend_mode = set_blend_mode,
 
         .clear = clear,
         .draw_solid = draw_solid,

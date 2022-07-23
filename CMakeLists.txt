@@ -151,7 +151,8 @@ if(BUILD_EXAMPLES)
         "callbacks"
         "sounds"
         "text"
-        "graphics-surfaces")
+        "graphics-surfaces"
+        "graphics-blend")
 
     foreach(EXAMPLE ${EXAMPLES})
         add_executable(${EXAMPLE} "examples/${EXAMPLE}.c")

@@ -650,3 +650,10 @@ int graphics_get_surface_texture_id(int surface_id)
 }
 
 //------------------------------------------------------------------------------
+
+void graphics_set_blend_mode(tq_blend_mode mode)
+{
+    renderer.set_blend_mode(mode);
+}
+
+//------------------------------------------------------------------------------
