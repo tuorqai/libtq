@@ -144,7 +144,14 @@ endif()
 # Examples
 
 if(BUILD_EXAMPLES)
-    set(EXAMPLES "hello" "defense" "jestan" "callbacks" "sounds" "text")
+    set(EXAMPLES
+        "hello"
+        "defense"
+        "jestan"
+        "callbacks"
+        "sounds"
+        "text"
+        "graphics-surfaces")
 
     foreach(EXAMPLE ${EXAMPLES})
         add_executable(${EXAMPLE} "examples/${EXAMPLE}.c")

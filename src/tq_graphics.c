@@ -84,6 +84,11 @@ static void make_default_projection(float *dst, int w, int h)
     mat4_ortho(dst, 0.0f, (float) w, (float) h, 0.0f, -1.0f, +1.0f);
 }
 
+static void make_default_projection_for_surface(float *dst, int w, int h)
+{
+    mat4_ortho(dst, 0.0f, (float) w, 0.0f, (float) h, -1.0f, +1.0f);
+}
+
 static float *make_circle(float x, float y, float radius, int color_id, int *length)
 {
     float e = 0.25f;
@@ -621,11 +626,22 @@ void graphics_set_surface(int surface_id)
     }
 
     renderer.bind_surface(surface_id);
+
+    int texture_id = renderer.get_surface_texture_id(surface_id);
+
+    int width, height;
+    renderer.get_texture_size(texture_id, &width, &height);
+
+    float projection[16];
+    make_default_projection_for_surface(projection, width, height);
+
+    renderer.update_projection(projection);
 }
 
 void graphics_reset_surface(void)
 {
     renderer.bind_surface(graphics.canvas_surface_id);
+    renderer.update_projection(matrices.projection);
 }
 
 int graphics_get_surface_texture_id(int surface_id)

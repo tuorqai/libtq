@@ -118,6 +118,7 @@ void tq_core_initialize(void)
     if (!core.display_width || !core.display_height) {
         core.display_width = 1280;
         core.display_height = 720;
+        core.display_aspect_ratio = 1280.0f / 720.0f;
     }
 
     if (!core.title[0]) {
