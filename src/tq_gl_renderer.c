@@ -17,6 +17,7 @@
 #include "tq_core.h"
 #include "tq_error.h"
 #include "tq_graphics.h"
+#include "tq_handle_list.h"
 #include "tq_image_loader.h"
 #include "tq_log.h"
 #include "tq_math.h"
@@ -143,8 +144,6 @@ static char const *fs_src_font =
 
 //------------------------------------------------------------------------------
 
-#define INITIAL_TEXTURE_COUNT       16
-
 /**
  * Vertex attributes.
  */
@@ -236,16 +235,17 @@ struct gl_state
     tq_blend_mode blend_mode;
 };
 
+DECLARE_FLEXIBLE_ARRAY(gl_texture)
+DECLARE_FLEXIBLE_ARRAY(gl_surface)
+
 //------------------------------------------------------------------------------
 
 static struct gl_colors colors;
 static struct gl_matrices matrices;
-static struct gl_texture *textures;
-static int texture_count;
+static struct gl_texture_array textures;
 static struct gl_program programs[PROGRAM_COUNT];
 static struct gl_state state;
-static struct gl_surface *surfaces;
-static int surface_count;
+static struct gl_surface_array surfaces;
 
 //------------------------------------------------------------------------------
 
@@ -262,64 +262,6 @@ static void decode_color32(GLfloat *dst, tq_color color)
     dst[1] = color.g / 255.0f;
     dst[2] = color.b / 255.0f;
     dst[3] = color.a / 255.0f;
-}
-
-static int get_texture_id(void)
-{
-    for (int i = 0; i < texture_count; i++) {
-        if (textures[i].handle == 0) {
-            return i;
-        }
-    }
-
-    int next_count = TQ_MAX(texture_count * 2, INITIAL_TEXTURE_COUNT);
-    size_t next_size = sizeof(struct gl_texture) * next_count;
-
-    struct gl_texture *next_array = mem_realloc(textures, next_size);
-
-    if (!next_array) {
-        out_of_memory();
-    }
-
-    int texture_id = texture_count;
-
-    texture_count = next_count;
-    textures = next_array;
-
-    for (int i = texture_id; i < texture_count; i++) {
-        textures[i].handle = 0;
-    }
-
-    return texture_id;
-}
-
-static int get_surface_id(void)
-{
-    for (int i = 0; i < surface_count; i++) {
-        if (surfaces[i].framebuffer == 0) {
-            return i;
-        }
-    }
-
-    int next_count = TQ_MAX(surface_count * 2, INITIAL_TEXTURE_COUNT);
-    size_t next_size = sizeof(struct gl_surface) * next_count;
-
-    struct gl_surface *next_array = mem_realloc(surfaces, next_size);
-
-    if (!next_array) {
-        out_of_memory();
-    }
-
-    int surface_id = surface_count;
-
-    surface_count = next_count;
-    surfaces = next_array;
-
-    for (int i = surface_id; i < surface_count; i++) {
-        memset(&surfaces[i], 0, sizeof(struct gl_surface));
-    }
-
-    return surface_id;
 }
 
 /**
@@ -399,6 +341,18 @@ static GLenum conv_blend_equation(tq_blend_equation equation)
     }
 
     return GL_INVALID_ENUM;
+}
+
+static void gl_texture_dtor(struct gl_texture *texture)
+{
+    CHECK_GL(glDeleteTextures(1, &texture->handle));
+}
+
+static void gl_surface_dtor(struct gl_surface *surface)
+{
+    CHECK_GL(glDeleteFramebuffers(1, &surface->framebuffer));
+    CHECK_GL(glDeleteRenderbuffers(1, &surface->depth));
+    gl_texture_array_remove(&textures, surface->texture_id);
 }
 
 /**
@@ -562,11 +516,6 @@ static void set_dirty_uniform(int program_id, int uniform_id)
 
 //------------------------------------------------------------------------------
 
-static void delete_texture(int texture_id);
-static void delete_surface(int surface_id);
-
-//------------------------------------------------------------------------------
-
 /**
  * - (void) initialize;
  */
@@ -586,11 +535,8 @@ static void initialize(void)
     mat4_identity(matrices.proj);
     mat4_identity(matrices.mv);
 
-    textures = NULL;
-    texture_count = 0;
-
-    surfaces = NULL;
-    surface_count = 0;
+    gl_texture_array_initialize(&textures, 16, gl_texture_dtor);
+    gl_surface_array_initialize(&surfaces, 8, gl_surface_dtor);
 
     state.vertex_format = 0;
     state.program_id = -1;
@@ -659,21 +605,12 @@ static void initialize(void)
  */
 static void terminate(void)
 {
-    for (int i = 0; i < surface_count; i++) {
-        delete_surface(i);
-    }
-
-    // Delete all shader programs.
     for (int i = 0; i < PROGRAM_COUNT; i++) {
         CHECK_GL(glDeleteProgram(programs[i].handle));
     }
 
-    // Free all textures that are still in use.
-    for (int i = 0; i < texture_count; i++) {
-        delete_texture(i);
-    }
-
-    mem_free(textures);
+    gl_surface_array_terminate(&surfaces);
+    gl_texture_array_terminate(&textures);
 }
 
 /**
@@ -727,30 +664,27 @@ static int create_texture(int width, int height, int channels)
         return -1;
     }
 
-    GLuint handle = 0;
-    GLenum format = conv_texture_format(channels);
+    struct gl_texture texture;
+    texture.format = conv_texture_format(channels);
 
-    CHECK_GL(glGenTextures(1, &handle));
-    CHECK_GL(glBindTexture(GL_TEXTURE_2D, handle));
+    CHECK_GL(glGenTextures(1, &texture.handle));
+    CHECK_GL(glBindTexture(GL_TEXTURE_2D, texture.handle));
 
     CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
     CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
 
-    CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, format,
-        width, height, 0, format,
+    CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, texture.format,
+        width, height, 0, texture.format,
         GL_UNSIGNED_BYTE, NULL));
 
-    int texture_id = get_texture_id();
+    texture.width = width;
+    texture.height = height;
+    texture.channels = channels;
+    texture.smooth = false;
 
-    textures[texture_id].handle = handle;
-    textures[texture_id].width = width;
-    textures[texture_id].height = height;
-    textures[texture_id].format = format;
-    textures[texture_id].channels = channels;
-    textures[texture_id].smooth = false;
+    int texture_id = gl_texture_array_add(&textures, &texture);
 
     state.bound_texture_id = texture_id;
-
     return texture_id;
 }
 
@@ -759,64 +693,63 @@ static int create_texture(int width, int height, int channels)
  */
 static void delete_texture(int texture_id)
 {
-    if (texture_id < 0 || texture_id > texture_count || textures[texture_id].handle == 0) {
-        return;
-    }
-
-    CHECK_GL(glDeleteTextures(1, &textures[texture_id].handle));
-    textures[texture_id].handle = 0;
+    gl_texture_array_remove(&textures, texture_id);
 }
 
 static bool is_texture_smooth(int texture_id)
 {
-    if (texture_id < 0 || texture_id > texture_count || textures[texture_id].handle == 0) {
+    if (!gl_texture_array_check(&textures, texture_id)) {
         return false;
     }
 
-    return textures[texture_id].smooth;
+    return textures.data[texture_id].smooth;
 }
 
 static void set_texture_smooth(int texture_id, bool smooth)
 {
-    if (texture_id < 0 || texture_id > texture_count || textures[texture_id].handle == 0) {
+    if (!gl_texture_array_check(&textures, texture_id)) {
         return;
     }
 
-    if (textures[texture_id].smooth == smooth) {
+    if (textures.data[texture_id].smooth == smooth) {
         return;
     }
 
-    textures[texture_id].smooth = smooth;
-
-    CHECK_GL(glBindTexture(GL_TEXTURE_2D, textures[texture_id].handle));
+    CHECK_GL(glBindTexture(GL_TEXTURE_2D, textures.data[texture_id].handle));
     CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST));
     CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST));
 
+    textures.data[texture_id].smooth = smooth;
     state.bound_texture_id = texture_id;
 }
 
 static void get_texture_size(int texture_id, int *width, int *height)
 {
-    if (texture_id < 0 || texture_id > texture_count || textures[texture_id].handle == 0) {
+    if (!gl_texture_array_check(&textures, texture_id)) {
         *width = -1;
         *height = -1;
-    } else {
-        *width = textures[texture_id].width;
-        *height = textures[texture_id].height;
+        return;
     }
+
+    *width = textures.data[texture_id].width;
+    *height = textures.data[texture_id].height;
 }
 
 static void update_texture(int texture_id, int x_offset, int y_offset, int width, int height, unsigned char *pixels)
 {
-    glBindTexture(GL_TEXTURE_2D, textures[texture_id].handle);
+    if (!gl_texture_array_check(&textures, texture_id)) {
+        return;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, textures.data[texture_id].handle);
 
     if (x_offset == 0 && y_offset == 0 && width == -1 && height == -1) {
-        glTexImage2D(GL_TEXTURE_2D, 0, textures[texture_id].format,
-            textures[texture_id].width, textures[texture_id].height, 0,
-            textures[texture_id].format, GL_UNSIGNED_BYTE, pixels);
+        glTexImage2D(GL_TEXTURE_2D, 0, textures.data[texture_id].format,
+            textures.data[texture_id].width, textures.data[texture_id].height, 0,
+            textures.data[texture_id].format, GL_UNSIGNED_BYTE, pixels);
     } else {
         glTexSubImage2D(GL_TEXTURE_2D, 0, x_offset, y_offset, width, height,
-            textures[texture_id].format, GL_UNSIGNED_BYTE, pixels);
+            textures.data[texture_id].format, GL_UNSIGNED_BYTE, pixels);
     }
 
     state.bound_texture_id = texture_id;
@@ -824,30 +757,34 @@ static void update_texture(int texture_id, int x_offset, int y_offset, int width
 
 static void resize_texture(int texture_id, int new_width, int new_height)
 {
-    int old_width = textures[texture_id].width;
-    int old_height = textures[texture_id].height;
+    if (!gl_texture_array_check(&textures, texture_id)) {
+        return;
+    }
 
-    unsigned char *pixels = mem_malloc(textures[texture_id].channels *
+    int old_width = textures.data[texture_id].width;
+    int old_height = textures.data[texture_id].height;
+
+    unsigned char *pixels = mem_malloc(textures.data[texture_id].channels *
         old_width * old_height);
 
     if (!pixels) {
         out_of_memory();
     }
 
-    glBindTexture(GL_TEXTURE_2D, textures[texture_id].handle);
-    glGetTexImage(GL_TEXTURE_2D, 0, textures[texture_id].format, GL_UNSIGNED_BYTE, pixels);
+    glBindTexture(GL_TEXTURE_2D, textures.data[texture_id].handle);
+    glGetTexImage(GL_TEXTURE_2D, 0, textures.data[texture_id].format, GL_UNSIGNED_BYTE, pixels);
 
     glTexImage2D(GL_TEXTURE_2D, 0,
-        textures[texture_id].format, new_width, new_height, 0,
-        textures[texture_id].format, GL_UNSIGNED_BYTE, NULL);
+        textures.data[texture_id].format, new_width, new_height, 0,
+        textures.data[texture_id].format, GL_UNSIGNED_BYTE, NULL);
 
     if (new_width >= old_width && new_height >= old_height) {
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, old_width, old_height,
-            textures[texture_id].format, GL_UNSIGNED_BYTE, pixels);
+            textures.data[texture_id].format, GL_UNSIGNED_BYTE, pixels);
     }
 
-    textures[texture_id].width = new_width;
-    textures[texture_id].height = new_height;
+    textures.data[texture_id].width = new_width;
+    textures.data[texture_id].height = new_height;
 
     mem_free(pixels);
 
@@ -860,15 +797,12 @@ static void bind_texture(int texture_id)
         return;
     }
 
-    GLenum texture;
-
-    if (texture_id < 0 || texture_id >= texture_count) {
-        texture = 0;
+    if (!gl_texture_array_check(&textures, texture_id)) {
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
     } else {
-        texture = textures[texture_id].handle;
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D, textures.data[texture_id].handle));
     }
 
-    CHECK_GL(glBindTexture(GL_TEXTURE_2D, texture));
     state.bound_texture_id = texture_id;
 }
 
@@ -877,24 +811,24 @@ static void bind_texture(int texture_id)
  */
 static int create_surface(int width, int height)
 {
-    int surface_id = get_surface_id();
-    
-    GLuint depth = 0;
-    CHECK_GL(glGenRenderbuffers(1, &depth));
-    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, depth));
+    struct gl_surface surface;
+
+    CHECK_GL(glGenRenderbuffers(1, &surface.depth));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, surface.depth));
     CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height));
 
-    int texture_id = create_texture(width, height, PIXEL_FORMAT_RGBA);
-    set_texture_smooth(texture_id, true);
+    surface.texture_id = create_texture(width, height, PIXEL_FORMAT_RGBA);
+    set_texture_smooth(surface.texture_id, true);
     CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
     CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
-    GLuint handle = 0;
-    CHECK_GL(glGenFramebuffers(1, &handle));
-    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, handle));
-    CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth));
+    CHECK_GL(glGenFramebuffers(1, &surface.framebuffer));
+    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, surface.framebuffer));
+
+    CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+        GL_RENDERBUFFER, surface.depth));
     CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_2D, textures[texture_id].handle, 0));
+        GL_TEXTURE_2D, textures.data[surface.texture_id].handle, 0));
 
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
@@ -902,12 +836,9 @@ static int create_surface(int width, int height)
         tq_error("Failed to create surface.\n");
     }
 
-    surfaces[surface_id].framebuffer = handle;
-    surfaces[surface_id].depth = depth;
-    surfaces[surface_id].texture_id = texture_id;
+    int surface_id = gl_surface_array_add(&surfaces, &surface);
 
     state.bound_surface_id = surface_id;
-
     return surface_id;
 }
 
@@ -916,21 +847,7 @@ static int create_surface(int width, int height)
  */
 static void delete_surface(int surface_id)
 {
-    if (surface_id < 0 || surface_id >= surface_count) {
-        return;
-    }
-
-    if (surfaces[surface_id].framebuffer == 0) {
-        return;
-    }
-
-    CHECK_GL(glDeleteFramebuffers(1, &surfaces[surface_id].framebuffer));
-    CHECK_GL(glDeleteRenderbuffers(1, &surfaces[surface_id].depth));
-    delete_texture(surfaces[surface_id].texture_id);
-
-    surfaces[surface_id].framebuffer = 0;
-    surfaces[surface_id].depth = 0;
-    surfaces[surface_id].texture_id = -1;
+    gl_surface_array_remove(&surfaces, surface_id);
 }
 
 /**
@@ -938,15 +855,11 @@ static void delete_surface(int surface_id)
  */
 static int get_surface_texture_id(int surface_id)
 {
-    if (surface_id < 0 || surface_id >= surface_count) {
+    if (!gl_surface_array_check(&surfaces, surface_id)) {
         return -1;
     }
 
-    if (surfaces[surface_id].framebuffer == 0) {
-        return -1;
-    }
-
-    return surfaces[surface_id].texture_id;
+    return surfaces.data[surface_id].texture_id;
 }
 
 /**
@@ -962,13 +875,13 @@ static void bind_surface(int surface_id)
     int width;
     int height;
 
-    if (surface_id < 0 || surface_id >= surface_count || surfaces[surface_id].framebuffer == 0) {
+    if (!gl_surface_array_check(&surfaces, surface_id)) {
         framebuffer = 0;
         tq_core_get_display_size(&width, &height);
     } else {
-        framebuffer = surfaces[surface_id].framebuffer;
-        width = textures[surfaces[surface_id].texture_id].width;
-        height = textures[surfaces[surface_id].texture_id].height;
+        framebuffer = surfaces.data[surface_id].framebuffer;
+        width = textures.data[surfaces.data[surface_id].texture_id].width;
+        height = textures.data[surfaces.data[surface_id].texture_id].height;
     }
 
     CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, framebuffer));
