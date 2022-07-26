@@ -1,6 +1,26 @@
 
 //------------------------------------------------------------------------------
-// tq library :3
+// Copyright (c) 2021-2022 tuorqai
+// 
+// This software is provided 'as-is', without any express or implied
+// warranty. In no event will the authors be held liable for any damages
+// arising from the use of this software.
+// 
+// Permission is granted to anyone to use this software for any purpose,
+// including commercial applications, and to alter it and redistribute it
+// freely, subject to the following restrictions:
+// 
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+// tq library: SDL display implementation
 //------------------------------------------------------------------------------
 
 #include <SDL.h>
@@ -13,24 +33,24 @@
 //------------------------------------------------------------------------------
 // Declarations
 
-typedef struct tq_sdl_gl_version
+struct gl_version
 {
     int major;
     int minor;
     int flags;
-} tq_sdl_gl_version_t;
+};
 
-typedef struct tq_sdl_display
+struct sdl_display_priv
 {
     SDL_Window      *window;
     SDL_GLContext   gl_context;
     bool            key_autorepeat;
-} tq_sdl_display_t;
+};
 
 //------------------------------------------------------------------------------
 // Definitions
 
-static tq_sdl_display_t sdl;
+static struct sdl_display_priv sdl;
 
 //------------------------------------------------------------------------------
 // Utility functions
@@ -154,7 +174,6 @@ static tq_mouse_button_t mouse_button_conv(int button)
 }
 
 //------------------------------------------------------------------------------
-// Implementation
 
 static void initialize(uint32_t a0, uint32_t a1, char const *a2)
 {
@@ -165,7 +184,7 @@ static void initialize(uint32_t a0, uint32_t a1, char const *a2)
     int width, height;
     tq_core_get_display_size(&width, &height);
 
-    tq_sdl_gl_version_t versions[] = {
+    struct gl_version gl_versions[] = {
         { 4, 6, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
         { 4, 5, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
         { 4, 4, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
@@ -180,33 +199,36 @@ static void initialize(uint32_t a0, uint32_t a1, char const *a2)
         { 2, 1, 0 },
     };
 
-    for (size_t n = 0; n < sizeof(versions) / sizeof(versions[0]); n++) {
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, versions[n].major);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, versions[n].minor);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, versions[n].flags);
+    for (size_t n = 0; n < SDL_arraysize(gl_versions); n++) {
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_versions[n].major);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_versions[n].minor);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, gl_versions[n].flags);
 
         sdl.window = SDL_CreateWindow(
             tq_core_get_title(),
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
             width, height,
-            SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
+            SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN
         );
 
-        if (sdl.window != NULL) {
-            tq_log_info("Created SDL window, requested OpenGL %d.%d\n",
-                versions[n].major, versions[n].minor);
-            break;
+        if (!sdl.window) {
+            tq_error("Failed to create SDL window: %s", SDL_GetError());
         }
+
+        sdl.gl_context = SDL_GL_CreateContext(sdl.window);
+
+        if (!sdl.gl_context) {
+            SDL_DestroyWindow(sdl.window);
+            continue;
+        }
+
+        log_info("Created OpenGL context, version %d.%d\n",
+            gl_versions[n].major, gl_versions[n].minor);
+        break;
     }
 
-    if (sdl.window == NULL) {
-        tq_error("Failed to create SDL window: %s", SDL_GetError());
-    }
-
-    sdl.gl_context = SDL_GL_CreateContext(sdl.window);
-
-    if (sdl.gl_context == NULL) {
+    if (!sdl.gl_context) {
         tq_error("Failed to create OpenGL context: %s", SDL_GetError());
     }
 
@@ -216,11 +238,12 @@ static void initialize(uint32_t a0, uint32_t a1, char const *a2)
 
     SDL_GL_SetSwapInterval(1);
 
+    SDL_ShowWindow(sdl.window);
     SDL_SetWindowMinimumSize(sdl.window, 256, 256);
 
     sdl.key_autorepeat = tq_core_is_key_autorepeat_enabled();
 
-    tq_log_info("SDL-based display module initialized.\n");
+    tq_log_info("SDL window initialized.\n");
 }
 
 static void terminate(void)
@@ -228,7 +251,7 @@ static void terminate(void)
     SDL_GL_DeleteContext(sdl.gl_context);
     SDL_DestroyWindow(sdl.window);
 
-    tq_log_info("SDL-based display module terminated.\n");
+    tq_log_info("SDL window terminated.\n");
 }
 
 static void present(void)
