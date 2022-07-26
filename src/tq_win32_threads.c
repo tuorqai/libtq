@@ -8,6 +8,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#include "tq_core.h"
 #include "tq_log.h"
 #include "tq_mem.h"
 
@@ -23,7 +24,7 @@ struct thread_info
     void        *data;
 
     CRITICAL_SECTION    mutex;
-    bool                bits;
+    int                 bits;
 };
 
 //------------------------------------------------------------------------------
