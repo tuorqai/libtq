@@ -287,9 +287,9 @@ typedef enum tq_blend_equation
  */
 typedef enum tq_channel_state
 {
-    TQ_CHANNEL_STATE_INACTIVE,
-    TQ_CHANNEL_STATE_PAUSED,
-    TQ_CHANNEL_STATE_PLAYING,
+    TQ_CHANNEL_INACTIVE,
+    TQ_CHANNEL_PAUSED,
+    TQ_CHANNEL_PLAYING,
 } tq_channel_state_t;
 
 //------------------------------------------------------------------------------

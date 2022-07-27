@@ -641,14 +641,14 @@ static int32_t play_music(int32_t music_id, int loop)
 static tq_channel_state_t get_channel_state(int32_t channel_id)
 {
     if (channel_id < 0 || channel_id >= TQ_CHANNEL_LIMIT) {
-        return TQ_CHANNEL_STATE_INACTIVE;
+        return TQ_CHANNEL_INACTIVE;
     }
 
     if ((openal.channels.bits[channel_id] & CHANNEL_BIT_USED) == 0) {
-        return TQ_CHANNEL_STATE_INACTIVE;
+        return TQ_CHANNEL_INACTIVE;
     }
 
-    tq_channel_state_t result = TQ_CHANNEL_STATE_INACTIVE;
+    tq_channel_state_t result = TQ_CHANNEL_INACTIVE;
 
     tq_core_lock_mutex(openal.mutex);
     {
@@ -656,9 +656,9 @@ static tq_channel_state_t get_channel_state(int32_t channel_id)
         CHECK_AL(alGetSourcei(openal.channels.source[channel_id], AL_SOURCE_STATE, &state));
 
         if (state == AL_PLAYING) {
-            result = TQ_CHANNEL_STATE_PLAYING;
+            result = TQ_CHANNEL_PLAYING;
         } else if (state == AL_PAUSED) {
-            result = TQ_CHANNEL_STATE_PAUSED;
+            result = TQ_CHANNEL_PAUSED;
         }
     }
     tq_core_unlock_mutex(openal.mutex);

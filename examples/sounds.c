@@ -48,9 +48,9 @@ void on_key_pressed(tq_key_t key)
         if (music_channel.id == -1) {
             music_channel = tq_play_music(music, -1);
         } else {
-            if (tq_get_channel_state(music_channel) == TQ_CHANNEL_STATE_PLAYING) {
+            if (tq_get_channel_state(music_channel) == TQ_CHANNEL_PLAYING) {
                 tq_pause_channel(music_channel);
-            } else if (tq_get_channel_state(music_channel) == TQ_CHANNEL_STATE_PAUSED) {
+            } else if (tq_get_channel_state(music_channel) == TQ_CHANNEL_PAUSED) {
                 tq_unpause_channel(music_channel);
             }
         }
