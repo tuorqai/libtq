@@ -63,12 +63,6 @@ struct image image_load(int stream_id)
         return image;
     }
 
-    stbi_io_callbacks callbacks = {
-        .read = stream_read,
-        .skip = stream_skip,
-        .eof = stream_eof,
-    };
-
     image.pixels = stbi_load_from_callbacks(
         &(stbi_io_callbacks) {
             .read = stream_read,
