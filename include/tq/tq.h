@@ -58,7 +58,11 @@
 #   define TQ_NO_RET
 #endif
 
-#define TQ_API          TQ_LINKAGE TQ_EXPORT
+#ifdef TQ_SHARED
+    #define TQ_API TQ_LINKAGE TQ_EXPORT
+#else
+    #define TQ_API
+#endif
 
 /**
  * C++ lacks C99's compound literals. However, since C++11, plain structures

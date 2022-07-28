@@ -60,6 +60,10 @@ set_target_properties(tq PROPERTIES
 option(BUILD_SHARED_LIBS "Build shared libraries" NO)
 option(BUILD_EXAMPLES "Build examples" NO)
 
+if(BUILD_SHARED_LIBS)
+    add_compile_definitions(tq PRIVATE TQ_SHARED)
+endif()
+
 #---------------------------------------
 # Platform-specific
 #---------------------------------------
