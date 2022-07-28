@@ -29,18 +29,20 @@ int main(int argc, char *argv[])
     while (tq_process()) {
         tq_clear();
 
-        tq_set_fill_color(tq_c24(224, 208, 0));
-        tq_draw_text(regular, TQ_VEC2F(32, 64), "Hello world!");
+        tq_set_fill_color(tq_c24(255, 255, 255));
+        tq_draw_text(regular, (tq_vec2f) {32, 36}, "Op brute wĳze ving de");
+        tq_draw_text(regular, (tq_vec2f) {32, 72}, "schooljuf de quasi-kalme");
+        tq_draw_text(regular, (tq_vec2f) {32, 108}, "lynx");
 
         tq_vec2i cursor = tq_get_mouse_cursor_position();
 
         tq_set_fill_color(tq_c24(0, 160, 210));
-        tq_print_text(italic, TQ_VEC2F(32, 440),
+        tq_print_text(italic, TQ_VEC2F(32, 410),
             "cursor pos: [%d, %d]",
             cursor.x, cursor.y);
 
         tq_set_fill_color(tq_c24(224, 192, 224));
-        tq_print_text(italic, TQ_VEC2F(32, 480),
+        tq_print_text(italic, TQ_VEC2F(32, 450),
             "time: %.2f", tq_get_time_mediump());
     }
 

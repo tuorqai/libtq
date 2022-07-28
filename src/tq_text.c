@@ -51,6 +51,8 @@ struct font
     struct font_atlas   atlas;
     struct font_glyph   *glyphs;
     int                 glyph_count;
+
+    float           height;
 };
 
 //------------------------------------------------------------------------------
@@ -420,6 +422,11 @@ int text_load_font(int stream_id, float pt, int weight)
         cache_glyph(font_id, codepoint, x_advance / 64.0f, y_advance / 64.0f);
     }
 
+    FT_F26Dot6 ascender = fonts[font_id].face->size->metrics.ascender;
+    FT_F26Dot6 descender = fonts[font_id].face->size->metrics.descender;
+
+    fonts[font_id].height = (ascender - descender) / 64.0f;
+
     return font_id;
 }
 
@@ -513,7 +520,7 @@ void text_draw_text(int font_id, float x, float y, char const *text)
         struct font_glyph *glyph = &fonts[font_id].glyphs[glyph_id];
 
         float x0 = x_current + glyph->x_bearing;
-        float y0 = y_current - glyph->y_bearing;
+        float y0 = y_current - glyph->y_bearing + fonts[font_id].height;
         float x1 = x0 + glyph->s1 - glyph->s0;
         float y1 = y0 + glyph->t1 - glyph->t0;
 
