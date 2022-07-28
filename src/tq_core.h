@@ -27,6 +27,7 @@ typedef struct tq_display
     void        (*set_size)(uint32_t, uint32_t);
     void        (*set_title)(char const *);
     void        (*set_key_autorepeat_enabled)(bool enabled);
+    void        (*set_mouse_cursor_hidden)(bool hidden);
     void        (*show_message_box)(char const *title, char const *message);
 } tq_display_t;
 
@@ -64,6 +65,9 @@ unsigned int tq_core_get_framerate(void);
 
 void tq_core_on_key_pressed(tq_key_t key);
 void tq_core_on_key_released(tq_key_t key);
+
+bool core_is_mouse_cursor_hidden(void);
+void core_set_mouse_cursor_hidden(bool hidden);
 
 void tq_core_on_mouse_button_pressed(tq_mouse_button_t mouse_button);
 void tq_core_on_mouse_button_released(tq_mouse_button_t mouse_button);

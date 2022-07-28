@@ -487,6 +487,18 @@ TQ_API void TQ_CALL tq_on_key_released(tq_key_callback_t callback);
 // Mouse
 
 /**
+ * Check if mouse cursor is hidden.
+ */
+TQ_API bool TQ_CALL tq_is_mouse_cursor_hidden(void);
+
+/**
+ * Use this option to hide mouse cursor.
+ * It will be invisible only if it's inside the window boundaries,
+ * otherwise it can be visible.
+ */
+TQ_API void TQ_CALL tq_set_mouse_cursor_hidden(bool hidden);
+
+/**
  * Check if a mouse button is pressed.
  */
 TQ_API bool TQ_CALL tq_is_mouse_button_pressed(tq_mouse_button_t mouse_button);

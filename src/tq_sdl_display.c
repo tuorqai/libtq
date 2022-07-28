@@ -320,6 +320,11 @@ static void set_key_autorepeat_enabled(bool enabled)
     sdl.key_autorepeat = enabled;
 }
 
+static void set_mouse_cursor_hidden(bool hidden)
+{
+    SDL_ShowCursor(hidden ? SDL_DISABLE : SDL_ENABLE);
+}
+
 static void show_message_box(char const *title, char const *message)
 {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, message, sdl.window);
@@ -336,6 +341,7 @@ void tq_construct_sdl_display(tq_display_t *display)
     display->set_size               = set_size;
     display->set_title              = set_title;
     display->set_key_autorepeat_enabled = set_key_autorepeat_enabled;
+    display->set_mouse_cursor_hidden = set_mouse_cursor_hidden;
     display->show_message_box       = show_message_box;
 }
 

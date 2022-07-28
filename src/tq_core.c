@@ -29,6 +29,7 @@ typedef struct tq_core
     double              delta_time;
 
     uint8_t             key_state[32];
+    bool                mouse_cursor_hidden;
     uint8_t             mouse_button_state;
     int32_t             mouse_cursor_x;
     int32_t             mouse_cursor_y;
@@ -269,6 +270,17 @@ void tq_core_on_key_released(tq_key_t key)
     if (core.key_release_callback) {
         core.key_release_callback(key);
     }
+}
+
+bool core_is_mouse_cursor_hidden(void)
+{
+    return core.mouse_cursor_hidden;
+}
+
+void core_set_mouse_cursor_hidden(bool hidden)
+{
+    core.display.set_mouse_cursor_hidden(hidden);
+    core.mouse_cursor_hidden = hidden;
 }
 
 void tq_core_on_mouse_button_pressed(tq_mouse_button_t mouse_button)

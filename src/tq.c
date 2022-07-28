@@ -102,6 +102,16 @@ void tq_on_key_released(tq_key_callback_t callback)
 //----------------------------------------------------------
 // Mouse
 
+bool tq_is_mouse_cursor_hidden(void)
+{
+    return core_is_mouse_cursor_hidden();
+}
+
+void tq_set_mouse_cursor_hidden(bool hidden)
+{
+    core_set_mouse_cursor_hidden(hidden);
+}
+
 tq_vec2i tq_get_mouse_cursor_position(void)
 {
     tq_vec2i position;
