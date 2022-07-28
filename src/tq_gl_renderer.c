@@ -755,42 +755,6 @@ static void update_texture(int texture_id, int x_offset, int y_offset, int width
     state.bound_texture_id = texture_id;
 }
 
-static void resize_texture(int texture_id, int new_width, int new_height)
-{
-    if (!gl_texture_array_check(&textures, texture_id)) {
-        return;
-    }
-
-    int old_width = textures.data[texture_id].width;
-    int old_height = textures.data[texture_id].height;
-
-    unsigned char *pixels = mem_malloc(textures.data[texture_id].channels *
-        old_width * old_height);
-
-    if (!pixels) {
-        out_of_memory();
-    }
-
-    glBindTexture(GL_TEXTURE_2D, textures.data[texture_id].handle);
-    glGetTexImage(GL_TEXTURE_2D, 0, textures.data[texture_id].format, GL_UNSIGNED_BYTE, pixels);
-
-    glTexImage2D(GL_TEXTURE_2D, 0,
-        textures.data[texture_id].format, new_width, new_height, 0,
-        textures.data[texture_id].format, GL_UNSIGNED_BYTE, NULL);
-
-    if (new_width >= old_width && new_height >= old_height) {
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, old_width, old_height,
-            textures.data[texture_id].format, GL_UNSIGNED_BYTE, pixels);
-    }
-
-    textures.data[texture_id].width = new_width;
-    textures.data[texture_id].height = new_height;
-
-    mem_free(pixels);
-
-    state.bound_texture_id = texture_id;
-}
-
 static void bind_texture(int texture_id)
 {
     if (state.bound_texture_id == texture_id) {
@@ -1013,7 +977,6 @@ void construct_gl_renderer(struct renderer_impl *renderer)
         .set_texture_smooth = set_texture_smooth,
         .get_texture_size = get_texture_size,
         .update_texture = update_texture,
-        .resize_texture = resize_texture,
         .bind_texture = bind_texture,
 
         .create_surface = create_surface,

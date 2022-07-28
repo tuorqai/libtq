@@ -153,7 +153,6 @@ struct renderer_impl
     void (*set_texture_smooth)(int texture_id, bool smooth);
     void (*get_texture_size)(int texture_id, int *width, int *height);
     void (*update_texture)(int texture_id, int x_offset, int y_offset, int width, int height, unsigned char *pixels);
-    void (*resize_texture)(int texture_id, int new_width, int new_height);
     void (*bind_texture)(int texture_id);
 
     int (*create_surface)(int width, int height);
