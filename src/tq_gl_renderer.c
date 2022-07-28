@@ -136,10 +136,11 @@ static char const *fs_src_textured =
 static char const *fs_src_font =
     "varying vec2 v_texCoord;\n"
     "uniform sampler2D u_texture;\n"
+    "uniform vec4 u_color;\n"
     "void main() {\n"
     "    vec4 texColor = texture2D(u_texture, v_texCoord);\n"
     "    float alpha = texColor.r;\n"
-    "    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);\n"
+    "    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha) * u_color;\n"
     "}\n";
 
 //------------------------------------------------------------------------------

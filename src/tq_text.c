@@ -68,6 +68,9 @@ static int              vertex_buffer_size;
 static unsigned int     *index_buffer;
 static int              index_buffer_size;
 
+static tq_color         text_outline_color;
+static tq_color         text_fill_color;
+
 //------------------------------------------------------------------------------
 
 static unsigned long ft_stream_io(FT_Stream stream,
@@ -545,9 +548,20 @@ void text_draw_text(int font_id, float x, float y, char const *text)
     }
 
     renderer->bind_texture(fonts[font_id].atlas.texture_id);
+    renderer->set_draw_color(text_fill_color);
     renderer->draw_font(vertex_buffer, index_buffer, 6 * quad_count);
 
     hb_buffer_destroy(buffer);
+}
+
+void text_set_outline_color(tq_color outline_color)
+{
+    text_outline_color = outline_color;
+}
+
+void text_set_fill_color(tq_color fill_color)
+{
+    text_fill_color = fill_color;
 }
 
 //------------------------------------------------------------------------------

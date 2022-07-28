@@ -511,6 +511,7 @@ tq_color graphics_get_outline_color(void)
 void graphics_set_outline_color(tq_color outline_color)
 {
     colors[COLOR_OUTLINE].value = outline_color;
+    text_set_outline_color(outline_color);
 }
 
 tq_color graphics_get_fill_color(void)
@@ -521,6 +522,7 @@ tq_color graphics_get_fill_color(void)
 void graphics_set_fill_color(tq_color fill_color)
 {
     colors[COLOR_FILL].value = fill_color;
+    text_set_fill_color(fill_color);
 }
 
 //------------------------------------------------------------------------------

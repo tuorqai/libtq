@@ -25,6 +25,9 @@ int text_get_font_texture(int font_id);
 
 void text_draw_text(int font_id, float x, float y, char const *text);
 
+void text_set_outline_color(tq_color outline_color);
+void text_set_fill_color(tq_color fill_color);
+
 //------------------------------------------------------------------------------
 
 #endif // TQ_TEXT_H_INC
