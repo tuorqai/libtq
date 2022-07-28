@@ -150,6 +150,7 @@ endif()
 if(BUILD_EXAMPLES)
     set(EXAMPLES
         "core-hello"
+        "core-keyboard"
         "core-mouse"
         "graphics-textures"
         "graphics-surfaces"
