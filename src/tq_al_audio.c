@@ -638,7 +638,7 @@ static int32_t play_music(int32_t music_id, int loop)
 //------------------------------------------------------------------------------
 // Channels
 
-static tq_channel_state_t get_channel_state(int32_t channel_id)
+static tq_channel_state get_channel_state(int32_t channel_id)
 {
     if (channel_id < 0 || channel_id >= TQ_CHANNEL_LIMIT) {
         return TQ_CHANNEL_INACTIVE;
@@ -648,7 +648,7 @@ static tq_channel_state_t get_channel_state(int32_t channel_id)
         return TQ_CHANNEL_INACTIVE;
     }
 
-    tq_channel_state_t result = TQ_CHANNEL_INACTIVE;
+    tq_channel_state result = TQ_CHANNEL_INACTIVE;
 
     tq_core_lock_mutex(openal.mutex);
     {

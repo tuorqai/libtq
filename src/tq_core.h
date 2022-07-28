@@ -52,8 +52,8 @@ void tq_core_set_title(char const *title);
 bool tq_core_is_key_autorepeat_enabled(void);
 void tq_core_set_key_autorepeat_enabled(bool enabled);
 
-bool tq_core_is_key_pressed(tq_key_t key);
-bool tq_core_is_mouse_button_pressed(tq_mouse_button_t mouse_button);
+bool tq_core_is_key_pressed(tq_key key);
+bool tq_core_is_mouse_button_pressed(tq_mouse_button mouse_button);
 
 void tq_core_get_mouse_cursor_position(int *x, int *y);
 
@@ -63,25 +63,25 @@ double tq_core_get_delta_time(void);
 
 unsigned int tq_core_get_framerate(void);
 
-void tq_core_on_key_pressed(tq_key_t key);
-void tq_core_on_key_released(tq_key_t key);
+void tq_core_on_key_pressed(tq_key key);
+void tq_core_on_key_released(tq_key key);
 
 bool core_is_mouse_cursor_hidden(void);
 void core_set_mouse_cursor_hidden(bool hidden);
 
-void tq_core_on_mouse_button_pressed(tq_mouse_button_t mouse_button);
-void tq_core_on_mouse_button_released(tq_mouse_button_t mouse_button);
+void tq_core_on_mouse_button_pressed(tq_mouse_button mouse_button);
+void tq_core_on_mouse_button_released(tq_mouse_button mouse_button);
 void tq_core_on_mouse_cursor_moved(int32_t x, int32_t y);
 void tq_core_on_mouse_wheel_scrolled(float x_delta, float y_delta);
 
 void tq_core_on_display_resized(int width, int height);
 
-void tq_core_set_key_press_callback(tq_key_callback_t callback);
-void tq_core_set_key_release_callback(tq_key_callback_t callback);
-void tq_core_set_mouse_button_press_callback(tq_mouse_button_callback_t callback);
-void tq_core_set_mouse_button_release_callback(tq_mouse_button_callback_t callback);
-void tq_core_set_mouse_cursor_move_callback(tq_mouse_cursor_callback_t callback);
-void tq_core_set_mouse_wheel_scroll_callback(tq_mouse_wheel_callback_t callback);
+void tq_core_set_key_press_callback(tq_key_callback callback);
+void tq_core_set_key_release_callback(tq_key_callback callback);
+void tq_core_set_mouse_button_press_callback(tq_mouse_button_callback callback);
+void tq_core_set_mouse_button_release_callback(tq_mouse_button_callback callback);
+void tq_core_set_mouse_cursor_move_callback(tq_mouse_cursor_callback callback);
+void tq_core_set_mouse_wheel_scroll_callback(tq_mouse_wheel_callback callback);
 
 void tq_core_show_message_box(char const *title, char const *message);
 

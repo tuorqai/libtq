@@ -34,12 +34,12 @@ typedef struct tq_core
     int32_t             mouse_cursor_x;
     int32_t             mouse_cursor_y;
 
-    tq_key_callback_t            key_press_callback;
-    tq_key_callback_t            key_release_callback;
-    tq_mouse_button_callback_t   mouse_button_press_callback;
-    tq_mouse_button_callback_t   mouse_button_release_callback;
-    tq_mouse_cursor_callback_t   mouse_cursor_move_callback;
-    tq_mouse_wheel_callback_t    mouse_wheel_scroll_callback;
+    tq_key_callback              key_press_callback;
+    tq_key_callback              key_release_callback;
+    tq_mouse_button_callback     mouse_button_press_callback;
+    tq_mouse_button_callback     mouse_button_release_callback;
+    tq_mouse_cursor_callback     mouse_cursor_move_callback;
+    tq_mouse_wheel_callback      mouse_wheel_scroll_callback;
 
     unsigned int        framerate;
     unsigned int        framerate_counter;
@@ -53,7 +53,7 @@ static tq_core_t core;
 
 //------------------------------------------------------------------------------
 
-static void set_key_state(tq_key_t key, bool state)
+static void set_key_state(tq_key key, bool state)
 {
     uint8_t index = key / 8;
     uint8_t mask = (1 << (key % 8));
@@ -65,7 +65,7 @@ static void set_key_state(tq_key_t key, bool state)
     }
 }
 
-static bool get_key_state(tq_key_t key)
+static bool get_key_state(tq_key key)
 {
     uint8_t index = key / 8;
     uint8_t mask = (1 << (key % 8));
@@ -218,12 +218,12 @@ void tq_core_set_key_autorepeat_enabled(bool enabled)
     }
 }
 
-bool tq_core_is_key_pressed(tq_key_t key)
+bool tq_core_is_key_pressed(tq_key key)
 {
     return get_key_state(key);
 }
 
-bool tq_core_is_mouse_button_pressed(tq_mouse_button_t mouse_button)
+bool tq_core_is_mouse_button_pressed(tq_mouse_button mouse_button)
 {
     return (core.mouse_button_state & (1 << mouse_button));
 }
@@ -254,7 +254,7 @@ unsigned int tq_core_get_framerate(void)
     return core.framerate;
 }
 
-void tq_core_on_key_pressed(tq_key_t key)
+void tq_core_on_key_pressed(tq_key key)
 {
     set_key_state(key, true);
 
@@ -263,7 +263,7 @@ void tq_core_on_key_pressed(tq_key_t key)
     }
 }
 
-void tq_core_on_key_released(tq_key_t key)
+void tq_core_on_key_released(tq_key key)
 {
     set_key_state(key, false);
 
@@ -283,7 +283,7 @@ void core_set_mouse_cursor_hidden(bool hidden)
     core.mouse_cursor_hidden = hidden;
 }
 
-void tq_core_on_mouse_button_pressed(tq_mouse_button_t mouse_button)
+void tq_core_on_mouse_button_pressed(tq_mouse_button mouse_button)
 {
     core.mouse_button_state |= (1 << mouse_button);
 
@@ -293,7 +293,7 @@ void tq_core_on_mouse_button_pressed(tq_mouse_button_t mouse_button)
     }
 }
 
-void tq_core_on_mouse_button_released(tq_mouse_button_t mouse_button)
+void tq_core_on_mouse_button_released(tq_mouse_button mouse_button)
 {
     core.mouse_button_state &= ~(1 << mouse_button);
 
@@ -329,32 +329,32 @@ void tq_core_on_display_resized(int width, int height)
     core.display_aspect_ratio = (float) width / (float) height;
 }
 
-void tq_core_set_key_press_callback(tq_key_callback_t callback)
+void tq_core_set_key_press_callback(tq_key_callback callback)
 {
     core.key_press_callback = callback;
 }
 
-void tq_core_set_key_release_callback(tq_key_callback_t callback)
+void tq_core_set_key_release_callback(tq_key_callback callback)
 {
     core.key_release_callback = callback;
 }
 
-void tq_core_set_mouse_button_press_callback(tq_mouse_button_callback_t callback)
+void tq_core_set_mouse_button_press_callback(tq_mouse_button_callback callback)
 {
     core.mouse_button_press_callback = callback;
 }
 
-void tq_core_set_mouse_button_release_callback(tq_mouse_button_callback_t callback)
+void tq_core_set_mouse_button_release_callback(tq_mouse_button_callback callback)
 {
     core.mouse_button_release_callback = callback;
 }
 
-void tq_core_set_mouse_cursor_move_callback(tq_mouse_cursor_callback_t callback)
+void tq_core_set_mouse_cursor_move_callback(tq_mouse_cursor_callback callback)
 {
     core.mouse_cursor_move_callback = callback;
 }
 
-void tq_core_set_mouse_wheel_scroll_callback(tq_mouse_wheel_callback_t callback)
+void tq_core_set_mouse_wheel_scroll_callback(tq_mouse_wheel_callback callback)
 {
     core.mouse_wheel_scroll_callback = callback;
 }

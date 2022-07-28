@@ -22,7 +22,7 @@ typedef struct tq_audio_impl
     void        (*close_music)(int32_t music_id);
     int32_t     (*play_music)(int32_t music_id, int loop);
 
-    tq_channel_state_t (*get_channel_state)(int32_t channel_id);
+    tq_channel_state (*get_channel_state)(int32_t channel_id);
     void        (*pause_channel)(int32_t channel_id);
     void        (*unpause_channel)(int32_t channel_id);
     void        (*stop_channel)(int32_t channel_id);
@@ -50,7 +50,7 @@ int32_t tq_audio_open_music_from_memory(uint8_t const *buffer, size_t size);
 void tq_audio_close_music(int32_t music_id);
 int32_t tq_audio_play_music(int32_t music_id, int loop);
 
-tq_channel_state_t tq_audio_get_channel_state(int32_t channel_id);
+tq_channel_state tq_audio_get_channel_state(int32_t channel_id);
 void tq_audio_pause_channel(int32_t channel_id);
 void tq_audio_unpause_channel(int32_t channel_id);
 void tq_audio_stop_channel(int32_t channel_id);

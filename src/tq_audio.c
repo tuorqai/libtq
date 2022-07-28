@@ -131,7 +131,7 @@ int32_t tq_audio_play_music(int32_t music_id, int loop)
     return audio.impl.play_music(music_id, loop);
 }
 
-tq_channel_state_t tq_audio_get_channel_state(int32_t channel_id)
+tq_channel_state tq_audio_get_channel_state(int32_t channel_id)
 {
     return audio.impl.get_channel_state(channel_id);
 }

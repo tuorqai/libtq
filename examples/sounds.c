@@ -29,7 +29,7 @@ void draw_button(int index, float x, float y)
     tq_pop_matrix();
 }
 
-void on_key_pressed(tq_key_t key)
+void on_key_pressed(tq_key key)
 {
     switch (key) {
     case TQ_KEY_1:
@@ -58,7 +58,7 @@ void on_key_pressed(tq_key_t key)
     }
 }
 
-void on_mouse_button_pressed(tq_vec2i cursor, tq_mouse_button_t button)
+void on_mouse_button_pressed(tq_vec2i cursor, tq_mouse_button button)
 {
     if (button == TQ_MOUSE_BUTTON_LEFT) {
         if (selected_index != -1) {

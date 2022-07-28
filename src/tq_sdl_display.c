@@ -55,7 +55,7 @@ static struct sdl_display_priv sdl;
 //------------------------------------------------------------------------------
 // Utility functions
 
-static tq_key_t key_conv(SDL_Keysym const *sym)
+static tq_key key_conv(SDL_Keysym const *sym)
 {
     switch (sym->scancode) {
         case SDL_SCANCODE_0:            return TQ_KEY_0;
@@ -160,7 +160,7 @@ static tq_key_t key_conv(SDL_Keysym const *sym)
     }
 }
 
-static tq_mouse_button_t mouse_button_conv(int button)
+static tq_mouse_button mouse_button_conv(int button)
 {
     if (button == SDL_BUTTON_LEFT) {
         return TQ_MOUSE_BUTTON_LEFT;

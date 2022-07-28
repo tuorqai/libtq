@@ -230,7 +230,7 @@ typedef enum tq_key
     TQ_KEY_KP_DIV,
     TQ_KEY_KP_ENTER,
     TQ_TOTAL_KEYS,
-} tq_key_t;
+} tq_key;
 
 /**
  * Enumeration of mouse buttons.
@@ -241,7 +241,7 @@ typedef enum tq_mouse_button
     TQ_MOUSE_BUTTON_RIGHT,
     TQ_MOUSE_BUTTON_MIDDLE,
     TQ_TOTAL_MOUSE_BUTTONS,
-} tq_mouse_button_t;
+} tq_mouse_button;
 
 /**
  * Enumeration of joystick axes.
@@ -249,7 +249,7 @@ typedef enum tq_mouse_button
 typedef enum tq_joystick_axis
 {
     TQ_TOTAL_JOYSTICK_AXES,
-} tq_joystick_axis_t;
+} tq_joystick_axis;
 
 /**
  * Enumeration of joystick buttons.
@@ -257,7 +257,7 @@ typedef enum tq_joystick_axis
 typedef enum tq_joystick_button
 {
     TQ_TOTAL_JOYSTICK_BUTTONS,
-} tq_joystick_button_t;
+} tq_joystick_button;
 
 /**
  * Enumeration of blend mode factors.
@@ -294,7 +294,7 @@ typedef enum tq_channel_state
     TQ_CHANNEL_INACTIVE,
     TQ_CHANNEL_PAUSED,
     TQ_CHANNEL_PLAYING,
-} tq_channel_state_t;
+} tq_channel_state;
 
 //------------------------------------------------------------------------------
 // Typedefs and structs
@@ -397,22 +397,22 @@ typedef struct tq_blend_mode
 /**
  * Keyboard event callback.
  */
-typedef void (*tq_key_callback_t)(tq_key_t key);
+typedef void (*tq_key_callback)(tq_key key);
 
 /**
  * Mouse button event callback.
  */
-typedef void (*tq_mouse_button_callback_t)(tq_vec2i cursor, tq_mouse_button_t mouse_button);
+typedef void (*tq_mouse_button_callback)(tq_vec2i cursor, tq_mouse_button mouse_button);
 
 /**
  * Mouse cursor event callback.
  */
-typedef void (*tq_mouse_cursor_callback_t)(tq_vec2i cursor);
+typedef void (*tq_mouse_cursor_callback)(tq_vec2i cursor);
 
 /**
  * Mouse wheel event callback.
  */
-typedef void (*tq_mouse_wheel_callback_t)(tq_vec2i cursor, tq_vec2f wheel);
+typedef void (*tq_mouse_wheel_callback)(tq_vec2i cursor, tq_vec2f wheel);
 
 //------------------------------------------------------------------------------
 
@@ -475,17 +475,17 @@ TQ_API void TQ_CALL tq_set_key_autorepeat_enabled(bool enabled);
 /**
  * Check if a key is pressed.
  */
-TQ_API bool TQ_CALL tq_is_key_pressed(tq_key_t key);
+TQ_API bool TQ_CALL tq_is_key_pressed(tq_key key);
 
 /**
  * Set callback function that will be called when a key is pressed.
  */
-TQ_API void TQ_CALL tq_on_key_pressed(tq_key_callback_t callback);
+TQ_API void TQ_CALL tq_on_key_pressed(tq_key_callback callback);
 
 /**
  * Set callback function that will be called when a key is released.
  */
-TQ_API void TQ_CALL tq_on_key_released(tq_key_callback_t callback);
+TQ_API void TQ_CALL tq_on_key_released(tq_key_callback callback);
 
 //----------------------------------------------------------
 // Mouse
@@ -505,7 +505,7 @@ TQ_API void TQ_CALL tq_set_mouse_cursor_hidden(bool hidden);
 /**
  * Check if a mouse button is pressed.
  */
-TQ_API bool TQ_CALL tq_is_mouse_button_pressed(tq_mouse_button_t mouse_button);
+TQ_API bool TQ_CALL tq_is_mouse_button_pressed(tq_mouse_button mouse_button);
 
 /**
  * Get mouse cursor position.
@@ -515,22 +515,22 @@ TQ_API tq_vec2i TQ_CALL tq_get_mouse_cursor_position(void);
 /**
  * Set callback function that will be called when a mouse button is pressed.
  */
-TQ_API void TQ_CALL tq_on_mouse_button_pressed(tq_mouse_button_callback_t callback);
+TQ_API void TQ_CALL tq_on_mouse_button_pressed(tq_mouse_button_callback callback);
 
 /**
  * Set callback function that will be called when a mouse button is released.
  */
-TQ_API void TQ_CALL tq_on_mouse_button_released(tq_mouse_button_callback_t callback);
+TQ_API void TQ_CALL tq_on_mouse_button_released(tq_mouse_button_callback callback);
 
 /**
  * Set callback function that will be called when a mouse cursor is moved.
  */
-TQ_API void TQ_CALL tq_on_mouse_cursor_moved(tq_mouse_cursor_callback_t callback);
+TQ_API void TQ_CALL tq_on_mouse_cursor_moved(tq_mouse_cursor_callback callback);
 
 /**
  * Register a function that will be called when a mouse wheel is scrolled.
  */
-TQ_API void TQ_CALL tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback_t callback);
+TQ_API void TQ_CALL tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback callback);
 
 //----------------------------------------------------------
 // Time and other
@@ -982,7 +982,7 @@ TQ_API tq_channel TQ_CALL tq_play_music(tq_music music, int loop);
 /**
  * Get current state of the audio channel.
  */
-TQ_API tq_channel_state_t TQ_CALL tq_get_channel_state(tq_channel channel);
+TQ_API tq_channel_state TQ_CALL tq_get_channel_state(tq_channel channel);
 
 /**
  * Pause the audio channel.

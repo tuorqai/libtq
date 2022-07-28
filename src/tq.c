@@ -79,22 +79,22 @@ void tq_set_key_autorepeat_enabled(bool enabled)
     tq_core_set_key_autorepeat_enabled(enabled);
 }
 
-bool tq_is_key_pressed(tq_key_t key)
+bool tq_is_key_pressed(tq_key key)
 {
     return tq_core_is_key_pressed(key);
 }
 
-bool tq_is_mouse_button_pressed(tq_mouse_button_t mouse_button)
+bool tq_is_mouse_button_pressed(tq_mouse_button mouse_button)
 {
     return tq_core_is_mouse_button_pressed(mouse_button);
 }
 
-void tq_on_key_pressed(tq_key_callback_t callback)
+void tq_on_key_pressed(tq_key_callback callback)
 {
     tq_core_set_key_press_callback(callback);
 }
 
-void tq_on_key_released(tq_key_callback_t callback)
+void tq_on_key_released(tq_key_callback callback)
 {
     tq_core_set_key_release_callback(callback);
 }
@@ -120,22 +120,22 @@ tq_vec2i tq_get_mouse_cursor_position(void)
     return position;
 }
 
-void tq_on_mouse_button_pressed(tq_mouse_button_callback_t callback)
+void tq_on_mouse_button_pressed(tq_mouse_button_callback callback)
 {
     tq_core_set_mouse_button_press_callback(callback);
 }
 
-void tq_on_mouse_button_released(tq_mouse_button_callback_t callback)
+void tq_on_mouse_button_released(tq_mouse_button_callback callback)
 {
     tq_core_set_mouse_button_release_callback(callback);
 }
 
-void tq_on_mouse_cursor_moved(tq_mouse_cursor_callback_t callback)
+void tq_on_mouse_cursor_moved(tq_mouse_cursor_callback callback)
 {
     tq_core_set_mouse_cursor_move_callback(callback);
 }
 
-void tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback_t callback)
+void tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback callback)
 {
     tq_core_set_mouse_wheel_scroll_callback(callback);
 }
@@ -545,7 +545,7 @@ tq_channel tq_play_music(tq_music music, int loop)
 //----------------------------------------------------------
 // Channels
 
-tq_channel_state_t tq_get_channel_state(tq_channel channel)
+tq_channel_state tq_get_channel_state(tq_channel channel)
 {
     return tq_audio_get_channel_state(channel.id);
 }

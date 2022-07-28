@@ -18,7 +18,7 @@ static tq_vec2f position = {256.0f, 256.0f};
 static float size = 128.0f;
 static int current_color = 0;
 
-void on_key_pressed(tq_key_t key)
+void on_key_pressed(tq_key key)
 {
     if (key == TQ_KEY_Z) {
         current_color--;
@@ -37,7 +37,7 @@ void on_key_pressed(tq_key_t key)
     }
 }
 
-void on_mouse_button_pressed(tq_vec2i cursor, tq_mouse_button_t mouse_button)
+void on_mouse_button_pressed(tq_vec2i cursor, tq_mouse_button mouse_button)
 {
     if (mouse_button == TQ_MOUSE_BUTTON_LEFT) {
         position.x = (float) cursor.x;
