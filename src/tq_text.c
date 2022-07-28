@@ -27,6 +27,7 @@ struct font_atlas
     int             line_height;
     int             x_padding;
     int             y_padding;
+    unsigned char   *bitmap;
 };
 
 struct font_glyph
@@ -180,10 +181,36 @@ static int cache_glyph(int font_id, unsigned long codepoint, float x_advance, fl
 
         if (atlas->cursor_y >= (atlas->height - atlas->y_padding - bitmap_height)) {
             atlas->height *= 2;
-            renderer->resize_texture(atlas->texture_id, atlas->width, atlas->height);
+            atlas->bitmap = mem_realloc(atlas->bitmap, atlas->width * atlas->height);
+
+            if (!atlas->bitmap) {
+                out_of_memory();
+            }
+
+            for (int y = atlas->height / 2; y < atlas->height; y++) {
+                for (int x = 0; x < atlas->width; x++) {
+                    atlas->bitmap[y * atlas->width + x] = 0;
+                }
+            }
+
+            renderer->delete_texture(atlas->texture_id);
+            atlas->texture_id = renderer->create_texture(atlas->width, atlas->height,
+                PIXEL_FORMAT_GRAYSCALE);
+            renderer->update_texture(atlas->texture_id, 0, 0,
+                atlas->width, atlas->height, atlas->bitmap);
         }
 
         atlas->line_height = 0;
+    }
+
+    for (int y = 0; y < bitmap_height; y++) {
+        int atlas_y = atlas->cursor_y + y;
+
+        for (int x = 0; x < bitmap_width; x++) {
+            int atlas_x = atlas->cursor_x + x;
+    
+            atlas->bitmap[atlas_y * atlas->width + atlas_x] = bitmap[y * bitmap_width + x];
+        }
     }
 
     renderer->update_texture(atlas->texture_id,
@@ -336,31 +363,40 @@ int text_load_font(int stream_id, float pt, int weight)
         return -1;
     }
 
-    fonts[font_id].atlas.width = 16;
-    fonts[font_id].atlas.height = 16;
+    int width = 16;
+    int height = 16;
 
-    while (fonts[font_id].atlas.width < (pt * 8)) {
-        fonts[font_id].atlas.width *= 2;
+    while (width < (pt * 8)) {
+        width *= 2;
     }
 
-    while (fonts[font_id].atlas.height < (pt * 4)) {
-        fonts[font_id].atlas.height *= 2;
+    while (height < (pt * 4)) {
+        height *= 2;
     }
 
-    fonts[font_id].atlas.texture_id = renderer->create_texture(
-        fonts[font_id].atlas.width,
-        fonts[font_id].atlas.height,
-        PIXEL_FORMAT_GRAYSCALE
-    );
+    fonts[font_id].atlas.texture_id = renderer->create_texture(width, height,
+        PIXEL_FORMAT_GRAYSCALE);
 
-    if (fonts[font_id].atlas.texture_id == -1) {
+    fonts[font_id].atlas.bitmap = mem_malloc(width * height);
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            fonts[font_id].atlas.bitmap[y * width + x] = 0;
+        }
+    }
+
+    if (fonts[font_id].atlas.texture_id == -1 || !fonts[font_id].atlas.bitmap) {
+        mem_free(fonts[font_id].atlas.bitmap);
         hb_font_destroy(fonts[font_id].font);
-    
+
         fonts[font_id].face = NULL;
         fonts[font_id].font = NULL;
 
         return -1;
     }
+
+    fonts[font_id].atlas.width = width;
+    fonts[font_id].atlas.height = height;
 
     fonts[font_id].atlas.x_padding = 4;
     fonts[font_id].atlas.y_padding = 4;
@@ -416,6 +452,7 @@ void text_delete_font(int font_id)
     }
 
     mem_free(fonts[font_id].glyphs);
+    mem_free(fonts[font_id].atlas.bitmap);
     renderer->delete_texture(fonts[font_id].atlas.texture_id);
     hb_font_destroy(fonts[font_id].font);
 
