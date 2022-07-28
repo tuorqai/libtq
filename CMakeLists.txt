@@ -149,11 +149,7 @@ endif()
 
 if(BUILD_EXAMPLES)
     set(EXAMPLES
-        "hello"
-        "jestan"
-        "callbacks"
-        "sounds"
-        "text"
+        "core-hello"
         "graphics-surfaces"
         "graphics-blend")
 
