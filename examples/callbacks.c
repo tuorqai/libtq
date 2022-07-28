@@ -66,7 +66,7 @@ void on_mouse_wheel_scrolled(tq_vec2i cursor, tq_vec2f wheel)
 
 int main(int argc, char *argv[])
 {
-    tq_set_display_size(TQ_VEC2I(512, 512));
+    tq_set_display_size((tq_vec2i) {512, 512});
 
     tq_initialize();
 

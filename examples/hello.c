@@ -26,7 +26,7 @@
 
 int main(int argc, char *argv[])
 {
-    tq_set_display_size(TQ_VEC2I(512, 512));
+    tq_set_display_size((tq_vec2i) {512, 512});
     tq_set_title("Hello, tq!");
 
     tq_initialize();
@@ -46,8 +46,8 @@ int main(int argc, char *argv[])
         }
 
         tq_clear();
-        tq_draw_rectangle(TQ_RECTF(128.0f, 128.0f, 256.0f, 256.0f));
-        tq_draw_texture(moon, TQ_RECTF(128.0f, 128.0f, 256.0f, 256.0f));
+        tq_draw_rectangle((tq_rectf) {128.0f, 128.0f, 256.0f, 256.0f});
+        tq_draw_texture(moon, (tq_rectf) {128.0f, 128.0f, 256.0f, 256.0f});
     }
 
     tq_terminate();

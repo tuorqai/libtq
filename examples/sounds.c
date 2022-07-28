@@ -21,11 +21,11 @@ void draw_button(int index, float x, float y)
         : tq_c24(0x80, 0x80, 0x80));
 
     tq_push_matrix();
-        tq_translate_matrix(TQ_VEC2F(x, y));
+        tq_translate_matrix((tq_vec2f) {x, y});
         tq_draw_subtexture(texture,
-            TQ_RECTF(index * 16.0f, 0.0f, 16.0f, 16.0f),
-            TQ_RECTF(-16.0f, -16.0f, 32.0f, 32.0f));
-        tq_outline_rectangle(TQ_RECTF(-32.0f, -32.0f, 64.0f, 64.0f));
+            (tq_rectf) {index * 16.0f, 0.0f, 16.0f, 16.0f},
+            (tq_rectf) {-16.0f, -16.0f, 32.0f, 32.0f});
+        tq_outline_rectangle((tq_rectf) {-32.0f, -32.0f, 64.0f, 64.0f});
     tq_pop_matrix();
 }
 
@@ -86,7 +86,7 @@ void on_mouse_cursor_moved(tq_vec2i cursor)
 
 int main(int argc, char *argv[])
 {
-    tq_set_display_size(TQ_VEC2I(512, 512));
+    tq_set_display_size((tq_vec2i) {512, 512});
     tq_set_title("[tq library] sounds.c");
 
     tq_initialize();

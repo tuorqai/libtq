@@ -152,7 +152,7 @@ void update_stage(world_t *world, stage_t *self)
 
 void draw_stage(stage_t const *self)
 {
-    tq_fill_rectangle(TQ_RECTF(0.0f, 0.0f, STAGE_WIDTH * 16.0f, STAGE_HEIGHT * 16.0f));
+    tq_fill_rectangle((tq_rectf) {0.0f, 0.0f, STAGE_WIDTH * 16.0f, STAGE_HEIGHT * 16.0f});
 
     for (int q = 0; q < STAGE_HEIGHT; q++) {
         for (int p = 0; p < STAGE_WIDTH; p++) {
@@ -166,11 +166,11 @@ void draw_stage(stage_t const *self)
             int y = c / 20;
 
             tq_push_matrix();
-            tq_translate_matrix(TQ_VEC2F(p * 16.0f, q * 16.0f));
+            tq_translate_matrix((tq_vec2f) {p * 16.0f, q * 16.0f});
             tq_draw_subtexture(
                 self->texture,
-                TQ_RECTF(x * 16.0f, y * 16.0f, 16.0f, 16.0f),
-                TQ_RECTF(0.0f, 0.0f, 16.0f, 16.0f)
+                (tq_rectf) {x * 16.0f, y * 16.0f, 16.0f, 16.0f},
+                (tq_rectf) {0.0f, 0.0f, 16.0f, 16.0f}
             );
             tq_pop_matrix();
         }
@@ -373,12 +373,12 @@ void draw_players(players_t const *self)
         }
 
         tq_push_matrix();
-        tq_translate_matrix(TQ_VEC2F(self->x[id], self->y[id]));
-        tq_outline_rectangle(TQ_RECTF(0.0f, 0.0f, 16.0f, 18.0f));
+        tq_translate_matrix((tq_vec2f) {self->x[id], self->y[id]});
+        tq_outline_rectangle((tq_rectf) {0.0f, 0.0f, 16.0f, 18.0f});
         tq_draw_subtexture(
             self->texture,
-            TQ_RECTF(self->frame[id] * 16.0f, y_frame * 18.0f, 16.0f, 18.0f),
-            TQ_RECTF(0.0f, 0.0f, 16.0f, 18.0f)
+            (tq_rectf) {self->frame[id] * 16.0f, y_frame * 18.0f, 16.0f, 18.0f},
+            (tq_rectf) {0.0f, 0.0f, 16.0f, 18.0f}
         );
         tq_pop_matrix();
     }
@@ -445,17 +445,18 @@ void draw_world(world_t const *world)
     draw_objects(&world->objects);
     draw_players(&world->players);
 
-    tq_draw_line(TQ_VEC2F(world->camera.x - 2.0f, world->camera.y), TQ_VEC2F(world->camera.x + 2.0f, world->camera.y));
-    tq_draw_line(TQ_VEC2F(world->camera.x, world->camera.y - 2.0f), TQ_VEC2F(world->camera.x, world->camera.y + 2.0f));
+    tq_draw_line((tq_vec2f) {world->camera.x - 2.0f, world->camera.y}, (tq_vec2f) {world->camera.x + 2.0f, world->camera.y});
+    tq_draw_line((tq_vec2f) {world->camera.x, world->camera.y - 2.0f}, (tq_vec2f) {world->camera.x, world->camera.y + 2.0f});
 
     tq_set_fill_color(tq_c24(255, 255, 255));
 
     tq_vec2i cursor = tq_get_mouse_cursor_position();
     tq_vec2f mrel = tq_get_relative_position(tq_vec2i_cast(cursor));
 
-    tq_vec2f prel = TQ_VEC2F(
+    tq_vec2f prel = {
         world->players.x[world->player_id],
-        world->players.y[world->player_id]);
+        world->players.y[world->player_id]
+    };
 }
 
 //------------------------------------------------------------------------------

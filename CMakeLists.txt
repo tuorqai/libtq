@@ -150,7 +150,6 @@ endif()
 if(BUILD_EXAMPLES)
     set(EXAMPLES
         "hello"
-        "defense"
         "jestan"
         "callbacks"
         "sounds"

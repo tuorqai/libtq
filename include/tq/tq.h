@@ -1023,26 +1023,6 @@ TQ_API void TQ_CALL tq_stop_channel(tq_channel channel);
 #define TQ_RAD2DEG(rad)             ((rad) * (180.0 / TQ_PI))
 
 /**
- * Construct 2-component integer vector.
- */
-#define TQ_VEC2I(x, y)              ((tq_vec2i) {(x), (y)})
-
-/**
- * Construct 2-component floating-point vector.
- */
-#define TQ_VEC2F(x, y)              ((tq_vec2f) {(x), (y)})
-
-/**
- * Construct rectangle (integer).
- */
-#define TQ_RECTI(x, y, w, h)        ((tq_recti) {(x), (y), (w), (h)})
-
-/**
- * Construct rectangle (floating point).
- */
-#define TQ_RECTF(x, y, w, h)        ((tq_rectf) {(x), (y), (w), (h)})
-
-/**
  * Cast 2-component integer vector to floating-point vector.
  */
 static inline tq_vec2f tq_vec2i_cast(tq_vec2i ivec)

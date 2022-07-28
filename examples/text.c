@@ -8,7 +8,7 @@
 
 int main(int argc, char *argv[])
 {
-    tq_set_display_size(TQ_VEC2I(512, 512));
+    tq_set_display_size((tq_vec2i) {512, 512});
     tq_set_title("[tq library] text.c");
 
     tq_initialize();
@@ -37,12 +37,12 @@ int main(int argc, char *argv[])
         tq_vec2i cursor = tq_get_mouse_cursor_position();
 
         tq_set_fill_color(tq_c24(0, 160, 210));
-        tq_print_text(italic, TQ_VEC2F(32, 410),
+        tq_print_text(italic, (tq_vec2f) {32, 410},
             "cursor pos: [%d, %d]",
             cursor.x, cursor.y);
 
         tq_set_fill_color(tq_c24(224, 192, 224));
-        tq_print_text(italic, TQ_VEC2F(32, 450),
+        tq_print_text(italic, (tq_vec2f) {32, 450},
             "time: %.2f", tq_get_time_mediump());
     }
 
