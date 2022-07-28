@@ -150,6 +150,7 @@ endif()
 if(BUILD_EXAMPLES)
     set(EXAMPLES
         "core-hello"
+        "graphics-textures"
         "graphics-surfaces"
         "graphics-blend")
 
