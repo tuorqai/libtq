@@ -86,7 +86,7 @@ void tq_core_initialize(void)
             tq_construct_sdl_clock(&core.clock);
             tq_construct_win32_threads(&core.threads);
         #elif defined(unix)
-            tq_construct_sdl_clock(&core.clock);
+            construct_posix_clock(&core.clock);
             tq_construct_posix_threads(&core.threads);
         #endif
 

@@ -36,8 +36,11 @@ typedef struct tq_display
     void tq_construct_sdl_display(tq_display_t *display);
 #endif
 
-#if defined(TQ_PLATFORM_ANDROID)
+#if defined(unix)
     void construct_posix_clock(struct tq_clock *clock);
+#endif
+
+#if defined(TQ_PLATFORM_ANDROID)
     void construct_android_display(struct tq_display *display);
 #endif
 
