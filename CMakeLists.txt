@@ -33,6 +33,7 @@ add_library(tq
     "src/tq_image_loader.c"
     "src/tq_log.c"
     "src/tq_math.c"
+    "src/tq_null_audio.c"
     "src/tq_posix_threads.c"
     "src/tq_sdl_clock.c"
     "src/tq_sdl_display.c"

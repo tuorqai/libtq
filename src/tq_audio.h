@@ -8,7 +8,7 @@
 
 //------------------------------------------------------------------------------
 
-typedef struct tq_audio_impl
+typedef struct audio_impl
 {
     void        (*initialize)(void);
     void        (*terminate)(void);
@@ -29,6 +29,8 @@ typedef struct tq_audio_impl
 } tq_audio_impl_t;
 
 //------------------------------------------------------------------------------
+
+void construct_null_audio(struct audio_impl *impl);
 
 #if defined(TQ_USE_OPENAL)
     void tq_construct_al_audio(tq_audio_impl_t *impl);

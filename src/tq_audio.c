@@ -31,7 +31,7 @@ void tq_audio_initialize(void)
 #if defined(TQ_USE_OPENAL)
     tq_construct_al_audio(&audio.impl);
 #else
-    #error Invalid compilation flags: no audio implementation is enabled.
+    construct_null_audio(&audio.impl);
 #endif
 
     audio.impl.initialize();
