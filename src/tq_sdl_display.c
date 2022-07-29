@@ -23,6 +23,10 @@
 // tq library: SDL display implementation
 //------------------------------------------------------------------------------
 
+#ifdef TQ_USE_SDL
+
+//------------------------------------------------------------------------------
+
 #include <SDL.h>
 
 #include "tq_core.h"
@@ -344,5 +348,9 @@ void tq_construct_sdl_display(tq_display_t *display)
     display->set_mouse_cursor_hidden = set_mouse_cursor_hidden;
     display->show_message_box       = show_message_box;
 }
+
+//------------------------------------------------------------------------------
+
+#endif // TQ_USE_SDL
 
 //------------------------------------------------------------------------------

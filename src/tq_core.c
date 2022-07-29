@@ -78,36 +78,24 @@ static bool get_key_state(tq_key key)
 void tq_core_initialize(void)
 {
     /**
-     * Construct clock implementation.
+     * Construct clock, thread and display implementations.
      */
 
-#if defined(TQ_USE_SDL)
-    tq_construct_sdl_clock(&core.clock);
-#else
-    #error Invalid configuration. Check your build settings.
-#endif
+    #if defined(TQ_PLATFORM_DESKTOP)
+        #if defined(_WIN32)
+            tq_construct_sdl_clock(&core.clock);
+            tq_construct_win32_threads(&core.threads);
+        #elif defined(unix)
+            tq_construct_sdl_clock(&core.clock);
+            tq_construct_posix_threads(&core.threads);
+        #endif
 
-    /**
-     * Construct threads implementation.
-     */
-
-#if defined(TQ_PLATFORM_WINDOWS)
-    tq_construct_win32_threads(&core.threads);
-#elif defined(TQ_PLATFORM_UNIX)
-    tq_construct_posix_threads(&core.threads);
-#else
-    #error Invalid configuration. Check your build settings.
-#endif
-
-    /**
-     * Construct display implementation.
-     */
-
-#if defined(TQ_USE_SDL)
-    tq_construct_sdl_display(&core.display);
-#else
-    #error Invalid configuration. Check your build settings.
-#endif
+        tq_construct_sdl_display(&core.display);
+    #elif defined(TQ_PLATFORM_ANDROID)
+        construct_posix_clock(&core.clock);
+        construct_android_display(&core.display);
+        tq_construct_posix_threads(&core.threads);
+    #endif
 
     /**
      * Initialization begins here.

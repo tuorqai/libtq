@@ -4,3 +4,7 @@
 
 # Visual Studio Code things
 /.vscode/
+
+# Android prebuilt static libraries
+/android-bundle/*
+!/android-bundle/CMakeLists.txt

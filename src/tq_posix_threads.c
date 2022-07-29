@@ -1,11 +1,13 @@
 
 //------------------------------------------------------------------------------
 
-#if defined(TQ_PLATFORM_UNIX)
+#if defined(unix)
 
 //------------------------------------------------------------------------------
 
-#define _GNU_SOURCE
+#if defined(__linux__)
+    #define _GNU_SOURCE
+#endif
 
 #include <errno.h>
 #include <pthread.h>
@@ -76,7 +78,9 @@ static tq_thread_t create_thread(char const *name, int (*func)(void *), void *da
         return NULL;
     }
 
-    pthread_setname_np(info->thread, name);
+    #if defined(__linux__)
+        pthread_setname_np(info->thread, name);
+    #endif
 
     return (tq_thread_t) info;
 }
@@ -158,6 +162,6 @@ void tq_construct_posix_threads(tq_threads_impl_t *impl)
 
 //------------------------------------------------------------------------------
 
-#endif // defined(TQ_PLATFORM_UNIX)
+#endif // defined(unix)
 
 //------------------------------------------------------------------------------

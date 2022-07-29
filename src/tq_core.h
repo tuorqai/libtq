@@ -36,6 +36,11 @@ typedef struct tq_display
     void tq_construct_sdl_display(tq_display_t *display);
 #endif
 
+#if defined(TQ_PLATFORM_ANDROID)
+    void construct_posix_clock(struct tq_clock *clock);
+    void construct_android_display(struct tq_display *display);
+#endif
+
 //------------------------------------------------------------------------------
 
 void tq_core_initialize(void);
@@ -107,9 +112,9 @@ typedef struct tq_threads_impl
     void            (*unlock_mutex)(tq_mutex_t mutex);
 } tq_threads_impl_t;
 
-#if defined(TQ_PLATFORM_WINDOWS)
+#if defined(_WIN32)
     void tq_construct_win32_threads(tq_threads_impl_t *impl);
-#elif defined(TQ_PLATFORM_LINUX)
+#elif defined(unix)
     void tq_construct_posix_threads(tq_threads_impl_t *impl);
 #endif
 
