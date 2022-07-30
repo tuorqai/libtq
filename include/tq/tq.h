@@ -61,7 +61,7 @@
 #ifdef TQ_SHARED
     #define TQ_API TQ_LINKAGE TQ_EXPORT
 #else
-    #define TQ_API
+    #define TQ_API TQ_LINKAGE
 #endif
 
 /**
