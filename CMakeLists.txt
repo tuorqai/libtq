@@ -42,7 +42,8 @@ add_library(tq
     "src/tq_sound_decoder.c"
     "src/tq_stream.c"
     "src/tq_text.c"
-    "src/tq_win32_threads.c")
+    "src/tq_win32_threads.c"
+    "src/tq_win32_system.c")
 
 target_include_directories(tq PUBLIC "include")
 target_include_directories(tq PRIVATE "third-party")
@@ -144,5 +145,6 @@ if(BUILD_EXAMPLES)
     foreach(EXAMPLE ${EXAMPLES})
         add_executable(${EXAMPLE} "examples/${EXAMPLE}.c")
         target_link_libraries(${EXAMPLE} tq)
+        set_target_properties(${EXAMPLE} PROPERTIES WIN32_EXECUTABLE YES)
     endforeach()
 endif()
