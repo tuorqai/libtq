@@ -103,7 +103,11 @@ endif()
 find_package(Threads REQUIRED)
 find_package(FreeType REQUIRED)
 find_package(HarfBuzz REQUIRED)
-find_package(VorbisFile REQUIRED)
+find_package(VorbisFile)
+
+if(VorbisFile_FOUND)
+    target_compile_definitions(tq PRIVATE TQ_USE_OGG)
+endif()
 
 target_link_libraries(tq
     Threads::Threads
@@ -121,7 +125,15 @@ endif()
 # Examples
 
 if(BUILD_EXAMPLES)
+    # Copy assets to build directory
+    # TODO: move assets directory to examples/assets
+    add_custom_command(TARGET tq POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets
+            $<TARGET_FILE_DIR:tq>/assets)
+
     set(EXAMPLES
+        "audio-music"
         "core-hello"
         "core-keyboard"
         "core-mouse"
