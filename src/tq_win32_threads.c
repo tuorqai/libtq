@@ -14,132 +14,152 @@
 
 //------------------------------------------------------------------------------
 
-struct thread_info
+#define THREAD_FLAG_WAIT            0x01
+#define THREAD_FLAG_DETACHED        0x02
+
+struct ThreadInfo
 {
-    DWORD       id;
-    HANDLE      thread;
+    DWORD               id;
+    HANDLE              thread;
+    CRITICAL_SECTION    cs;
+    UINT                Flags;
 
-    char const  *name;
-    int         (*func)(void *);
-    void        *data;
-
-    CRITICAL_SECTION    mutex;
-    int                 bits;
+    char const          *name;
+    int                 (*func)(void *);
+    void                *data;
 };
 
 //------------------------------------------------------------------------------
 
+/**
+ * End point for a thread.
+ */
+static void thread_end(struct ThreadInfo *info)
+{
+    // If the thread is detached, then only its info struct should be freed.
+    if (!(info->Flags & THREAD_FLAG_DETACHED)) {
+        EnterCriticalSection(&info->cs);
+
+        // If the thread is being waited in wait_thread(), do not release
+        // its resources.
+        if (info->Flags & THREAD_FLAG_WAIT) {
+            LeaveCriticalSection(&info->cs);
+            return;
+        }
+
+        LeaveCriticalSection(&info->cs);
+
+        CloseHandle(info->thread);
+        DeleteCriticalSection(&info->cs);
+    }
+
+    HeapFree(GetProcessHeap(), 0, info);
+}
+
+/**
+ * Entry point for a thread.
+ */
 static DWORD WINAPI thread_main(LPVOID param)
 {
-    struct thread_info *info = (struct thread_info *) param;
+    struct ThreadInfo *info = (struct ThreadInfo *) param;
     int retval = info->func(info->data);
 
-    EnterCriticalSection(&info->mutex);
-
-    // We are waiting for this thread in wait_thread(), don't delete the stuff
-    if (info->bits & 0x01) {
-        LeaveCriticalSection(&info->mutex);
-        return retval;
-    }
-
-    // Close the thread handle if it's not detached
-    if ((info->bits & 0x02) == 0) {
-        CloseHandle(info->thread);
-    }
-
-    LeaveCriticalSection(&info->mutex);
-    DeleteCriticalSection(&info->mutex);
-    tq_mem_free(info);
-
+    thread_end(info);
     return retval;
 }
 
 //------------------------------------------------------------------------------
 
+/**
+ * Initialize Win32 multi-threading module.
+ */
 static void initialize(void)
 {
 }
 
+/**
+ * Terminate Win32 multi-threading module.
+ */
 static void terminate(void)
 {
 }
 
+/**
+ * Pause current thread for a given period of time.
+ */
 static void sleep(double seconds)
 {
-    DWORD dwMilliseconds = (DWORD) (seconds * 1000);
-    Sleep(dwMilliseconds);
+    DWORD milliseconds = (DWORD) (seconds * 1000);
+    Sleep(milliseconds);
 }
 
+/**
+ * Create new thread and return it's opaque handle.
+ */
 static tq_thread_t create_thread(char const *name, int (*func)(void *), void *data)
 {
-    struct thread_info *info = tq_mem_alloc(sizeof(thread_info));
+    struct ThreadInfo *info = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct ThreadInfo));
 
     info->name = name;
     info->func = func;
     info->data = data;
 
-    info->thread = CreateThread(
-        NULL,
-        0,
-        thread_main,
-        info,
-        0,
-        &info->id
-    );
+    info->Flags = 0;
+    InitializeCriticalSection(&info->cs);
+
+    info->thread = CreateThread(NULL, 0, thread_main, info, 0, &info->id);
 
     if (info->thread == NULL) {
         tq_log_error("Failed to create thread \"%s\".\n", name);
-        tq_mem_free(info);
+        HeapFree(GetProcessHeap(), 0, info);
         return NULL;
     }
-
-    InitializeCriticalSection(&info->mutex);
-    info->bits = 0;
 
     return (tq_thread_t) info;
 }
 
 static void detach_thread(tq_thread_t thread)
 {
-    struct thread_info *info = (struct thread_info *) param;
+    struct ThreadInfo *info = (struct ThreadInfo *) thread;
 
-    EnterCriticalSection(&info->mutex);
-    info->bits |= 0x02;
-    LeaveCriticalSection(&info->mutex);
+    EnterCriticalSection(&info->cs);
+    info->Flags |= THREAD_FLAG_DETACHED;
+    LeaveCriticalSection(&info->cs);
 
     CloseHandle(info->thread);
+    DeleteCriticalSection(&info->cs);
 }
 
 static int wait_thread(tq_thread_t thread)
 {
-    struct thread_info *info = (struct thread_info *) param;
+    struct ThreadInfo *info = (struct ThreadInfo *) thread;
 
-    // The thread is detached
-    if (info->bits & 0x02) {
+    EnterCriticalSection(&info->cs);
+
+    if (info->Flags & THREAD_FLAG_DETACHED) {
+        LeaveCriticalSection(&info->cs);
         return -1;
     }
 
-    EnterCriticalSection(&info->mutex);
-    info->bits |= 0x01;
-    LeaveCriticalSection(&info->mutex);
-
-    WaitForSingleObject(info->thread, INFINITE);
+    info->Flags |= THREAD_FLAG_WAIT;
+    LeaveCriticalSection(&info->cs);
 
     DWORD retval;
+    WaitForSingleObject(info->thread, INFINITE);
     GetExitCodeThread(info->thread, &retval);
 
-    DeleteCriticalSection(&info->mutex);
-    CloseHandle(info->thread);
-
-    tq_mem_free(info);
+    info->Flags &= ~THREAD_FLAG_WAIT;
+    thread_end(info);
 
     return (int) retval;
 }
 
+//------------------------------------------------------------------------------
+// Mutexes
+
 static tq_mutex_t create_mutex(void)
 {
-    LPCRITICAL_SECTION mutex = tq_mem_alloc(sizeof(CRITICAL_SECTION));
-
+    LPCRITICAL_SECTION mutex = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(CRITICAL_SECTION));
     InitializeCriticalSection(mutex);
 
     return (tq_mutex_t) mutex;
