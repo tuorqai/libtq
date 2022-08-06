@@ -6,7 +6,7 @@
 
 find_package(BrotliCommon REQUIRED)
 
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 pkg_check_modules(PC_BrotliDec QUIET brotlidec)
 
 find_path(BrotliDec_INCLUDE_DIR

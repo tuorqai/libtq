@@ -6,7 +6,7 @@
 
 find_package(Ogg REQUIRED)
 
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 pkg_check_modules(PC_Vorbis QUIET vorbis)
 
 find_path(Vorbis_INCLUDE_DIR

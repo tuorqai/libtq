@@ -8,7 +8,7 @@ find_package(BrotliDec REQUIRED)
 find_package(PNG REQUIRED)
 find_package(ZLIB REQUIRED)
 
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 pkg_check_modules(PC_FreeType QUIET harfbuzz)
 
 find_path(FreeType_INCLUDE_DIR

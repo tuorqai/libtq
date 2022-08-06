@@ -6,7 +6,7 @@
 
 find_package(Vorbis REQUIRED)
 
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 pkg_check_modules(PC_VorbisFile QUIET vorbisfile)
 
 find_path(VorbisFile_INCLUDE_DIR

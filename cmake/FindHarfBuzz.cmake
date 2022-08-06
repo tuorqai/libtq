@@ -4,7 +4,7 @@
 # This file is part of tq library.
 #-------------------------------------------------------------------------------
 
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 pkg_check_modules(PC_HarfBuzz QUIET harfbuzz)
 
 find_path(HarfBuzz_INCLUDE_DIR
