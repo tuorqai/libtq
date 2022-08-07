@@ -144,6 +144,7 @@ if(BUILD_EXAMPLES)
         "core-mouse"
         "graphics-textures"
         "graphics-surfaces"
+        "graphics-text"
         "graphics-blend")
 
     foreach(EXAMPLE ${EXAMPLES})
