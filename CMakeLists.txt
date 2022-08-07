@@ -17,6 +17,10 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
         -Wno-unused-variable)
 endif()
 
+if(MSVC)
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+endif()
+
 #---------------------------------------
 # Library target
 #---------------------------------------
