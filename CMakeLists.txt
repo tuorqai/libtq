@@ -46,8 +46,7 @@ add_library(tq
     "src/tq_sound_decoder.c"
     "src/tq_stream.c"
     "src/tq_text.c"
-    "src/tq_win32_threads.c"
-    "src/tq_win32_system.c")
+    "src/tq_win32_threads.c")
 
 target_include_directories(tq PUBLIC "include")
 target_include_directories(tq PRIVATE "third-party")
@@ -81,7 +80,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 if(ANDROID)
     set(APP_GLUE_PATH "${ANDROID_NDK}/sources/android/native_app_glue")
     add_library(native_app_glue STATIC "${APP_GLUE_PATH}/android_native_app_glue.c")
-    target_link_libraries(tq android log native_app_glue GLESv2 EGL)
+    target_link_libraries(tq PUBLIC android log native_app_glue GLESv2 EGL)
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_ANDROID
         TQ_USE_OPENGL
@@ -95,12 +94,18 @@ elseif(WIN32 OR UNIX AND NOT APPLE)
     find_package(OpenAL REQUIRED)
 
     target_include_directories(tq PRIVATE ${OPENAL_INCLUDE_DIR})
-    target_link_libraries(tq SDL2::SDL2 OpenGL::GL GLEW::GLEW ${OPENAL_LIBRARY})
+    target_link_libraries(tq PUBLIC SDL2::SDL2 OpenGL::GL GLEW::GLEW ${OPENAL_LIBRARY})
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_DESKTOP
         TQ_USE_SDL
         TQ_USE_OPENGL
         TQ_USE_OPENAL)
+    
+    # Static utility library which contains WinMain
+    if(WIN32)
+        add_library(tq_win32_system STATIC "src/tq_win32_system.c")
+        target_link_libraries(tq INTERFACE tq_win32_system)
+    endif()
 else()
     message(FATAL_ERROR "Sorry, but your OS is not supported :(")
 endif()
@@ -114,7 +119,7 @@ if(VorbisFile_FOUND)
     target_compile_definitions(tq PRIVATE TQ_USE_OGG)
 endif()
 
-target_link_libraries(tq
+target_link_libraries(tq PUBLIC
     Threads::Threads
     FreeType::FreeType
     HarfBuzz::HarfBuzz
