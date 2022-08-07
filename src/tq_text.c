@@ -78,7 +78,7 @@ static unsigned long ft_stream_io(FT_Stream stream,
     unsigned char *buffer,
     unsigned long count)
 {
-    if (input_stream_seek(stream->descriptor.value, offset) == -1) {
+    if (libtq_stream_seek(stream->descriptor.pointer, offset) == -1) {
         if (count == 0) {
             return 1;
         }
@@ -86,12 +86,12 @@ static unsigned long ft_stream_io(FT_Stream stream,
         return 0;
     }
 
-    return input_stream_read(stream->descriptor.value, buffer, count);
+    return libtq_stream_read(stream->descriptor.pointer, buffer, count);
 }
 
 static void ft_stream_close(FT_Stream stream)
 {
-    input_stream_close(stream->descriptor.value);
+    libtq_stream_close(stream->descriptor.pointer);
 }
 
 static int get_font_id(void)
@@ -323,22 +323,22 @@ void text_terminate(void)
     mem_free(fonts);
 }
 
-int text_load_font(int stream_id, float pt, int weight)
+int text_load_font(libtq_stream *stream, float pt, int weight)
 {
     int font_id = get_font_id();
 
     if (font_id == -1) {
-        input_stream_close(stream_id);
+        libtq_stream_close(stream);
         return -1;
     }
 
     memset(&fonts[font_id], 0, sizeof(struct font));
 
     fonts[font_id].stream.base = NULL;
-    fonts[font_id].stream.size = input_stream_size(stream_id);
-    fonts[font_id].stream.pos = input_stream_tell(stream_id);
-    fonts[font_id].stream.descriptor.value = stream_id;
-    fonts[font_id].stream.pathname.pointer = (void *) input_stream_repr(stream_id);
+    fonts[font_id].stream.size = libtq_stream_size(stream);
+    fonts[font_id].stream.pos = libtq_stream_tell(stream);
+    fonts[font_id].stream.descriptor.pointer = stream;
+    fonts[font_id].stream.pathname.pointer = (void *) libtq_stream_repr(stream);
     fonts[font_id].stream.read = ft_stream_io;
     fonts[font_id].stream.close = ft_stream_close;
 
@@ -351,7 +351,7 @@ int text_load_font(int stream_id, float pt, int weight)
 
     if (error) {
         log_error("Failed to open font %s. Reason: %s\n",
-            input_stream_repr(stream_id), FT_Error_String(error));
+            libtq_stream_repr(stream), FT_Error_String(error));
 
         fonts[font_id].face = NULL;
         return -1;
@@ -435,24 +435,24 @@ int text_load_font(int stream_id, float pt, int weight)
 
 int text_load_font_from_file(char const *path, float pt, int weight)
 {
-    int stream_id = open_file_input_stream(path);
+    libtq_stream *stream = libtq_open_file_stream(path);
 
-    if (stream_id == -1) {
+    if (!stream) {
         return -1;
     }
 
-    return text_load_font(stream_id, pt, weight);
+    return text_load_font(stream, pt, weight);
 }
 
 int text_load_font_from_memory(void const *buffer, size_t size, float pt, int weight)
 {
-    int stream_id = open_memory_input_stream((unsigned char *) buffer, size);
+    libtq_stream *stream = libtq_open_memory_stream(buffer, size);
 
-    if (stream_id == -1) {
+    if (!stream) {
         return -1;
     }
 
-    return text_load_font(stream_id, pt, weight);
+    return text_load_font(stream, pt, weight);
 }
 
 void text_delete_font(int font_id)

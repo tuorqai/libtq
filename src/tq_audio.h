@@ -14,11 +14,11 @@ typedef struct audio_impl
     void        (*terminate)(void);
     void        (*process)(void);
 
-    int32_t     (*load_sound)(int32_t stream_id);
+    int32_t     (*load_sound)(libtq_stream *stream);
     void        (*delete_sound)(int32_t sound_id);
     int32_t     (*play_sound)(int32_t sound_id, int loop);
 
-    int32_t     (*open_music)(int32_t stream_id);
+    int32_t     (*open_music)(libtq_stream *stream);
     void        (*close_music)(int32_t music_id);
     int32_t     (*play_music)(int32_t music_id, int loop);
 

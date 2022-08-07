@@ -49,31 +49,27 @@ void tq_audio_process(void)
 
 int32_t tq_audio_load_sound_from_file(char const *path)
 {
-    int32_t stream_id = tq_open_file_istream(path);
+    libtq_stream *stream = libtq_open_file_stream(path);
 
-    if (stream_id == -1) {
+    if (stream) {
         return -1;
     }
 
-    int32_t sound_id = audio.impl.load_sound(stream_id);
-
-    tq_istream_close(stream_id);
-
+    int32_t sound_id = audio.impl.load_sound(stream);
+    libtq_stream_close(stream);
     return sound_id;
 }
 
 int32_t tq_audio_load_sound_from_memory(uint8_t const *buffer, size_t size)
 {
-    int32_t stream_id = tq_open_memory_istream(buffer, size);
+    libtq_stream *stream = libtq_open_memory_stream(buffer, size);
 
-    if (stream_id == -1) {
+    if (stream) {
         return -1;
     }
 
-    int32_t sound_id = audio.impl.load_sound(stream_id);
-
-    tq_istream_close(stream_id);
-
+    int32_t sound_id = audio.impl.load_sound(stream);
+    libtq_stream_close(stream);
     return sound_id;
 }
 
@@ -89,16 +85,16 @@ int32_t tq_audio_play_sound(int32_t sound_id, int loop)
 
 int32_t tq_audio_open_music_from_file(char const *path)
 {
-    int32_t stream_id = tq_open_file_istream(path);
+    libtq_stream *stream = libtq_open_file_stream(path);
 
-    if (stream_id == -1) {
+    if (!stream) {
         return -1;
     }
 
-    int32_t music_id = audio.impl.open_music(stream_id);
+    int32_t music_id = audio.impl.open_music(stream);
 
     if (music_id == -1) {
-        tq_istream_close(stream_id);
+        libtq_stream_close(stream);
     }
 
     return music_id;
@@ -106,16 +102,16 @@ int32_t tq_audio_open_music_from_file(char const *path)
 
 int32_t tq_audio_open_music_from_memory(uint8_t const *buffer, size_t size)
 {
-    int32_t stream_id = tq_open_memory_istream(buffer, size);
+    libtq_stream *stream = libtq_open_memory_stream(buffer, size);
 
-    if (stream_id == -1) {
+    if (!stream) {
         return -1;
     }
 
-    int32_t music_id = audio.impl.open_music(stream_id);
+    int32_t music_id = audio.impl.open_music(stream);
 
     if (music_id == -1) {
-        tq_istream_close(stream_id);
+        libtq_stream_close(stream);
     }
 
     return music_id;

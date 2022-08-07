@@ -16,7 +16,7 @@ enum { TQ_SOUND_DECODER_LIMIT = 32 };
 
 //------------------------------------------------------------------------------
 
-int32_t     tq_sound_decoder_open(int32_t stream_id);
+int32_t     tq_sound_decoder_open(libtq_stream *stream);
 void        tq_sound_decoder_close(int32_t decoder_id);
 
 uint16_t    tq_sound_decoder_get_num_channels(int32_t decoder_id);

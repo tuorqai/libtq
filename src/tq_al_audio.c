@@ -88,7 +88,7 @@ struct openal_sounds
 struct openal_music
 {
     uint8_t     bits[TQ_MUSIC_LIMIT];
-    int32_t     stream_id[TQ_MUSIC_LIMIT];
+    libtq_stream *stream[TQ_MUSIC_LIMIT];
     int32_t     decoder_id[TQ_MUSIC_LIMIT];
 };
 
@@ -98,7 +98,7 @@ struct openal_channels
     ALuint      source[TQ_CHANNEL_LIMIT];
     tq_thread_t thread[TQ_CHANNEL_LIMIT];
 
-    int32_t     stream_id[TQ_CHANNEL_LIMIT];
+    libtq_stream *stream[TQ_CHANNEL_LIMIT];
     int32_t     decoder_id[TQ_MUSIC_LIMIT];
     int         loop[TQ_CHANNEL_LIMIT];
 };
@@ -246,7 +246,7 @@ static void terminate(void)
     for (int32_t music_id = 0; music_id < TQ_MUSIC_LIMIT; music_id++) {
         if (openal.music.bits[music_id] & MUSIC_BIT_OPEN) {
             tq_sound_decoder_close(openal.music.decoder_id[music_id]);
-            tq_istream_close(openal.music.stream_id[music_id]);
+            libtq_stream_close(openal.music.stream[music_id]);
         }
     }
 
@@ -276,7 +276,7 @@ static void process(void)
 //------------------------------------------------------------------------------
 // Sounds
 
-static int32_t load_sound(int32_t stream_id)
+static int32_t load_sound(libtq_stream *stream)
 {
     int32_t sound_id = get_sound_id();
 
@@ -284,7 +284,7 @@ static int32_t load_sound(int32_t stream_id)
         return -1;
     }
 
-    int32_t decoder_id = tq_sound_decoder_open(stream_id);
+    int32_t decoder_id = tq_sound_decoder_open(stream);
 
     if (decoder_id == -1) {
         return -1;
@@ -543,7 +543,7 @@ static int music_main(void *data)
 //------------------------------------------------------------------------------
 // Music
 
-static int32_t open_music(int32_t stream_id)
+static int32_t open_music(libtq_stream *stream)
 {
     int32_t music_id = get_music_id();
 
@@ -551,14 +551,14 @@ static int32_t open_music(int32_t stream_id)
         return -1;
     }
 
-    int32_t decoder_id = tq_sound_decoder_open(stream_id);
+    int32_t decoder_id = tq_sound_decoder_open(stream);
 
     if (decoder_id == -1) {
         return -1;
     }
 
     openal.music.bits[music_id] = MUSIC_BIT_OPEN;
-    openal.music.stream_id[music_id] = stream_id;
+    openal.music.stream[music_id] = stream;
     openal.music.decoder_id[music_id] = decoder_id;
 
     return music_id;
@@ -576,7 +576,7 @@ static void close_music(int32_t music_id)
 
     for (int32_t channel_id = 0; channel_id < TQ_CHANNEL_LIMIT; channel_id++) {
         if (openal.channels.bits[channel_id] & CHANNEL_BIT_STREAMING) {
-            if (openal.channels.stream_id[channel_id] == openal.music.stream_id[music_id]) {
+            if (openal.channels.stream[channel_id] == openal.music.stream[music_id]) {
                 tq_core_lock_mutex(openal.mutex);
                 {
                     CHECK_AL(alSourceStop(openal.channels.source[channel_id]));
@@ -589,10 +589,10 @@ static void close_music(int32_t music_id)
     }
 
     tq_sound_decoder_close(openal.music.decoder_id[music_id]);
-    tq_istream_close(openal.music.stream_id[music_id]);
+    libtq_stream_close(openal.music.stream[music_id]);
 
     openal.music.bits[music_id] = 0;
-    openal.music.stream_id[music_id] = -1;
+    openal.music.stream[music_id] = NULL;
     openal.music.decoder_id[music_id] = -1;
 }
 
@@ -611,7 +611,7 @@ static int32_t play_music(int32_t music_id, int loop)
      */
     for (int32_t channel_id = 0; channel_id < TQ_CHANNEL_LIMIT; channel_id++) {
         if (openal.channels.bits[channel_id] & CHANNEL_BIT_STREAMING) {
-            if (openal.channels.stream_id[channel_id] == openal.music.stream_id[music_id]) {
+            if (openal.channels.stream[channel_id] == openal.music.stream[music_id]) {
                 return -1;
             }
         }
@@ -625,7 +625,7 @@ static int32_t play_music(int32_t music_id, int loop)
 
     openal.channels.bits[channel_id] = CHANNEL_BIT_USED | CHANNEL_BIT_STREAMING;
 
-    openal.channels.stream_id[channel_id] = openal.music.stream_id[music_id];
+    openal.channels.stream[channel_id] = openal.music.stream[music_id];
     openal.channels.decoder_id[channel_id] = openal.music.decoder_id[music_id];
     openal.channels.loop[channel_id] = loop;
 

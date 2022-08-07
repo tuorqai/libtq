@@ -4,354 +4,322 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "tq_error.h"
+#include "tq_mem.h"
 #include "tq_log.h"
 #include "tq_stream.h"
 
 //------------------------------------------------------------------------------
 
-#define TQ_STREAM_NAME_LENGTH       (256)
+#define STREAM_NAME_LENGTH          (256)
 
-typedef struct tq_file_istream_data
+//------------------------------------------------------------------------------
+
+struct libtq_file_stream
 {
     FILE            *handle;
-    uint8_t         *buffer;
+    void            *buffer;
     size_t          size;
-    char            path[TQ_STREAM_NAME_LENGTH];
-} tq_file_istream_data_t;
+    char            path[STREAM_NAME_LENGTH];
+};
 
-typedef struct tq_memory_istream_data
+struct libtq_memory_stream
 {
-    uint8_t const   *buffer;
-    int64_t         size;
-    int64_t         position;
-    char            repr[TQ_STREAM_NAME_LENGTH];
-} tq_memory_istream_data_t;
+    void const      *buffer;
+    intptr_t        size;
+    intptr_t        position;
+    char            repr[STREAM_NAME_LENGTH];
+};
 
-typedef union tq_istream_data
+struct libtq_stream
 {
-    tq_file_istream_data_t      file;
-    tq_memory_istream_data_t    memory;
-} tq_istream_data_t;
+    intptr_t        (*read)(libtq_stream *stream, void *dst, intptr_t size);
+    intptr_t        (*seek)(libtq_stream *stream, intptr_t position);
+    intptr_t        (*tell)(libtq_stream *stream);
+    intptr_t        (*size)(libtq_stream *stream);
+    intptr_t        (*close)(libtq_stream *stream);
 
-typedef struct tq_istream
-{
-    int64_t     (*read)(tq_istream_data_t *data, void *dst, int64_t size);
-    int64_t     (*seek)(tq_istream_data_t *data, int64_t position);
-    int64_t     (*tell)(tq_istream_data_t *data);
-    int64_t     (*size)(tq_istream_data_t *data);
-    void const  *(*buffer)(tq_istream_data_t *data);
-    int64_t     (*close)(tq_istream_data_t *data);
-    char const  *(*repr)(tq_istream_data_t *data);
+    void const      *(*buffer)(libtq_stream *stream);
+    char const      *(*repr)(libtq_stream *stream);
 
-    tq_istream_data_t data;
-} tq_istream_t;
-
-//------------------------------------------------------------------------------
-
-static tq_istream_t    *istream_array[TQ_INPUT_STREAM_LIMIT];
-
-//------------------------------------------------------------------------------
-
-int32_t get_istream_id(void)
-{
-    for (int32_t id = 0; id < TQ_INPUT_STREAM_LIMIT; id++) {
-        if (istream_array[id] == NULL) {
-            return id;
-        }
-    }
-
-    return -1;
-}
+    union {
+        struct libtq_file_stream    file;
+        struct libtq_memory_stream  memory;
+    } info;
+};
 
 //------------------------------------------------------------------------------
 // File streams
 
-static int64_t file_istream_read(tq_istream_data_t *data, void *dst, int64_t size)
+static intptr_t file_stream_read(libtq_stream *stream, void *dst, intptr_t size)
 {
-    return (int64_t) fread(dst, 1, size, data->file.handle);
+    return (intptr_t) fread(dst, 1, size, stream->info.file.handle);
 }
 
-static int64_t file_istream_seek(tq_istream_data_t *data, int64_t position)
+static intptr_t file_stream_seek(libtq_stream *stream, intptr_t position)
 {
-    return (int64_t) fseek(data->file.handle, position, SEEK_SET);
+    return (intptr_t) fseek(stream->info.file.handle, position, SEEK_SET);
 }
 
-static int64_t file_istream_tell(tq_istream_data_t *data)
+static intptr_t file_stream_tell(libtq_stream *stream)
 {
-    return (int64_t) ftell(data->file.handle);
+    return (intptr_t) ftell(stream->info.file.handle);
 }
 
-static int64_t file_istream_size(tq_istream_data_t *data)
+static intptr_t file_stream_size(libtq_stream *stream)
 {
-    if (data->file.size == (size_t) -1) {
-        int64_t prev_position = (int64_t) ftell(data->file.handle);
+    if (stream->info.file.size == (size_t) -1) {
+        intptr_t prev_position = (intptr_t) ftell(stream->info.file.handle);
 
-        fseek(data->file.handle, 0, SEEK_END);
-        data->file.size = (int64_t) ftell(data->file.handle);
+        fseek(stream->info.file.handle, 0, SEEK_END);
+        stream->info.file.size = (intptr_t) ftell(stream->info.file.handle);
 
-        fseek(data->file.handle, prev_position, SEEK_SET);
+        fseek(stream->info.file.handle, prev_position, SEEK_SET);
     }
 
-    return data->file.size;
+    return stream->info.file.size;
 }
 
-static void const *file_istream_buffer(tq_istream_data_t *data)
+static void const *file_stream_buffer(libtq_stream *stream)
 {
-    if (data->file.buffer == NULL) {
-        size_t size = file_istream_size(data);
+    if (stream->info.file.buffer == NULL) {
+        size_t size = stream->size(stream);
 
-        uint8_t *buffer = malloc(size);
+        void *buffer = libtq_malloc(size);
 
         if (!buffer) {
-            return NULL;
+            libtq_out_of_memory();
         }
 
-        int64_t prev_position = (int64_t) ftell(data->file.handle);
+        intptr_t prev_position = (intptr_t) ftell(stream->info.file.handle);
 
-        fseek(data->file.handle, 0, SEEK_SET);
-        size_t read = fread(buffer, size, 1, data->file.handle);
+        fseek(stream->info.file.handle, 0, SEEK_SET);
+        size_t read = fread(buffer, size, 1, stream->info.file.handle);
 
         if (read == 1) {
-            data->file.buffer = buffer;
+            stream->info.file.buffer = buffer;
         } else {
-            free(buffer);
+            libtq_free(buffer);
         }
 
-        fseek(data->file.handle, prev_position, SEEK_SET);
+        fseek(stream->info.file.handle, prev_position, SEEK_SET);
     }
 
-    return data->file.buffer;
+    return stream->info.file.buffer;
 }
 
-static int64_t file_istream_close(tq_istream_data_t *data)
+static char const *file_stream_repr(libtq_stream *stream)
 {
-    fclose(data->file.handle);
-    free(data->file.buffer);
+    return stream->info.file.path;
+}
+
+static intptr_t file_stream_close(libtq_stream *stream)
+{
+    fclose(stream->info.file.handle);
+    libtq_free(stream->info.file.buffer);
 
     return 0;
-}
-
-static char const *file_istream_repr(tq_istream_data_t *data)
-{
-    return data->file.path;
 }
 
 //------------------------------------------------------------------------------
 // Memory streams
 
-static int64_t memory_istream_read(tq_istream_data_t *data, void *dst, int64_t size)
+static intptr_t memory_stream_read(libtq_stream *stream, void *dst, intptr_t size)
 {
-    if (data->memory.position > data->memory.size) {
+    struct libtq_memory_stream *memory = &stream->info.memory;
+
+    if (memory->position > memory->size) {
         return -1;
     }
 
-    int64_t bytes_left = data->memory.size - data->memory.position;
-    int64_t bytes_to_copy = (bytes_left < size) ? bytes_left : size;
+    intptr_t bytes_left = memory->size - memory->position;
+    intptr_t bytes_to_copy = (bytes_left < size) ? bytes_left : size;
 
-    memcpy(dst, data->memory.buffer + data->memory.position, bytes_to_copy);
-    data->memory.position += bytes_to_copy;
+    void const *ptr = ((uint8_t const *) memory->buffer) + memory->position;
+    memcpy(dst, ptr, bytes_to_copy);
+    memory->position += bytes_to_copy;
     return bytes_to_copy;
 }
 
-static int64_t memory_istream_seek(tq_istream_data_t *data, int64_t position)
+static intptr_t memory_stream_seek(libtq_stream *stream, intptr_t position)
 {
-    if (position >= 0 && position <= data->memory.size) {
-        data->memory.position = position;
+    struct libtq_memory_stream *memory = &stream->info.memory;
+
+    if (position >= 0 && position <= memory->size) {
+        memory->position = position;
         return 0;
     }
 
     return -1;
 }
 
-static int64_t memory_istream_tell(tq_istream_data_t *data)
+static intptr_t memory_stream_tell(libtq_stream *stream)
 {
-    return data->memory.position;
+    return stream->info.memory.position;
 }
 
-static int64_t memory_istream_size(tq_istream_data_t *data)
+static intptr_t memory_stream_size(libtq_stream *stream)
 {
-    return data->memory.size;
+    return stream->info.memory.size;
 }
 
-static void const *memory_istream_buffer(tq_istream_data_t *data)
+static void const *memory_stream_buffer(libtq_stream *stream)
 {
-    return data->memory.buffer;
+    return stream->info.memory.buffer;
 }
 
-static int64_t memory_istream_close(tq_istream_data_t *data)
+static intptr_t memory_stream_close(libtq_stream *stream)
 {
     return 0;
 }
 
-static char const *memory_istream_repr(tq_istream_data_t *data)
+static char const *memory_stream_repr(libtq_stream *stream)
 {
-    return data->memory.repr;
+    return stream->info.memory.repr;
 }
 
 //------------------------------------------------------------------------------
 
-int64_t tq_istream_read(int32_t istream_id, void *dst, size_t size)
+intptr_t libtq_stream_read(libtq_stream *stream, void *dst, size_t size)
 {
-    tq_istream_t *istream = istream_array[istream_id];
-
-    if (istream == NULL) {
-        tq_log_warning("tq_istream_read(): istream is NULL.\n");
+    if (!stream) {
+        libtq_log(LIBTQ_LOG_WARNING, "libtq_stream_read(): stream is NULL.\n");
         return -1;
     }
 
-    return istream->read(&istream->data, dst, size);
+    return stream->read(stream, dst, size);
 }
 
-int64_t tq_istream_seek(int32_t istream_id, int64_t position)
+intptr_t libtq_stream_seek(libtq_stream *stream, intptr_t position)
 {
-    tq_istream_t *istream = istream_array[istream_id];
-
-    if (istream == NULL) {
-        tq_log_warning("tq_istream_seek(): istream is NULL.\n");
+    if (!stream) {
+        libtq_log(LIBTQ_LOG_WARNING, "libtq_stream_seek(): stream is NULL.\n");
         return -1;
     }
 
-    return istream->seek(&istream->data, position);
+    return stream->seek(stream, position);
 }
 
-int64_t tq_istream_tell(int32_t istream_id)
+intptr_t libtq_stream_tell(libtq_stream *stream)
 {
-    tq_istream_t *istream = istream_array[istream_id];
-
-    if (istream == NULL) {
-        tq_log_warning("tq_istream_tell(): istream is NULL.\n");
+    if (!stream) {
+        libtq_log(LIBTQ_LOG_WARNING, "libtq_stream_tell(): stream is NULL.\n");
         return -1;
     }
 
-    return istream->tell(&istream->data);
+    return stream->tell(stream);
 }
 
-int64_t tq_istream_size(int32_t istream_id)
+intptr_t libtq_stream_size(libtq_stream *stream)
 {
-    tq_istream_t *istream = istream_array[istream_id];
-
-    if (istream == NULL) {
-        tq_log_warning("tq_istream_size(): istream is NULL.\n");
+    if (!stream) {
+        libtq_log(LIBTQ_LOG_WARNING, "libtq_stream_size(): stream is NULL.\n");
         return -1;
     }
 
-    return istream->size(&istream->data);
+    return stream->size(stream);
 }
 
-void const *tq_istream_buffer(int32_t istream_id)
+intptr_t libtq_stream_close(libtq_stream *stream)
 {
-    tq_istream_t *istream = istream_array[istream_id];
-
-    if (istream == NULL) {
-        tq_log_warning("tq_istream_buffer(): istream is NULL.\n");
-        return NULL;
-    }
-
-    return istream->buffer(&istream->data);
-}
-
-int64_t tq_istream_close(int32_t istream_id)
-{
-    tq_istream_t *istream = istream_array[istream_id];
-
-    if (istream == NULL) {
-        tq_log_warning("tq_istream_close(): istream is NULL.\n");
+    if (!stream) {
+        libtq_log(LIBTQ_LOG_WARNING, "libtq_stream_close(): stream is NULL.\n");
         return -1;
     }
 
-    tq_log_debug("Closing i-stream: %s...\n", istream->repr(&istream->data));
-
-    int64_t status = istream->close(&istream->data);
-
-    free(istream);
-    istream_array[istream_id] = NULL;
-
+    libtq_log(0, "Closing stream \"%s\"...\n", stream->repr(stream));
+    intptr_t status = stream->close(stream);
+    libtq_free(stream);
     return status;
 }
 
-char const *tq_istream_repr(int32_t istream_id)
+void const *libtq_stream_buffer(libtq_stream *stream)
 {
-    tq_istream_t *istream = istream_array[istream_id];
-
-    if (istream == NULL) {
+    if (!stream) {
+        libtq_log(LIBTQ_LOG_WARNING, "libtq_stream_buffer(): stream is NULL.\n");
         return NULL;
     }
 
-    return istream->repr(&istream->data);
+    return stream->buffer(stream);
+}
+
+char const *libtq_stream_repr(libtq_stream *stream)
+{
+    if (!stream) {
+        libtq_log(LIBTQ_LOG_WARNING, "libtq_stream_repr(): stream is NULL.\n");
+        return NULL;
+    }
+
+    return stream->repr(stream);
 }
 
 //------------------------------------------------------------------------------
 
-int32_t tq_open_file_istream(char const *path)
+libtq_stream *libtq_open_file_stream(char const *path)
 {
-    int32_t id = get_istream_id();
-
-    if (id == -1) {
-        return -1;
-    }
-
     FILE *handle = fopen(path, "rb");
 
     if (handle == NULL) {
-        return -1;
+        libtq_log(LIBTQ_LOG_WARNING, "libtq_open_file_stream(): file %s not found.\n", path);
+        return NULL;
     }
 
-    tq_istream_t *istream = malloc(sizeof(tq_istream_t));
+    libtq_stream *stream = libtq_calloc(1, sizeof(struct libtq_stream));
 
-    if (istream == NULL) {
-        return -1;
+    if (!stream) {
+        libtq_out_of_memory();
     }
 
-    istream->read = file_istream_read;
-    istream->seek = file_istream_seek;
-    istream->tell = file_istream_tell;
-    istream->size = file_istream_size;
-    istream->buffer = file_istream_buffer;
-    istream->close = file_istream_close;
-    istream->repr = file_istream_repr;
+    *stream = (libtq_stream) {
+        .read = file_stream_read,
+        .seek = file_stream_seek,
+        .tell = file_stream_tell,
+        .size = file_stream_size,
+        .buffer = file_stream_buffer,
+        .close = file_stream_close,
+        .repr = file_stream_repr,
 
-    istream->data.file.handle = handle;
-    istream->data.file.buffer = NULL;
-    istream->data.file.size = (size_t) -1;
-    strncpy(istream->data.file.path, path, TQ_STREAM_NAME_LENGTH);
+        .info.file = {
+            .handle = handle,
+            .buffer = NULL,
+            .size = (size_t) -1,
+        },
+    };
 
-    tq_log_debug("Opened file i-stream: %s\n", istream->repr(&istream->data));
+    strncpy(stream->info.file.path, path, STREAM_NAME_LENGTH);
 
-    istream_array[id] = istream;
-    return id;
+    libtq_log(0, "Opened file stream: %s\n", stream->repr(stream));
+    return stream;
 }
 
-int32_t tq_open_memory_istream(void const *buffer, size_t size)
+libtq_stream *libtq_open_memory_stream(void const *buffer, size_t size)
 {
-    int32_t id = get_istream_id();
+    libtq_stream *stream = libtq_calloc(1, sizeof(struct libtq_stream));
 
-    if (id == -1) {
-        return -1;
+    if (!stream) {
+        libtq_out_of_memory();
     }
 
-    tq_istream_t *istream = malloc(sizeof(tq_istream_t));
+    *stream = (libtq_stream) {
+        .read = memory_stream_read,
+        .seek = memory_stream_seek,
+        .tell = memory_stream_tell,
+        .size = memory_stream_size,
+        .buffer = memory_stream_buffer,
+        .close = memory_stream_close,
+        .repr = memory_stream_repr,
 
-    if (istream == NULL) {
-        return -1;
-    }
+        .info.memory = {
+            .buffer = buffer,
+            .size = size,
+            .position = 0,
+        },
+    };
 
-    istream->read = memory_istream_read;
-    istream->seek = memory_istream_seek;
-    istream->tell = memory_istream_tell;
-    istream->size = memory_istream_size;
-    istream->buffer = memory_istream_buffer;
-    istream->close = memory_istream_close;
-    istream->repr = memory_istream_repr;
+    snprintf("%p", STREAM_NAME_LENGTH, stream->info.memory.repr, buffer);
 
-    istream->data.memory.buffer = (unsigned char *) buffer;
-    istream->data.memory.size = size;
-    istream->data.memory.position = 0;
-    snprintf("%p", TQ_STREAM_NAME_LENGTH, istream->data.memory.repr, (void *) buffer);
-
-    tq_log_debug("Opened memory i-stream: %s\n", istream->repr(&istream->data));
-
-    istream_array[id] = istream;
-    return id;
+    libtq_log(0, "Opened memory stream: %s\n", stream->repr(stream));
+    return stream;
 }
 
 //------------------------------------------------------------------------------

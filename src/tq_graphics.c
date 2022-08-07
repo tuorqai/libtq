@@ -527,10 +527,10 @@ void graphics_set_fill_color(tq_color fill_color)
 
 //------------------------------------------------------------------------------
 
-int graphics_load_texture(int stream_id)
+int graphics_load_texture(libtq_stream *stream)
 {
-    struct image image = image_load(stream_id);
-    input_stream_close(stream_id);
+    struct image image = image_load(stream);
+    libtq_stream_close(stream);
 
     if (!image.pixels) {
         return -1;
@@ -551,12 +551,12 @@ int graphics_load_texture(int stream_id)
 
 int graphics_load_texture_from_file(char const *path)
 {
-    return graphics_load_texture(open_file_input_stream(path));
+    return graphics_load_texture(libtq_open_file_stream(path));
 }
 
 int graphics_load_texture_from_memory(void const *buffer, size_t size)
 {
-    return graphics_load_texture(open_memory_input_stream(buffer, size));
+    return graphics_load_texture(libtq_open_memory_stream(buffer, size));
 }
 
 void graphics_delete_texture(int texture_id)

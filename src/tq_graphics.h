@@ -98,7 +98,7 @@ void graphics_set_outline_color(tq_color outline_color);
 tq_color graphics_get_fill_color(void);
 void graphics_set_fill_color(tq_color fill_color);
 
-int graphics_load_texture(int stream_id);
+int graphics_load_texture(libtq_stream *stream);
 int graphics_load_texture_from_file(char const *path);
 int graphics_load_texture_from_memory(void const *buffer, size_t length);
 void graphics_delete_texture(int texture_id);

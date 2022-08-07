@@ -20,7 +20,7 @@ static void process(void)
     return;
 }
 
-static int load_sound(int stream_id)
+static int load_sound(libtq_stream *stream)
 {
     return 0;
 }
@@ -35,7 +35,7 @@ static int play_sound(int sound_id, int loop)
     return 0;
 }
 
-static int open_music(int stream_id)
+static int open_music(libtq_stream *stream)
 {
     return 0;
 }

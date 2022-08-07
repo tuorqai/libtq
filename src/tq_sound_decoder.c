@@ -34,7 +34,7 @@ typedef struct tq_sound_decoders
 {
     uint8_t     usage[TQ_SOUND_DECODER_LIMIT / 8];
 
-    int32_t     stream_id[TQ_SOUND_DECODER_LIMIT];
+    libtq_stream *stream[TQ_SOUND_DECODER_LIMIT];
     uint16_t    num_channels[TQ_SOUND_DECODER_LIMIT];
     uint32_t    num_samples[TQ_SOUND_DECODER_LIMIT];
     uint32_t    sample_rate[TQ_SOUND_DECODER_LIMIT];
@@ -69,7 +69,7 @@ static void unmark_id(int32_t id)
 
 static int32_t get_sound_decoder_id(void)
 {
-    for (int32_t id = 0; id < TQ_INPUT_STREAM_LIMIT; id++) {
+    for (int32_t id = 0; id < TQ_SOUND_DECODER_LIMIT; id++) {
         uint8_t u = id / 8;
         uint8_t v = (1 << (id % 8));
 
@@ -89,8 +89,8 @@ static int32_t get_sound_decoder_id(void)
  */
 static int open_wav(int32_t decoder_id)
 {
-    int32_t stream_id = decoders.stream_id[decoder_id];
-    tq_istream_seek(stream_id, 0);
+    libtq_stream *stream = decoders.stream[decoder_id];
+    libtq_stream_seek(stream, 0);
 
     struct {
         char id[4];
@@ -98,7 +98,7 @@ static int open_wav(int32_t decoder_id)
         char format[4];
     } chunk;
 
-    if (tq_istream_read(stream_id, &chunk, sizeof(chunk)) < (int64_t) sizeof(chunk)) {
+    if (libtq_stream_read(stream, &chunk, sizeof(chunk)) < (int64_t) sizeof(chunk)) {
         return -1;
     }
 
@@ -114,11 +114,11 @@ static int open_wav(int32_t decoder_id)
             uint32_t size;
         } subchunk;
 
-        if (tq_istream_read(stream_id, &subchunk, sizeof(subchunk)) < (int64_t) sizeof(subchunk)) {
+        if (libtq_stream_read(stream, &subchunk, sizeof(subchunk)) < (int64_t) sizeof(subchunk)) {
             return -1;
         }
 
-        int64_t subchunk_start = tq_istream_tell(stream_id);
+        int64_t subchunk_start = libtq_stream_tell(stream);
 
         /**
          * 'fmt ' subchunk
@@ -134,7 +134,7 @@ static int open_wav(int32_t decoder_id)
                 uint16_t bits_per_sample;
             } fmt;
 
-            if (tq_istream_read(stream_id, &fmt, sizeof(fmt)) < (int64_t) sizeof(fmt)) {
+            if (libtq_stream_read(stream, &fmt, sizeof(fmt)) < (int64_t) sizeof(fmt)) {
                 return -1;
             }
 
@@ -150,7 +150,7 @@ static int open_wav(int32_t decoder_id)
         if (strncmp("data", subchunk.id, 4) == 0) {
             decoders.num_samples[decoder_id] = subchunk.size / decoders.info[decoder_id].wav.bytes_per_sample;
 
-            decoders.info[decoder_id].wav.data_start = tq_istream_tell(stream_id);
+            decoders.info[decoder_id].wav.data_start = libtq_stream_tell(stream);
             decoders.info[decoder_id].wav.data_end = decoders.info[decoder_id].wav.data_start + subchunk.size;
 
             data_found = true;
@@ -160,12 +160,12 @@ static int open_wav(int32_t decoder_id)
          * Force skip to next subchunk
          */
 
-        if (tq_istream_seek(stream_id, subchunk_start + subchunk.size) == -1) {
+        if (libtq_stream_seek(stream, subchunk_start + subchunk.size) == -1) {
             return -1;
         }
     }
 
-    tq_istream_seek(stream_id, decoders.info[decoder_id].wav.data_start);
+    libtq_stream_seek(stream, decoders.info[decoder_id].wav.data_start);
 
     return 0;
 }
@@ -182,11 +182,11 @@ static void close_wav(int32_t decoder_id)
  */
 static void seek_wav(int32_t decoder_id, uint64_t sample_offset)
 {
-    int32_t stream_id = decoders.stream_id[decoder_id];
+    libtq_stream *stream = decoders.stream[decoder_id];
     int64_t data_start = decoders.info[decoder_id].wav.data_start;
     int64_t bytes_per_sample = decoders.info[decoder_id].wav.bytes_per_sample;
 
-    tq_istream_seek(stream_id, data_start + (sample_offset * bytes_per_sample));
+    libtq_stream_seek(stream, data_start + (sample_offset * bytes_per_sample));
 }
 
 /**
@@ -194,13 +194,13 @@ static void seek_wav(int32_t decoder_id, uint64_t sample_offset)
  */
 static uint64_t read_wav(int32_t decoder_id, int16_t *samples, uint64_t max_samples)
 {
-    int32_t stream_id = decoders.stream_id[decoder_id];
+    libtq_stream *stream = decoders.stream[decoder_id];
     uint16_t bytes_per_sample = decoders.info[decoder_id].wav.bytes_per_sample;
 
     uint64_t samples_read = 0;
 
     while (samples_read < max_samples) {
-        int64_t position = tq_istream_tell(stream_id);
+        int64_t position = libtq_stream_tell(stream);
 
         if (position >= decoders.info[decoder_id].wav.data_end) {
             break;
@@ -208,7 +208,7 @@ static uint64_t read_wav(int32_t decoder_id, int16_t *samples, uint64_t max_samp
 
         uint8_t bytes[4];
 
-        if (tq_istream_read(stream_id, bytes, bytes_per_sample) != bytes_per_sample) {
+        if (libtq_stream_read(stream, bytes, bytes_per_sample) != bytes_per_sample) {
             break;
         }
 
@@ -270,9 +270,9 @@ static char const *ogg_err(int status)
  */
 static size_t vorbis_read_func(void *ptr, size_t size, size_t nmemb, void *datasource)
 {
-    int32_t stream_id = *(int32_t *) datasource;
+    libtq_stream *stream = (libtq_stream *) datasource;
 
-    return tq_istream_read(stream_id, ptr, size * nmemb);
+    return libtq_stream_read(stream, ptr, size * nmemb);
 }
 
 /**
@@ -280,10 +280,10 @@ static size_t vorbis_read_func(void *ptr, size_t size, size_t nmemb, void *datas
  */
 static int vorbis_seek_func(void *datasource, ogg_int64_t offset, int whence)
 {
-    int32_t stream_id = *(int32_t *) datasource;
+    libtq_stream *stream = (libtq_stream *) datasource;
 
-    int64_t position = tq_istream_tell(stream_id);
-    int64_t size = tq_istream_size(stream_id);
+    int64_t position = libtq_stream_tell(stream);
+    int64_t size = libtq_stream_size(stream);
 
     int64_t next_position = -1;
 
@@ -299,7 +299,7 @@ static int vorbis_seek_func(void *datasource, ogg_int64_t offset, int whence)
         break;
     }
 
-    return tq_istream_seek(stream_id, next_position);
+    return libtq_stream_seek(stream, next_position);
 }
 
 /**
@@ -307,9 +307,9 @@ static int vorbis_seek_func(void *datasource, ogg_int64_t offset, int whence)
  */
 static long vorbis_tell_func(void *datasource)
 {
-    int32_t stream_id = *(int32_t *) datasource;
+    libtq_stream *stream = (libtq_stream *) datasource;
 
-    return tq_istream_tell(stream_id);
+    return libtq_stream_tell(stream);
 }
 
 /**
@@ -317,10 +317,10 @@ static long vorbis_tell_func(void *datasource)
  */
 static int open_ogg(int32_t decoder_id)
 {
-    tq_istream_seek(decoders.stream_id[decoder_id], 0);
+    libtq_stream_seek(decoders.stream[decoder_id], 0);
 
     int test = ov_test_callbacks(
-        &decoders.stream_id[decoder_id],
+        decoders.stream[decoder_id],
         &decoders.info[decoder_id].vorbis,
         NULL, 0,
         (ov_callbacks) {
@@ -401,7 +401,7 @@ static uint64_t read_ogg(int32_t decoder_id, int16_t *samples, uint64_t max_samp
 
 //------------------------------------------------------------------------------
 
-int32_t tq_sound_decoder_open(int32_t stream_id)
+int32_t tq_sound_decoder_open(libtq_stream *stream)
 {
     int32_t decoder_id = get_sound_decoder_id();
 
@@ -409,7 +409,7 @@ int32_t tq_sound_decoder_open(int32_t stream_id)
         return -1;
     }
 
-    decoders.stream_id[decoder_id] = stream_id;
+    decoders.stream[decoder_id] = stream;
     decoders.num_channels[decoder_id] = 0;
     decoders.num_samples[decoder_id] = 0;
     decoders.sample_rate[decoder_id] = 0;

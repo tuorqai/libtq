@@ -15,7 +15,7 @@
 void text_initialize(struct renderer_impl const *renderer);
 void text_terminate(void);
 
-int text_load_font(int stream_id, float pt, int weight);
+int text_load_font(libtq_stream *stream, float pt, int weight);
 int text_load_font_from_file(char const *path, float pt, int weight);
 int text_load_font_from_memory(void const *buffer, size_t size, float pt, int weight);
 

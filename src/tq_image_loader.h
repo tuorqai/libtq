@@ -35,7 +35,7 @@ struct image image_create(unsigned int width, unsigned int height, unsigned int 
 /**
  * Load image from an input stream.
  */
-struct image image_load(int stream_id);
+struct image image_load(libtq_stream *stream);
 
 //------------------------------------------------------------------------------
 

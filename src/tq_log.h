@@ -25,8 +25,8 @@
 
 enum
 {
-    LIBTQ_LOG_DEBUG,
-    LIBTQ_LOG_INFO,
+    LIBTQ_LOG_DEBUG = -1,
+    LIBTQ_LOG_INFO = 0,
     LIBTQ_LOG_WARNING,
     LIBTQ_LOG_ERROR,
 };

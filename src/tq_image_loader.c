@@ -19,22 +19,22 @@
 
 static int stream_read(void *user, char *data, int size)
 {
-    int stream_id = *(int *) user;
-    return (int) tq_istream_read(stream_id, data, size);
+    libtq_stream *stream = (libtq_stream *) user;
+    return (int) libtq_stream_read(stream, data, size);
 }
 
 static void stream_skip(void *user, int n)
 {
-    int stream_id = *(int *) user;
-    int64_t position = tq_istream_tell(stream_id);
-    tq_istream_seek(stream_id, position + n);
+    libtq_stream *stream = (libtq_stream *) user;
+    intptr_t position = libtq_stream_tell(stream);
+    libtq_stream_seek(stream, position + n);
 }
 
 static int stream_eof(void *user)
 {
-    int stream_id = *(int *) user;
-    int64_t position = tq_istream_tell(stream_id);
-    int64_t size = tq_istream_size(stream_id);
+    libtq_stream *stream = (libtq_stream *) user;
+    intptr_t position = libtq_stream_tell(stream);
+    intptr_t size = libtq_stream_size(stream);
 
     return (position == size);
 }
@@ -51,15 +51,16 @@ struct image image_create(unsigned int width, unsigned int height, unsigned int 
     };
 }
 
-struct image image_load(int stream_id)
+struct image image_load(libtq_stream *stream)
 {
     struct image image = { 0 };
 
-    void const *buffer = input_stream_buffer(stream_id);
-    size_t size = input_stream_size(stream_id);
+    void const *buffer = libtq_stream_buffer(stream);
+    size_t size = libtq_stream_size(stream);
 
     if (buffer == NULL || size == 0) {
-        log_error("Can't load image from empty stream: %s\n", tq_istream_repr(stream_id));
+        libtq_log(LIBTQ_LOG_ERROR, "Can't load image from empty stream: %s\n",
+            libtq_stream_repr(stream));
         return image;
     }
 
@@ -69,7 +70,7 @@ struct image image_load(int stream_id)
             .skip = stream_skip,
             .eof = stream_eof,
         },
-        &stream_id,
+        stream,
         &image.width,
         &image.height,
         &image.channels,
@@ -77,7 +78,7 @@ struct image image_load(int stream_id)
     );
 
     if (image.pixels == NULL) {
-        log_error("stbi image loader error: %s\n", stbi_failure_reason());
+        libtq_log(LIBTQ_LOG_ERROR, "stbi image loader error: %s\n", stbi_failure_reason());
         return image;
     }
 
