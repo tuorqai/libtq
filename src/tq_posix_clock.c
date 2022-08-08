@@ -61,12 +61,14 @@ static double get_time_highp(void)
 
 //------------------------------------------------------------------------------
 
-void construct_posix_clock(struct tq_clock *clock)
+void libtq_construct_posix_clock(struct libtq_clock_impl *clock)
 {
-    clock->initialize           = initialize;
-    clock->terminate            = terminate;
-    clock->get_time_mediump     = get_time_mediump;
-    clock->get_time_highp       = get_time_highp;
+    *clock = (struct libtq_clock_impl) {
+        .initialize             = initialize,
+        .terminate              = terminate,
+        .get_time_mediump       = get_time_mediump,
+        .get_time_highp         = get_time_highp,
+    };
 }
 
 //------------------------------------------------------------------------------

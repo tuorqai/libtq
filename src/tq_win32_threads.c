@@ -10,7 +10,6 @@
 
 #include "tq_core.h"
 #include "tq_log.h"
-#include "tq_mem.h"
 
 //------------------------------------------------------------------------------
 
@@ -96,7 +95,7 @@ static void sleep(double seconds)
 /**
  * Create new thread and return it's opaque handle.
  */
-static tq_thread_t create_thread(char const *name, int (*func)(void *), void *data)
+static libtq_thread create_thread(char const *name, int (*func)(void *), void *data)
 {
     struct ThreadInfo *info = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct ThreadInfo));
 
@@ -115,10 +114,10 @@ static tq_thread_t create_thread(char const *name, int (*func)(void *), void *da
         return NULL;
     }
 
-    return (tq_thread_t) info;
+    return (libtq_thread) info;
 }
 
-static void detach_thread(tq_thread_t thread)
+static void detach_thread(libtq_thread thread)
 {
     struct ThreadInfo *info = (struct ThreadInfo *) thread;
 
@@ -130,7 +129,7 @@ static void detach_thread(tq_thread_t thread)
     DeleteCriticalSection(&info->cs);
 }
 
-static int wait_thread(tq_thread_t thread)
+static int wait_thread(libtq_thread thread)
 {
     struct ThreadInfo *info = (struct ThreadInfo *) thread;
 
@@ -157,46 +156,46 @@ static int wait_thread(tq_thread_t thread)
 //------------------------------------------------------------------------------
 // Mutexes
 
-static tq_mutex_t create_mutex(void)
+static libtq_mutex create_mutex(void)
 {
     LPCRITICAL_SECTION mutex = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(CRITICAL_SECTION));
     InitializeCriticalSection(mutex);
 
-    return (tq_mutex_t) mutex;
+    return (libtq_mutex) mutex;
 }
 
-static void destroy_mutex(tq_mutex_t mutex)
+static void destroy_mutex(libtq_mutex mutex)
 {
     DeleteCriticalSection((LPCRITICAL_SECTION) mutex);
-    tq_mem_free(mutex);
+    HeapFree(GetProcessHeap(), 0, mutex);
 }
 
-static void lock_mutex(tq_mutex_t mutex)
+static void lock_mutex(libtq_mutex mutex)
 {
     EnterCriticalSection((LPCRITICAL_SECTION) mutex);
 }
 
-static void unlock_mutex(tq_mutex_t mutex)
+static void unlock_mutex(libtq_mutex mutex)
 {
     LeaveCriticalSection((LPCRITICAL_SECTION) mutex);
 }
 
 //------------------------------------------------------------------------------
 
-void tq_construct_win32_threads(tq_threads_impl_t *impl)
+void libtq_construct_win32_threads(struct libtq_threads_impl *threads)
 {
-    impl->initialize        = initialize;
-    impl->terminate         = terminate;
-    impl->sleep             = sleep;
-
-    impl->create_thread     = create_thread;
-    impl->detach_thread     = detach_thread;
-    impl->wait_thread       = wait_thread;
-
-    impl->create_mutex      = create_mutex;
-    impl->destroy_mutex     = destroy_mutex;
-    impl->lock_mutex        = lock_mutex;
-    impl->unlock_mutex      = unlock_mutex;
+    *threads = (struct libtq_threads_impl) {
+        .initialize             = initialize,
+        .terminate              = terminate,
+        .sleep                  = sleep,
+        .create_thread          = create_thread,
+        .detach_thread          = detach_thread,
+        .wait_thread            = wait_thread,
+        .create_mutex           = create_mutex,
+        .destroy_mutex          = destroy_mutex,
+        .lock_mutex             = lock_mutex,
+        .unlock_mutex           = unlock_mutex,
+    };
 }
 
 //------------------------------------------------------------------------------

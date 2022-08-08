@@ -38,14 +38,15 @@ add_library(tq
     "src/tq_image_loader.c"
     "src/tq_log.c"
     "src/tq_math.c"
+    "src/tq_meta.c"
     "src/tq_null_audio.c"
     "src/tq_posix_clock.c"
     "src/tq_posix_threads.c"
-    "src/tq_sdl_clock.c"
     "src/tq_sdl_display.c"
     "src/tq_sound_decoder.c"
     "src/tq_stream.c"
     "src/tq_text.c"
+    "src/tq_win32_clock.c"
     "src/tq_win32_threads.c")
 
 target_include_directories(tq PUBLIC "include")

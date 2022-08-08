@@ -96,7 +96,7 @@ struct openal_channels
 {
     uint8_t     bits[TQ_CHANNEL_LIMIT];
     ALuint      source[TQ_CHANNEL_LIMIT];
-    tq_thread_t thread[TQ_CHANNEL_LIMIT];
+    libtq_thread thread[TQ_CHANNEL_LIMIT];
 
     libtq_stream *stream[TQ_CHANNEL_LIMIT];
     int32_t     decoder_id[TQ_MUSIC_LIMIT];
@@ -108,7 +108,7 @@ struct openal
     ALCdevice *device;
     ALCcontext *context;
 
-    tq_mutex_t mutex;
+    libtq_mutex mutex;
     struct openal_sounds sounds;
     struct openal_music music;
     struct openal_channels channels;

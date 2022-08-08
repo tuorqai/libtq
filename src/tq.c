@@ -11,30 +11,24 @@
 #include "tq_core.h"
 #include "tq_graphics.h"
 #include "tq_mem.h"
+#include "tq_meta.h"
 #include "tq_text.h"
 
 //------------------------------------------------------------------------------
 
 void tq_initialize(void)
 {
-    tq_core_initialize();
-    tq_graphics_initialize();
-    tq_audio_initialize();
+    libtq_initialize();
 }
 
 void tq_terminate(void)
 {
-    tq_audio_terminate();
-    tq_graphics_terminate();
-    tq_core_terminate();
+    libtq_terminate();
 }
 
 bool tq_process(void)
 {
-    tq_graphics_process();
-    tq_audio_process();
-
-    return tq_core_process();
+    return libtq_process();
 }
 
 //------------------------------------------------------------------------------

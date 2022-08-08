@@ -13,9 +13,9 @@
 
 typedef struct tq_core
 {
-    tq_clock_t          clock;
-    tq_threads_impl_t   threads;
-    tq_display_t        display;
+    struct libtq_clock_impl     clock;
+    struct libtq_threads_impl   threads;
+    struct libtq_display_impl   display;
 
     int                 display_width;
     int                 display_height;
@@ -75,7 +75,7 @@ static bool get_key_state(tq_key key)
 
 //------------------------------------------------------------------------------
 
-void tq_core_initialize(void)
+void libtq_initialize_core(void)
 {
     /**
      * Construct clock, thread and display implementations.
@@ -83,18 +83,18 @@ void tq_core_initialize(void)
 
     #if defined(TQ_PLATFORM_DESKTOP)
         #if defined(_WIN32)
-            tq_construct_sdl_clock(&core.clock);
-            tq_construct_win32_threads(&core.threads);
+            libtq_construct_win32_clock(&core.clock);
+            libtq_construct_win32_threads(&core.threads);
         #elif defined(unix)
-            construct_posix_clock(&core.clock);
-            tq_construct_posix_threads(&core.threads);
+            libtq_construct_posix_clock(&core.clock);
+            libtq_construct_posix_threads(&core.threads);
         #endif
 
-        tq_construct_sdl_display(&core.display);
+        libtq_construct_sdl_display(&core.display);
     #elif defined(TQ_PLATFORM_ANDROID)
-        construct_posix_clock(&core.clock);
-        construct_android_display(&core.display);
-        tq_construct_posix_threads(&core.threads);
+        libtq_construct_posix_clock(&core.clock);
+        libtq_construct_posix_threads(&core.threads);
+        libtq_construct_android_display(&core.display);
     #endif
 
     /**
@@ -128,7 +128,7 @@ void tq_core_initialize(void)
     core.framerate_time = core.current_time + 1.0;
 }
 
-void tq_core_terminate(void)
+void libtq_terminate_core(void)
 {
     core.display.terminate();
     core.threads.terminate();
@@ -137,7 +137,7 @@ void tq_core_terminate(void)
     memset(&core, 0, sizeof(tq_core_t));
 }
 
-bool tq_core_process(void)
+bool libtq_process_core(void)
 {
     core.display.present();
 
@@ -360,37 +360,37 @@ void tq_core_sleep(double seconds)
     core.threads.sleep(seconds);
 }
 
-tq_thread_t tq_core_create_thread(char const *name, int (*func)(void *), void *data)
+libtq_thread tq_core_create_thread(char const *name, int (*func)(void *), void *data)
 {
     return core.threads.create_thread(name, func, data);
 }
 
-void tq_core_detach_thread(tq_thread_t thread)
+void tq_core_detach_thread(libtq_thread thread)
 {
     core.threads.detach_thread(thread);
 }
 
-int tq_core_wait_thread(tq_thread_t thread)
+int tq_core_wait_thread(libtq_thread thread)
 {
     return core.threads.wait_thread(thread);
 }
 
-tq_mutex_t tq_core_create_mutex(void)
+libtq_mutex tq_core_create_mutex(void)
 {
     return core.threads.create_mutex();
 }
 
-void tq_core_destroy_mutex(tq_mutex_t mutex)
+void tq_core_destroy_mutex(libtq_mutex mutex)
 {
     core.threads.destroy_mutex(mutex);
 }
 
-void tq_core_lock_mutex(tq_mutex_t mutex)
+void tq_core_lock_mutex(libtq_mutex mutex)
 {
     core.threads.lock_mutex(mutex);
 }
 
-void tq_core_unlock_mutex(tq_mutex_t mutex)
+void tq_core_unlock_mutex(libtq_mutex mutex)
 {
     core.threads.unlock_mutex(mutex);
 }

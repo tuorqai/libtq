@@ -15,7 +15,6 @@
 #include "tq_core.h"
 #include "tq_error.h"
 #include "tq_log.h"
-#include "tq_mem.h"
 
 //------------------------------------------------------------------------------
 
@@ -34,7 +33,7 @@ static void *thread_main(void *arg)
     struct thread_info *info = (struct thread_info *) arg;
     int retval = info->func(info->data);
 
-    tq_mem_free(info);
+    free(info);
 
     return (void *) ((intptr_t) retval);
 }
@@ -61,10 +60,14 @@ static void sleep(double seconds)
     while ((nanosleep(&ts, &ts) == -1) && (errno == EINTR)) {}
 }
 
-static tq_thread_t create_thread(char const *name, int (*func)(void *), void *data)
+static libtq_thread create_thread(char const *name, int (*func)(void *), void *data)
 {
-    struct thread_info *info = tq_mem_alloc(sizeof(struct thread_info));
+    struct thread_info *info = malloc(sizeof(struct thread_info));
     
+    if (!info) {
+        libtq_out_of_memory();
+    }
+
     info->name = name;
     info->func = func;
     info->data = data;
@@ -72,8 +75,8 @@ static tq_thread_t create_thread(char const *name, int (*func)(void *), void *da
     int status = pthread_create(&info->thread, NULL, thread_main, info);
 
     if (status != 0) {
-        tq_log_error("Error occured while attempting to create thread.\n");
-        tq_mem_free(info);
+        libtq_log(LIBTQ_LOG_ERROR, "Error occured while attempting to create thread.\n");
+        free(info);
 
         return NULL;
     }
@@ -82,20 +85,20 @@ static tq_thread_t create_thread(char const *name, int (*func)(void *), void *da
         pthread_setname_np(info->thread, name);
     #endif
 
-    return (tq_thread_t) info;
+    return (libtq_thread) info;
 }
 
-static void detach_thread(tq_thread_t thread)
+static void detach_thread(libtq_thread thread)
 {
     struct thread_info *info = (struct thread_info *) thread;
     int status = pthread_detach(info->thread);
 
     if (status != 0) {
-        tq_log_error("Failed to detach thread \"%s\".\n", info->name);
+        libtq_log(LIBTQ_LOG_ERROR, "Failed to detach thread \"%s\".\n", info->name);
     }
 }
 
-static int wait_thread(tq_thread_t thread)
+static int wait_thread(libtq_thread thread)
 {
     struct thread_info *info = (struct thread_info *) thread;
 
@@ -103,61 +106,66 @@ static int wait_thread(tq_thread_t thread)
     int status = pthread_join(info->thread, &retval);
 
     if (status != 0) {
-        tq_log_error("Failed to join thread \"%s\".\n", info->name);
+        libtq_log(LIBTQ_LOG_ERROR, "Failed to join thread \"%s\".\n", info->name);
     }
 
     return (int) ((intptr_t) retval);
 }
 
-static tq_mutex_t create_mutex(void)
+static libtq_mutex create_mutex(void)
 {
-    pthread_mutex_t *mutex = tq_mem_alloc(sizeof(pthread_mutex_t));
+    pthread_mutex_t *mutex = malloc(sizeof(pthread_mutex_t));
+
+    if (!mutex) {
+        libtq_out_of_memory();
+    }
+
     int status = pthread_mutex_init(mutex, NULL);
 
     if (status != 0) {
-        tq_error("Failed to create mutex, error code: %d", status);
+        libtq_error("Failed to create mutex, error code: %d", status);
     }
 
-    return (tq_mutex_t) mutex;
+    return (libtq_mutex) mutex;
 }
 
-static void destroy_mutex(tq_mutex_t mutex)
+static void destroy_mutex(libtq_mutex mutex)
 {
     int status = pthread_mutex_destroy((pthread_mutex_t *) mutex);
 
     if (status != 0) {
-        tq_log_error("Failed to destroy mutex, error code: %d", status);
+        libtq_log(LIBTQ_LOG_ERROR, "Failed to destroy mutex, error code: %d", status);
     }
 
-    tq_mem_free(mutex);
+    free(mutex);
 }
 
-static void lock_mutex(tq_mutex_t mutex)
+static void lock_mutex(libtq_mutex mutex)
 {
     pthread_mutex_lock((pthread_mutex_t *) mutex);
 }
 
-static void unlock_mutex(tq_mutex_t mutex)
+static void unlock_mutex(libtq_mutex mutex)
 {
     pthread_mutex_unlock((pthread_mutex_t *) mutex);
 }
 
 //------------------------------------------------------------------------------
 
-void tq_construct_posix_threads(tq_threads_impl_t *impl)
+void libtq_construct_threads(struct libtq_threads_impl *threads)
 {
-    impl->initialize        = initialize;
-    impl->terminate         = terminate;
-    impl->sleep             = sleep;
-
-    impl->create_thread     = create_thread;
-    impl->detach_thread     = detach_thread;
-    impl->wait_thread       = wait_thread;
-
-    impl->create_mutex      = create_mutex;
-    impl->destroy_mutex     = destroy_mutex;
-    impl->lock_mutex        = lock_mutex;
-    impl->unlock_mutex      = unlock_mutex;
+    *threads = (struct libtq_threads_impl) {
+        .initialize             = initialize,
+        .terminate              = terminate,
+        .sleep                  = sleep,
+        .create_thread          = create_thread,
+        .detach_thread          = detach_thread,
+        .wait_thread            = wait_thread,
+        .create_mutex           = create_mutex,
+        .destroy_mutex          = destroy_mutex,
+        .lock_mutex             = lock_mutex,
+        .unlock_mutex           = unlock_mutex,
+    };
 }
 
 //------------------------------------------------------------------------------

@@ -56,7 +56,7 @@ static void show_message_box(char const *title, char const *message)
 
 //------------------------------------------------------------------------------
 
-void construct_android_display(struct tq_display *display)
+void libtq_construct_android_display(struct libtq_display_impl *display)
 {
     display->initialize                 = initialize;
     display->terminate                  = terminate;

@@ -336,7 +336,7 @@ static void show_message_box(char const *title, char const *message)
 
 //------------------------------------------------------------------------------
 
-void tq_construct_sdl_display(tq_display_t *display)
+void libtq_construct_sdl_display(struct libtq_display_impl *display)
 {
     display->initialize             = initialize;
     display->terminate              = terminate;

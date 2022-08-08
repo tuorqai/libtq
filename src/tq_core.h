@@ -10,15 +10,55 @@
 
 //------------------------------------------------------------------------------
 
-typedef struct tq_clock
+struct libtq_clock_impl
 {
     void        (*initialize)(void);
     void        (*terminate)(void);
     float       (*get_time_mediump)(void);
     double      (*get_time_highp)(void);
-} tq_clock_t;
+};
 
-typedef struct tq_display
+#if defined(_WIN32)
+    void libtq_construct_win32_clock(struct libtq_clock_impl *clock);
+#endif
+
+#if defined(__unix__)
+    void libtq_construct_posix_clock(struct libtq_clock_impl *clock);
+#endif
+
+//------------------------------------------------------------------------------
+
+typedef void *libtq_thread;
+typedef void *libtq_mutex;
+
+struct libtq_threads_impl
+{
+    void            (*initialize)(void);
+    void            (*terminate)(void);
+
+    void            (*sleep)(double seconds);
+
+    libtq_thread    (*create_thread)(char const *name, int (*func)(void *), void *data);
+    void            (*detach_thread)(libtq_thread thread);
+    int             (*wait_thread)(libtq_thread thread);
+
+    libtq_mutex     (*create_mutex)(void);
+    void            (*destroy_mutex)(libtq_mutex mutex);
+    void            (*lock_mutex)(libtq_mutex mutex);
+    void            (*unlock_mutex)(libtq_mutex mutex);
+};
+
+#if defined(_WIN32)
+    void libtq_construct_win32_threads(struct libtq_threads_impl *threads);
+#endif
+
+#if defined(__unix__)
+    void libtq_construct_posix_threads(struct libtq_threads_impl *threads);
+#endif
+
+//------------------------------------------------------------------------------
+
+struct libtq_display_impl
 {
     void        (*initialize)(uint32_t, uint32_t, char const *);
     void        (*terminate)(void);
@@ -29,26 +69,21 @@ typedef struct tq_display
     void        (*set_key_autorepeat_enabled)(bool enabled);
     void        (*set_mouse_cursor_hidden)(bool hidden);
     void        (*show_message_box)(char const *title, char const *message);
-} tq_display_t;
+};
 
 #if defined(TQ_USE_SDL)
-    void tq_construct_sdl_clock(tq_clock_t *clock);
-    void tq_construct_sdl_display(tq_display_t *display);
-#endif
-
-#if defined(unix)
-    void construct_posix_clock(struct tq_clock *clock);
+    void libtq_construct_sdl_display(struct libtq_display_impl *display);
 #endif
 
 #if defined(TQ_PLATFORM_ANDROID)
-    void construct_android_display(struct tq_display *display);
+    void libtq_construct_android_display(struct libtq_display_impl *display);
 #endif
 
 //------------------------------------------------------------------------------
 
-void tq_core_initialize(void);
-void tq_core_terminate(void);
-bool tq_core_process(void);
+void libtq_initialize_core(void);
+void libtq_terminate_core(void);
+bool libtq_process_core(void);
 
 void tq_core_get_display_size(int *width, int *height);
 void tq_core_set_display_size(int width, int height);
@@ -95,42 +130,16 @@ void tq_core_show_message_box(char const *title, char const *message);
 
 //------------------------------------------------------------------------------
 
-typedef void *tq_thread_t;
-typedef void *tq_mutex_t;
-
-typedef struct tq_threads_impl
-{
-    void            (*initialize)(void);
-    void            (*terminate)(void);
-
-    void            (*sleep)(double seconds);
-
-    tq_thread_t     (*create_thread)(char const *name, int (*func)(void *), void *data);
-    void            (*detach_thread)(tq_thread_t thread);
-    int             (*wait_thread)(tq_thread_t thread);
-
-    tq_mutex_t      (*create_mutex)(void);
-    void            (*destroy_mutex)(tq_mutex_t mutex);
-    void            (*lock_mutex)(tq_mutex_t mutex);
-    void            (*unlock_mutex)(tq_mutex_t mutex);
-} tq_threads_impl_t;
-
-#if defined(_WIN32)
-    void tq_construct_win32_threads(tq_threads_impl_t *impl);
-#elif defined(unix)
-    void tq_construct_posix_threads(tq_threads_impl_t *impl);
-#endif
-
 void            tq_core_sleep(double seconds);
 
-tq_thread_t     tq_core_create_thread(char const *name, int (*func)(void *), void *data);
-void            tq_core_detach_thread(tq_thread_t thread);
-int             tq_core_wait_thread(tq_thread_t thread);
+libtq_thread    tq_core_create_thread(char const *name, int (*func)(void *), void *data);
+void            tq_core_detach_thread(libtq_thread thread);
+int             tq_core_wait_thread(libtq_thread thread);
 
-tq_mutex_t      tq_core_create_mutex(void);
-void            tq_core_destroy_mutex(tq_mutex_t mutex);
-void            tq_core_lock_mutex(tq_mutex_t mutex);
-void            tq_core_unlock_mutex(tq_mutex_t mutex);
+libtq_mutex     tq_core_create_mutex(void);
+void            tq_core_destroy_mutex(libtq_mutex mutex);
+void            tq_core_lock_mutex(libtq_mutex mutex);
+void            tq_core_unlock_mutex(libtq_mutex mutex);
 
 //------------------------------------------------------------------------------
 
