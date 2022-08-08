@@ -57,7 +57,7 @@ struct font
 
 //------------------------------------------------------------------------------
 
-static struct renderer_impl const *renderer;
+static struct libtq_renderer_impl const *renderer;
 
 static FT_Library       freetype;
 static struct font      *fonts;
@@ -291,7 +291,7 @@ static unsigned int *maintain_index_buffer(int required_size)
 
 //------------------------------------------------------------------------------
 
-void text_initialize(struct renderer_impl const *_renderer)
+void text_initialize(struct libtq_renderer_impl const *_renderer)
 {
     renderer = _renderer;
 

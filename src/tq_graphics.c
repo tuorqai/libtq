@@ -56,7 +56,7 @@ struct graphics
 };
 
 static struct graphics graphics;
-static struct renderer_impl renderer;
+static struct libtq_renderer_impl renderer;
 static struct matrices matrices;
 static struct color colors[COLOR_COUNT];
 
@@ -118,10 +118,10 @@ static float const *get_inverse_projection(void)
 
 //------------------------------------------------------------------------------
 
-void tq_graphics_initialize(void)
+void libtq_initialize_graphics(void)
 {
 #if defined(TQ_USE_OPENGL)
-    construct_gl_renderer(&renderer);
+    libtq_construct_gl_renderer(&renderer);
 #else
     #error Invalid configuration. Check your build settings.
 #endif
@@ -146,11 +146,11 @@ void tq_graphics_initialize(void)
     matrices.current_model_view = 0;
     matrices.dirty_inverse_projection = true;
 
-    graphics_set_clear_color(tq_c24(0, 0, 0));
-    graphics_set_point_color(tq_c24(255, 255, 255));
-    graphics_set_line_color(tq_c24(255, 255, 255));
-    graphics_set_outline_color(tq_c24(255, 255, 255));
-    graphics_set_fill_color(tq_c24(0, 0, 0));
+    libtq_set_clear_color(tq_c24(0, 0, 0));
+    libtq_set_point_color(tq_c24(255, 255, 255));
+    libtq_set_line_color(tq_c24(255, 255, 255));
+    libtq_set_outline_color(tq_c24(255, 255, 255));
+    libtq_set_fill_color(tq_c24(0, 0, 0));
 
     renderer.initialize();
 
@@ -167,7 +167,7 @@ void tq_graphics_initialize(void)
     graphics.ready = 1;
 }
 
-void tq_graphics_terminate(void)
+void libtq_terminate_graphics(void)
 {
     text_terminate();
     renderer.terminate();
@@ -175,7 +175,7 @@ void tq_graphics_terminate(void)
     graphics.ready = 0;
 }
 
-void tq_graphics_process(void)
+void libtq_process_graphics(void)
 {
     renderer.process();
 
@@ -219,29 +219,29 @@ void tq_graphics_process(void)
 
 //------------------------------------------------------------------------------
 
-void graphics_clear(void)
+void libtq_clear(void)
 {
     renderer.clear();
 }
 
-tq_color graphics_get_clear_color(void)
+tq_color libtq_get_clear_color(void)
 {
     return colors[COLOR_CLEAR].value;
 }
 
-void graphics_set_clear_color(tq_color clear_color)
+void libtq_set_clear_color(tq_color clear_color)
 {
     colors[COLOR_CLEAR].value = clear_color;
     renderer.set_clear_color(clear_color);
 }
 
-void graphics_get_canvas_size(int *width, int *height)
+void libtq_get_canvas_size(int *width, int *height)
 {
     *width = graphics.canvas_width;
     *height = graphics.canvas_height;
 }
 
-void graphics_set_canvas_size(int width, int height)
+void libtq_set_canvas_size(int width, int height)
 {
     graphics.canvas_width = width;
     graphics.canvas_height = height;
@@ -255,24 +255,24 @@ void graphics_set_canvas_size(int width, int height)
     make_default_projection(matrices.default_projection, width, height);
 }
 
-float graphics_get_canvas_aspect_ratio(void)
+float libtq_get_canvas_aspect_ratio(void)
 {
     return graphics.canvas_aspect_ratio;
 }
 
-bool graphics_is_canvas_smooth(void)
+bool libtq_is_canvas_smooth(void)
 {
     int texture_id = renderer.get_surface_texture_id(graphics.canvas_surface_id);
     return renderer.is_texture_smooth(texture_id);
 }
 
-void graphics_set_canvas_smooth(bool smooth)
+void libtq_set_canvas_smooth(bool smooth)
 {
     int texture_id = renderer.get_surface_texture_id(graphics.canvas_surface_id);
     renderer.set_texture_smooth(texture_id, smooth);
 }
 
-void graphics_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v)
+void libtq_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v)
 {
     int display_width, display_height;
     libtq_get_display_size(&display_width, &display_height);
@@ -297,7 +297,7 @@ void graphics_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v)
 
 //------------------------------------------------------------------------------
 
-void graphics_get_relative_position(float ax, float ay, float *x, float *y)
+void libtq_get_relative_position(float ax, float ay, float *x, float *y)
 {
     float u = -1.0f + 2.0f * (ax / (float) graphics.canvas_width);
     float v = +1.0f - 2.0f * (ay / (float) graphics.canvas_height);
@@ -305,7 +305,7 @@ void graphics_get_relative_position(float ax, float ay, float *x, float *y)
     mat4_transform_point(get_inverse_projection(), u, v, x, y);
 }
 
-void graphics_set_view(float x, float y, float w, float h, float rotation)
+void libtq_set_view(float x, float y, float w, float h, float rotation)
 {
     make_projection(matrices.projection, x, y, w, h, rotation);
     renderer.update_projection(matrices.projection);
@@ -313,7 +313,7 @@ void graphics_set_view(float x, float y, float w, float h, float rotation)
     matrices.dirty_inverse_projection = true;
 }
 
-void graphics_reset_view(void)
+void libtq_reset_view(void)
 {
     mat4_copy(matrices.projection, matrices.default_projection);
     renderer.update_projection(matrices.projection);
@@ -323,7 +323,7 @@ void graphics_reset_view(void)
 
 //------------------------------------------------------------------------------
 
-void graphics_push_matrix(void)
+void libtq_push_matrix(void)
 {
     int index = matrices.current_model_view;
 
@@ -337,7 +337,7 @@ void graphics_push_matrix(void)
     renderer.update_model_view(matrices.model_view[matrices.current_model_view]);
 }
 
-void graphics_pop_matrix(void)
+void libtq_pop_matrix(void)
 {
     if (matrices.current_model_view == 0) {
         return;
@@ -347,21 +347,21 @@ void graphics_pop_matrix(void)
     renderer.update_model_view(matrices.model_view[matrices.current_model_view]);
 }
 
-void graphics_translate_matrix(float x, float y)
+void libtq_translate_matrix(float x, float y)
 {
     int index = matrices.current_model_view;
     mat3_translate(matrices.model_view[index], x, y);
     renderer.update_model_view(matrices.model_view[index]);
 }
 
-void graphics_scale_matrix(float x, float y)
+void libtq_scale_matrix(float x, float y)
 {
     int index = matrices.current_model_view;
     mat3_scale(matrices.model_view[index], x, y);
     renderer.update_model_view(matrices.model_view[index]);
 }
 
-void graphics_rotate_matrix(float a)
+void libtq_rotate_matrix(float a)
 {
     int index = matrices.current_model_view;
     mat3_rotate(matrices.model_view[index], RADIANS(a));
@@ -370,17 +370,17 @@ void graphics_rotate_matrix(float a)
 
 //------------------------------------------------------------------------------
 
-void graphics_draw_point(float x, float y)
+void libtq_draw_point(float x, float y)
 {
     float data[] = {
         x, y,
     };
 
     renderer.set_draw_color(colors[COLOR_POINT].value);
-    renderer.draw_solid(PRIMITIVE_POINTS, data, 1);
+    renderer.draw_solid(LIBTQ_POINTS, data, 1);
 }
 
-void graphics_draw_line(float ax, float ay, float bx, float by)
+void libtq_draw_line(float ax, float ay, float bx, float by)
 {
     float data[] = {
         ax, ay,
@@ -388,28 +388,28 @@ void graphics_draw_line(float ax, float ay, float bx, float by)
     };
 
     renderer.set_draw_color(colors[COLOR_LINE].value);
-    renderer.draw_solid(PRIMITIVE_LINE_STRIP, data, 2);
+    renderer.draw_solid(LIBTQ_LINE_STRIP, data, 2);
 }
 
-void graphics_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy)
+void libtq_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy)
 {
-    graphics_fill_triangle(ax, ay, bx, by, cx, cy);
-    graphics_outline_triangle(ax, ay, bx, by, cx, cy);
+    libtq_fill_triangle(ax, ay, bx, by, cx, cy);
+    libtq_outline_triangle(ax, ay, bx, by, cx, cy);
 }
 
-void graphics_draw_rectangle(float x, float y, float w, float h)
+void libtq_draw_rectangle(float x, float y, float w, float h)
 {
-    graphics_fill_rectangle(x, y, w, h);
-    graphics_outline_rectangle(x, y, w, h);
+    libtq_fill_rectangle(x, y, w, h);
+    libtq_outline_rectangle(x, y, w, h);
 }
 
-void graphics_draw_circle(float x, float y, float radius)
+void libtq_draw_circle(float x, float y, float radius)
 {
-    graphics_fill_circle(x, y, radius);
-    graphics_outline_circle(x, y, radius);
+    libtq_fill_circle(x, y, radius);
+    libtq_outline_circle(x, y, radius);
 }
 
-void graphics_outline_triangle(float ax, float ay, float bx, float by, float cx, float cy)
+void libtq_outline_triangle(float ax, float ay, float bx, float by, float cx, float cy)
 {
     float data[] = {
         ax, ay,
@@ -418,10 +418,10 @@ void graphics_outline_triangle(float ax, float ay, float bx, float by, float cx,
     };
 
     renderer.set_draw_color(colors[COLOR_OUTLINE].value);
-    renderer.draw_solid(PRIMITIVE_LINE_LOOP, data, 3);
+    renderer.draw_solid(LIBTQ_LINE_LOOP, data, 3);
 }
 
-void graphics_outline_rectangle(float x, float y, float w, float h)
+void libtq_outline_rectangle(float x, float y, float w, float h)
 {
     float data[] = {
         x,      y,
@@ -431,22 +431,22 @@ void graphics_outline_rectangle(float x, float y, float w, float h)
     };
 
     renderer.set_draw_color(colors[COLOR_OUTLINE].value);
-    renderer.draw_solid(PRIMITIVE_LINE_LOOP, data, 4);
+    renderer.draw_solid(LIBTQ_LINE_LOOP, data, 4);
 }
 
-void graphics_outline_circle(float x, float y, float radius)
+void libtq_outline_circle(float x, float y, float radius)
 {
     int length;
 
     float *data = make_circle(x, y, radius, COLOR_OUTLINE, &length);
 
     renderer.set_draw_color(colors[COLOR_OUTLINE].value);
-    renderer.draw_solid(PRIMITIVE_LINE_LOOP, data, length);
+    renderer.draw_solid(LIBTQ_LINE_LOOP, data, length);
 
     mem_free(data);
 }
 
-void graphics_fill_triangle(float ax, float ay, float bx, float by, float cx, float cy)
+void libtq_fill_triangle(float ax, float ay, float bx, float by, float cx, float cy)
 {
     float data[] = {
         ax, ay,
@@ -455,10 +455,10 @@ void graphics_fill_triangle(float ax, float ay, float bx, float by, float cx, fl
     };
 
     renderer.set_draw_color(colors[COLOR_FILL].value);
-    renderer.draw_solid(PRIMITIVE_TRIANGLE_FAN, data, 3);
+    renderer.draw_solid(LIBTQ_TRIANGLE_FAN, data, 3);
 }
 
-void graphics_fill_rectangle(float x, float y, float w, float h)
+void libtq_fill_rectangle(float x, float y, float w, float h)
 {
     float data[] = {
         x,      y,
@@ -468,58 +468,58 @@ void graphics_fill_rectangle(float x, float y, float w, float h)
     };
 
     renderer.set_draw_color(colors[COLOR_FILL].value);
-    renderer.draw_solid(PRIMITIVE_TRIANGLE_FAN, data, 4);
+    renderer.draw_solid(LIBTQ_TRIANGLE_FAN, data, 4);
 }
 
-void graphics_fill_circle(float x, float y, float radius)
+void libtq_fill_circle(float x, float y, float radius)
 {
     int length;
 
     float *data = make_circle(x, y, radius, COLOR_FILL, &length);
 
     renderer.set_draw_color(colors[COLOR_FILL].value);
-    renderer.draw_solid(PRIMITIVE_TRIANGLE_FAN, data, length - 1);
+    renderer.draw_solid(LIBTQ_TRIANGLE_FAN, data, length - 1);
 
     mem_free(data);
 }
 
-tq_color graphics_get_point_color(void)
+tq_color libtq_get_point_color(void)
 {
     return colors[COLOR_POINT].value;
 }
 
-void graphics_set_point_color(tq_color point_color)
+void libtq_set_point_color(tq_color point_color)
 {
     colors[COLOR_POINT].value = point_color;
 }
 
-tq_color graphics_get_line_color(void)
+tq_color libtq_get_line_color(void)
 {
     return colors[COLOR_LINE].value;
 }
 
-void graphics_set_line_color(tq_color line_color)
+void libtq_set_line_color(tq_color line_color)
 {
     colors[COLOR_LINE].value = line_color;
 }
 
-tq_color graphics_get_outline_color(void)
+tq_color libtq_get_outline_color(void)
 {
     return colors[COLOR_OUTLINE].value;
 }
 
-void graphics_set_outline_color(tq_color outline_color)
+void libtq_set_outline_color(tq_color outline_color)
 {
     colors[COLOR_OUTLINE].value = outline_color;
     text_set_outline_color(outline_color);
 }
 
-tq_color graphics_get_fill_color(void)
+tq_color libtq_get_fill_color(void)
 {
     return colors[COLOR_FILL].value;
 }
 
-void graphics_set_fill_color(tq_color fill_color)
+void libtq_set_fill_color(tq_color fill_color)
 {
     colors[COLOR_FILL].value = fill_color;
     text_set_fill_color(fill_color);
@@ -527,7 +527,7 @@ void graphics_set_fill_color(tq_color fill_color)
 
 //------------------------------------------------------------------------------
 
-int graphics_load_texture(libtq_stream *stream)
+int libtq_load_texture(libtq_stream *stream)
 {
     struct image image = image_load(stream);
     libtq_stream_close(stream);
@@ -549,32 +549,32 @@ int graphics_load_texture(libtq_stream *stream)
     return texture_id;
 }
 
-int graphics_load_texture_from_file(char const *path)
+int libtq_load_texture_from_file(char const *path)
 {
-    return graphics_load_texture(libtq_open_file_stream(path));
+    return libtq_load_texture(libtq_open_file_stream(path));
 }
 
-int graphics_load_texture_from_memory(void const *buffer, size_t size)
+int libtq_load_texture_from_memory(void const *buffer, size_t size)
 {
-    return graphics_load_texture(libtq_open_memory_stream(buffer, size));
+    return libtq_load_texture(libtq_open_memory_stream(buffer, size));
 }
 
-void graphics_delete_texture(int texture_id)
+void libtq_delete_texture(int texture_id)
 {
     renderer.delete_texture(texture_id);
 }
 
-void graphics_get_texture_size(int texture_id, int *width, int *height)
+void libtq_get_texture_size(int texture_id, int *width, int *height)
 {
     renderer.get_texture_size(texture_id, width, height);
 }
 
-void graphics_set_texture_smooth(int texture_id, bool smooth)
+void libtq_set_texture_smooth(int texture_id, bool smooth)
 {
     renderer.set_texture_smooth(texture_id, smooth);
 }
 
-void graphics_draw_texture(int texture_id,
+void libtq_draw_texture(int texture_id,
     float x, float y,
     float w, float h)
 {
@@ -586,10 +586,10 @@ void graphics_draw_texture(int texture_id,
     };
 
     renderer.bind_texture(texture_id);
-    renderer.draw_textured(PRIMITIVE_TRIANGLE_FAN, data, 4);
+    renderer.draw_textured(LIBTQ_TRIANGLE_FAN, data, 4);
 }
 
-void graphics_draw_subtexture(int texture_id,
+void libtq_draw_subtexture(int texture_id,
     float x, float y,
     float w, float h,
     float fx, float fy,
@@ -606,22 +606,22 @@ void graphics_draw_subtexture(int texture_id,
     };
 
     renderer.bind_texture(texture_id);
-    renderer.draw_textured(PRIMITIVE_TRIANGLE_FAN, data, 4);
+    renderer.draw_textured(LIBTQ_TRIANGLE_FAN, data, 4);
 }
 
 //------------------------------------------------------------------------------
 
-int graphics_create_surface(int width, int height)
+int libtq_create_surface(int width, int height)
 {
     return renderer.create_surface(width, height);
 }
 
-void graphics_delete_surface(int surface_id)
+void libtq_delete_surface(int surface_id)
 {
     renderer.delete_surface(surface_id);
 }
 
-void graphics_set_surface(int surface_id)
+void libtq_set_surface(int surface_id)
 {
     if (surface_id < 0) {
         return;
@@ -640,20 +640,20 @@ void graphics_set_surface(int surface_id)
     renderer.update_projection(projection);
 }
 
-void graphics_reset_surface(void)
+void libtq_reset_surface(void)
 {
     renderer.bind_surface(graphics.canvas_surface_id);
     renderer.update_projection(matrices.projection);
 }
 
-int graphics_get_surface_texture_id(int surface_id)
+int libtq_get_surface_texture_id(int surface_id)
 {
     return renderer.get_surface_texture_id(surface_id);
 }
 
 //------------------------------------------------------------------------------
 
-void graphics_set_blend_mode(tq_blend_mode mode)
+void libtq_set_blend_mode(tq_blend_mode mode)
 {
     renderer.set_blend_mode(mode);
 }

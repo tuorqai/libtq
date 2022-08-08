@@ -12,86 +12,67 @@
 //------------------------------------------------------------------------------
 // Declarations
 
-typedef struct tq_audio
+struct libtq_audio_priv
 {
-    tq_audio_impl_t     impl;
-} tq_audio_t;
+    struct libtq_audio_impl     impl;
+};
 
 //------------------------------------------------------------------------------
 // Definitions
 
-static tq_audio_t audio;
+static struct libtq_audio_priv priv;
 
 //------------------------------------------------------------------------------
 
-void tq_audio_initialize(void)
+void libtq_initialize_audio(void)
 {
-    memset(&audio, 0, sizeof(tq_audio_t));
+    #if defined(TQ_USE_OPENAL)
+        libtq_construct_al_audio(&priv.impl);
+    #else
+        libtq_construct_null_audio(&priv.impl);
+    #endif
 
-#if defined(TQ_USE_OPENAL)
-    tq_construct_al_audio(&audio.impl);
-#else
-    construct_null_audio(&audio.impl);
-#endif
-
-    audio.impl.initialize();
+    priv.impl.initialize();
 }
 
-void tq_audio_terminate(void)
+void libtq_terminate_audio(void)
 {
-    audio.impl.terminate();
+    priv.impl.terminate();
 }
 
-void tq_audio_process(void)
+void libtq_process_audio(void)
 {
-    audio.impl.process();
+    priv.impl.process();
 }
 
-int32_t tq_audio_load_sound_from_file(char const *path)
+int libtq_load_sound(libtq_stream *stream)
 {
-    libtq_stream *stream = libtq_open_file_stream(path);
-
-    if (stream) {
-        return -1;
-    }
-
-    int32_t sound_id = audio.impl.load_sound(stream);
-    libtq_stream_close(stream);
-    return sound_id;
-}
-
-int32_t tq_audio_load_sound_from_memory(uint8_t const *buffer, size_t size)
-{
-    libtq_stream *stream = libtq_open_memory_stream(buffer, size);
-
-    if (stream) {
-        return -1;
-    }
-
-    int32_t sound_id = audio.impl.load_sound(stream);
-    libtq_stream_close(stream);
-    return sound_id;
-}
-
-void tq_audio_delete_sound(int32_t sound_id)
-{
-    audio.impl.delete_sound(sound_id);
-}
-
-int32_t tq_audio_play_sound(int32_t sound_id, int loop)
-{
-    return audio.impl.play_sound(sound_id, loop);
-}
-
-int32_t tq_audio_open_music_from_file(char const *path)
-{
-    libtq_stream *stream = libtq_open_file_stream(path);
-
     if (!stream) {
         return -1;
     }
 
-    int32_t music_id = audio.impl.open_music(stream);
+    int sound_id = priv.impl.load_sound(stream);
+    libtq_stream_close(stream);
+    return sound_id;
+}
+
+void libtq_delete_sound(int sound_id)
+{
+    priv.impl.delete_sound(sound_id);
+}
+
+int libtq_play_sound(int sound_id, int loop)
+{
+    return priv.impl.play_sound(sound_id, loop);
+}
+
+int libtq_open_music(libtq_stream *stream)
+{
+    if (!stream) {
+        return -1;
+    }
+
+    int music_id = priv.impl.open_music(stream);
 
     if (music_id == -1) {
         libtq_stream_close(stream);
@@ -100,51 +81,34 @@ int32_t tq_audio_open_music_from_file(char const *path)
     return music_id;
 }
 
-int32_t tq_audio_open_music_from_memory(uint8_t const *buffer, size_t size)
+void libtq_close_music(int music_id)
 {
-    libtq_stream *stream = libtq_open_memory_stream(buffer, size);
-
-    if (!stream) {
-        return -1;
-    }
-
-    int32_t music_id = audio.impl.open_music(stream);
-
-    if (music_id == -1) {
-        libtq_stream_close(stream);
-    }
-
-    return music_id;
+    priv.impl.close_music(music_id);
 }
 
-void tq_audio_close_music(int32_t music_id)
+int libtq_play_music(int music_id, int loop)
 {
-    audio.impl.close_music(music_id);
+    return priv.impl.play_music(music_id, loop);
 }
 
-int32_t tq_audio_play_music(int32_t music_id, int loop)
+tq_channel_state libtq_get_channel_state(int channel_id)
 {
-    return audio.impl.play_music(music_id, loop);
+    return priv.impl.get_channel_state(channel_id);
 }
 
-tq_channel_state tq_audio_get_channel_state(int32_t channel_id)
+void libtq_pause_channel(int channel_id)
 {
-    return audio.impl.get_channel_state(channel_id);
+    priv.impl.pause_channel(channel_id);
 }
 
-void tq_audio_pause_channel(int32_t channel_id)
+void libtq_unpause_channel(int channel_id)
 {
-    audio.impl.pause_channel(channel_id);
+    priv.impl.unpause_channel(channel_id);
 }
 
-void tq_audio_unpause_channel(int32_t channel_id)
+void libtq_stop_channel(int channel_id)
 {
-    audio.impl.unpause_channel(channel_id);
-}
-
-void tq_audio_stop_channel(int32_t channel_id)
-{
-    audio.impl.stop_channel(channel_id);
+    priv.impl.stop_channel(channel_id);
 }
 
 //------------------------------------------------------------------------------

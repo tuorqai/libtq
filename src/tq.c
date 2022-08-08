@@ -168,40 +168,40 @@ int tq_get_framerate(void)
 
 void tq_clear(void)
 {
-    graphics_clear();
+    libtq_clear();
 }
 
 tq_color tq_get_clear_color(void)
 {
-    return graphics_get_clear_color();
+    return libtq_get_clear_color();
 }
 
 void tq_set_clear_color(tq_color clear_color)
 {
-    graphics_set_clear_color(clear_color);
+    libtq_set_clear_color(clear_color);
 }
 
 tq_vec2i tq_get_canvas_size(void)
 {
     tq_vec2i size;
-    graphics_get_canvas_size(&size.x, &size.y);
+    libtq_get_canvas_size(&size.x, &size.y);
 
     return size;
 }
 
 void tq_set_canvas_size(tq_vec2i size)
 {
-    graphics_set_canvas_size(size.x, size.y);
+    libtq_set_canvas_size(size.x, size.y);
 }
 
 bool tq_is_canvas_smooth(void)
 {
-    return graphics_is_canvas_smooth();
+    return libtq_is_canvas_smooth();
 }
 
 void tq_set_canvas_smooth(bool smooth)
 {
-    graphics_set_canvas_smooth(smooth);
+    libtq_set_canvas_smooth(smooth);
 }
 
 //----------------------------------------------------------
@@ -210,19 +210,19 @@ void tq_set_canvas_smooth(bool smooth)
 tq_vec2f tq_get_relative_position(tq_vec2f absolute)
 {
     tq_vec2f relative;
-    graphics_get_relative_position(absolute.x, absolute.y, &relative.x, &relative.y);
+    libtq_get_relative_position(absolute.x, absolute.y, &relative.x, &relative.y);
 
     return relative;
 }
 
 void tq_set_view(tq_rectf rect, float rotation)
 {
-    graphics_set_view(rect.x, rect.y, rect.w, rect.h, rotation);
+    libtq_set_view(rect.x, rect.y, rect.w, rect.h, rotation);
 }
 
 void tq_reset_view(void)
 {
-    graphics_reset_view();
+    libtq_reset_view();
 }
 
 //----------------------------------------------------------
@@ -230,27 +230,27 @@ void tq_reset_view(void)
 
 void tq_push_matrix(void)
 {
-    graphics_push_matrix();
+    libtq_push_matrix();
 }
 
 void tq_pop_matrix(void)
 {
-    graphics_pop_matrix();
+    libtq_pop_matrix();
 }
 
 void tq_translate_matrix(tq_vec2f v)
 {
-    graphics_translate_matrix(v.x, v.y);
+    libtq_translate_matrix(v.x, v.y);
 }
 
 void tq_scale_matrix(tq_vec2f v)
 {
-    graphics_scale_matrix(v.x, v.y);
+    libtq_scale_matrix(v.x, v.y);
 }
 
 void tq_rotate_matrix(float degrees)
 {
-    graphics_rotate_matrix(degrees);
+    libtq_rotate_matrix(degrees);
 }
 
 //----------------------------------------------------------
@@ -258,97 +258,97 @@ void tq_rotate_matrix(float degrees)
 
 void tq_draw_point(tq_vec2f position)
 {
-    graphics_draw_point(position.x, position.y);
+    libtq_draw_point(position.x, position.y);
 }
 
 void tq_draw_line(tq_vec2f a, tq_vec2f b)
 {
-    graphics_draw_line(a.x, a.y, b.x, b.y);
+    libtq_draw_line(a.x, a.y, b.x, b.y);
 }
 
 void tq_draw_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c)
 {
-    graphics_draw_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
+    libtq_draw_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
 }
 
 void tq_draw_rectangle(tq_rectf rect)
 {
-    graphics_draw_rectangle(rect.x, rect.y, rect.w, rect.h);
+    libtq_draw_rectangle(rect.x, rect.y, rect.w, rect.h);
 }
 
 void tq_draw_circle(tq_vec2f position, float radius)
 {
-    graphics_draw_circle(position.x, position.y, radius);
+    libtq_draw_circle(position.x, position.y, radius);
 }
 
 void tq_outline_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c)
 {
-    graphics_outline_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
+    libtq_outline_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
 }
 
 void tq_outline_rectangle(tq_rectf rect)
 {
-    graphics_outline_rectangle(rect.x, rect.y, rect.w, rect.h);
+    libtq_outline_rectangle(rect.x, rect.y, rect.w, rect.h);
 }
 
 void tq_outline_circle(tq_vec2f position, float radius)
 {
-    graphics_outline_circle(position.x, position.y, radius);
+    libtq_outline_circle(position.x, position.y, radius);
 }
 
 void tq_fill_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c)
 {
-    graphics_fill_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
+    libtq_fill_triangle(a.x, a.y, b.x, b.y, c.x, c.y);
 }
 
 void tq_fill_rectangle(tq_rectf rect)
 {
-    graphics_fill_rectangle(rect.x, rect.y, rect.w, rect.h);
+    libtq_fill_rectangle(rect.x, rect.y, rect.w, rect.h);
 }
 
 void tq_fill_circle(tq_vec2f position, float radius)
 {
-    graphics_fill_circle(position.x, position.y, radius);
+    libtq_fill_circle(position.x, position.y, radius);
 }
 
 tq_color tq_get_point_color(void)
 {
-    return graphics_get_point_color();
+    return libtq_get_point_color();
 }
 
 void tq_set_point_color(tq_color point_color)
 {
-    graphics_set_point_color(point_color);
+    libtq_set_point_color(point_color);
 }
 
 tq_color tq_get_line_color(void)
 {
-    return graphics_get_line_color();
+    return libtq_get_line_color();
 }
 
 void tq_set_line_color(tq_color line_color)
 {
-    graphics_set_line_color(line_color);
+    libtq_set_line_color(line_color);
 }
 
 tq_color tq_get_outline_color(void)
 {
-    return graphics_get_outline_color();
+    return libtq_get_outline_color();
 }
 
 void tq_set_outline_color(tq_color outline_color)
 {
-    graphics_set_outline_color(outline_color);
+    libtq_set_outline_color(outline_color);
 }
 
 tq_color tq_get_fill_color(void)
 {
-    return graphics_get_fill_color();
+    return libtq_get_fill_color();
 }
 
 void tq_set_fill_color(tq_color fill_color)
 {
-    graphics_set_fill_color(fill_color);
+    libtq_set_fill_color(fill_color);
 }
 
 //----------------------------------------------------------
@@ -356,40 +356,40 @@ void tq_set_fill_color(tq_color fill_color)
 
 tq_texture tq_load_texture_from_file(char const *path)
 {
-    return (tq_texture) { .id = graphics_load_texture_from_file(path) };
+    return (tq_texture) { .id = libtq_load_texture_from_file(path) };
 }
 
 tq_texture tq_load_texture_from_memory(uint8_t const *buffer, size_t length)
 {
-    return (tq_texture) { .id = graphics_load_texture_from_memory(buffer, length) };
+    return (tq_texture) { .id = libtq_load_texture_from_memory(buffer, length) };
 }
 
 void tq_delete_texture(tq_texture texture)
 {
-    graphics_delete_texture(texture.id);
+    libtq_delete_texture(texture.id);
 }
 
 tq_vec2i tq_get_texture_size(tq_texture texture)
 {
     tq_vec2i size;
-    graphics_get_texture_size(texture.id, &size.x, &size.y);
+    libtq_get_texture_size(texture.id, &size.x, &size.y);
 
     return size;
 }
 
 void tq_set_texture_smooth(tq_texture texture, bool smooth)
 {
-    graphics_set_texture_smooth(texture.id, smooth);
+    libtq_set_texture_smooth(texture.id, smooth);
 }
 
 void tq_draw_texture(tq_texture texture, tq_rectf rect)
 {
-    graphics_draw_texture(texture.id, rect.x, rect.y, rect.w, rect.h);
+    libtq_draw_texture(texture.id, rect.x, rect.y, rect.w, rect.h);
 }
 
 void tq_draw_subtexture(tq_texture texture, tq_rectf sub, tq_rectf rect)
 {
-    graphics_draw_subtexture(texture.id,
+    libtq_draw_subtexture(texture.id,
         rect.x, rect.y, rect.w, rect.h,
         sub.x, sub.y, sub.w, sub.h);
 }
@@ -399,27 +399,27 @@ void tq_draw_subtexture(tq_texture texture, tq_rectf sub, tq_rectf rect)
 
 tq_surface tq_create_surface(tq_vec2i size)
 {
-    return (tq_surface) { .id = graphics_create_surface(size.x, size.y) };
+    return (tq_surface) { .id = libtq_create_surface(size.x, size.y) };
 }
 
 void tq_delete_surface(tq_surface surface)
 {
-    graphics_delete_texture(surface.id);
+    libtq_delete_texture(surface.id);
 }
 
 void tq_set_surface(tq_surface surface)
 {
-    graphics_set_surface(surface.id);
+    libtq_set_surface(surface.id);
 }
 
 void tq_reset_surface(void)
 {
-    graphics_reset_surface();
+    libtq_reset_surface();
 }
 
 tq_texture tq_get_surface_texture(tq_surface surface)
 {
-    return (tq_texture) { .id = graphics_get_surface_texture_id(surface.id) };
+    return (tq_texture) { .id = libtq_get_surface_texture_id(surface.id) };
 }
 
 //----------------------------------------------------------
@@ -484,7 +484,7 @@ void tq_print_text(tq_font font, tq_vec2f position, char const *fmt, ...)
 
 void tq_set_blend_mode(tq_blend_mode mode)
 {
-    graphics_set_blend_mode(mode);
+    libtq_set_blend_mode(mode);
 }
 
 //------------------------------------------------------------------------------
@@ -495,22 +495,22 @@ void tq_set_blend_mode(tq_blend_mode mode)
 
 tq_sound tq_load_sound_from_file(char const *path)
 {
-    return (tq_sound) { .id = tq_audio_load_sound_from_file(path) };
+    return (tq_sound) {libtq_load_sound(libtq_open_file_stream(path))};
 }
 
-tq_sound tq_load_sound_from_memory(uint8_t const *buffer, size_t length)
+tq_sound tq_load_sound_from_memory(void const *buffer, size_t size)
 {
-    return (tq_sound) { .id = tq_audio_load_sound_from_memory(buffer, length) };
+    return (tq_sound) {libtq_load_sound(libtq_open_memory_stream(buffer, size))};
 }
 
 void tq_delete_sound(tq_sound sound)
 {
-    tq_audio_delete_sound(sound.id);
+    libtq_delete_sound(sound.id);
 }
 
 tq_channel tq_play_sound(tq_sound sound, int loop)
 {
-    return (tq_channel) { .id = tq_audio_play_sound(sound.id, loop) };
+    return (tq_channel) {libtq_play_sound(sound.id, loop)};
 }
 
 //----------------------------------------------------------
@@ -518,22 +518,22 @@ tq_channel tq_play_sound(tq_sound sound, int loop)
 
 tq_music tq_open_music_from_file(char const *path)
 {
-    return (tq_music) { .id = tq_audio_open_music_from_file(path) };
+    return (tq_music) {libtq_open_music(libtq_open_file_stream(path))};
 }
 
-tq_music tq_open_music_from_memory(uint8_t const *buffer, size_t length)
+tq_music tq_open_music_from_memory(void const *buffer, size_t size)
 {
-    return (tq_music) { .id = tq_audio_open_music_from_memory(buffer, length) };
+    return (tq_music) {libtq_open_music(libtq_open_memory_stream(buffer, size))};
 }
 
 void tq_close_music(tq_music music)
 {
-    tq_audio_close_music(music.id);
+    libtq_close_music(music.id);
 }
 
 tq_channel tq_play_music(tq_music music, int loop)
 {
-    return (tq_channel) { .id = tq_audio_play_music(music.id, loop) };
+    return (tq_channel) {libtq_play_music(music.id, loop)};
 }
 
 //----------------------------------------------------------
@@ -541,22 +541,22 @@ tq_channel tq_play_music(tq_music music, int loop)
 
 tq_channel_state tq_get_channel_state(tq_channel channel)
 {
-    return tq_audio_get_channel_state(channel.id);
+    return libtq_get_channel_state(channel.id);
 }
 
 void tq_pause_channel(tq_channel channel)
 {
-    tq_audio_pause_channel(channel.id);
+    libtq_pause_channel(channel.id);
 }
 
 void tq_unpause_channel(tq_channel channel)
 {
-    tq_audio_unpause_channel(channel.id);
+    libtq_unpause_channel(channel.id);
 }
 
 void tq_stop_channel(tq_channel channel)
 {
-    tq_audio_stop_channel(channel.id);
+    libtq_stop_channel(channel.id);
 }
 
 //------------------------------------------------------------------------------

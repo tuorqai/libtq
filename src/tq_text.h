@@ -12,7 +12,7 @@
 
 //------------------------------------------------------------------------------
 
-void text_initialize(struct renderer_impl const *renderer);
+void text_initialize(struct libtq_renderer_impl const *renderer);
 void text_terminate(void);
 
 int text_load_font(libtq_stream *stream, float pt, int weight);

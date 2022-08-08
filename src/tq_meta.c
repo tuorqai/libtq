@@ -11,21 +11,21 @@
 void libtq_initialize(void)
 {
     libtq_initialize_core();
-    tq_graphics_initialize();
-    tq_audio_initialize();
+    libtq_initialize_graphics();
+    libtq_initialize_audio();
 }
 
 void libtq_terminate(void)
 {
-    tq_audio_terminate();
-    tq_graphics_terminate();
+    libtq_terminate_audio();
+    libtq_terminate_graphics();
     libtq_terminate_core();
 }
 
 bool libtq_process(void)
 {
-    tq_graphics_process();
-    tq_audio_process();
+    libtq_process_graphics();
+    libtq_process_audio();
 
     return libtq_process_core();
 }

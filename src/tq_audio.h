@@ -1,4 +1,6 @@
 
+//------------------------------------------------------------------------------
+
 #ifndef TQ_AUDIO_H_INC
 #define TQ_AUDIO_H_INC
 
@@ -8,55 +10,55 @@
 
 //------------------------------------------------------------------------------
 
-typedef struct audio_impl
+struct libtq_audio_impl
 {
-    void        (*initialize)(void);
-    void        (*terminate)(void);
-    void        (*process)(void);
+    void                (*initialize)(void);
+    void                (*terminate)(void);
+    void                (*process)(void);
 
-    int32_t     (*load_sound)(libtq_stream *stream);
-    void        (*delete_sound)(int32_t sound_id);
-    int32_t     (*play_sound)(int32_t sound_id, int loop);
+    int                 (*load_sound)(libtq_stream *stream);
+    void                (*delete_sound)(int sound_id);
+    int                 (*play_sound)(int sound_id, int loop);
 
-    int32_t     (*open_music)(libtq_stream *stream);
-    void        (*close_music)(int32_t music_id);
-    int32_t     (*play_music)(int32_t music_id, int loop);
+    int                 (*open_music)(libtq_stream *stream);
+    void                (*close_music)(int music_id);
+    int                 (*play_music)(int music_id, int loop);
 
-    tq_channel_state (*get_channel_state)(int32_t channel_id);
-    void        (*pause_channel)(int32_t channel_id);
-    void        (*unpause_channel)(int32_t channel_id);
-    void        (*stop_channel)(int32_t channel_id);
-} tq_audio_impl_t;
+    tq_channel_state    (*get_channel_state)(int channel_id);
+    void                (*pause_channel)(int channel_id);
+    void                (*unpause_channel)(int channel_id);
+    void                (*stop_channel)(int channel_id);
+};
 
 //------------------------------------------------------------------------------
 
-void construct_null_audio(struct audio_impl *impl);
+void libtq_construct_null_audio(struct libtq_audio_impl *impl);
 
 #if defined(TQ_USE_OPENAL)
-    void tq_construct_al_audio(tq_audio_impl_t *impl);
+    void libtq_construct_al_audio(struct libtq_audio_impl *impl);
 #endif
 
 //------------------------------------------------------------------------------
 
-void tq_audio_initialize(void);
-void tq_audio_terminate(void);
-void tq_audio_process(void);
+void                libtq_initialize_audio(void);
+void                libtq_terminate_audio(void);
+void                libtq_process_audio(void);
 
-int32_t tq_audio_load_sound_from_file(char const *path);
-int32_t tq_audio_load_sound_from_memory(uint8_t const *buffer, size_t size);
-void tq_audio_delete_sound(int32_t sound_id);
-int32_t tq_audio_play_sound(int32_t sound_id, int loop);
+int                 libtq_load_sound(libtq_stream *stream);
+void                libtq_delete_sound(int sound_id);
+int                 libtq_play_sound(int sound_id, int loop);
 
-int32_t tq_audio_open_music_from_file(char const *path);
-int32_t tq_audio_open_music_from_memory(uint8_t const *buffer, size_t size);
-void tq_audio_close_music(int32_t music_id);
-int32_t tq_audio_play_music(int32_t music_id, int loop);
+int                 libtq_open_music(libtq_stream *stream);
+void                libtq_close_music(int music_id);
+int                 libtq_play_music(int music_id, int loop);
 
-tq_channel_state tq_audio_get_channel_state(int32_t channel_id);
-void tq_audio_pause_channel(int32_t channel_id);
-void tq_audio_unpause_channel(int32_t channel_id);
-void tq_audio_stop_channel(int32_t channel_id);
+tq_channel_state    libtq_get_channel_state(int channel_id);
+void                libtq_pause_channel(int channel_id);
+void                libtq_unpause_channel(int channel_id);
+void                libtq_stop_channel(int channel_id);
 
 //------------------------------------------------------------------------------
 
 #endif // TQ_AUDIO_H_INC
+
+//------------------------------------------------------------------------------

@@ -947,7 +947,7 @@ TQ_API tq_sound TQ_CALL tq_load_sound_from_file(char const *path);
 /**
  * Decode sound from a memory buffer.
  */
-TQ_API tq_sound TQ_CALL tq_load_sound_from_memory(uint8_t const *buffer, size_t length);
+TQ_API tq_sound TQ_CALL tq_load_sound_from_memory(void const *buffer, size_t size);
 
 /**
  * Delete sound from memory.
@@ -967,7 +967,7 @@ TQ_API tq_music TQ_CALL tq_open_music_from_file(char const *path);
 /**
  * Open music stream from memory buffer.
  */
-TQ_API tq_music TQ_CALL tq_open_music_from_memory(uint8_t const *buffer, size_t length);
+TQ_API tq_music TQ_CALL tq_open_music_from_memory(void const *buffer, size_t size);
 
 /**
  * Close music stream.
