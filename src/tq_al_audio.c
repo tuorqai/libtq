@@ -15,7 +15,7 @@
 #include "tq_error.h"
 #include "tq_mem.h"
 #include "tq_log.h"
-#include "tq_sound_decoder.h"
+#include "tq_audio_dec.h"
 
 //------------------------------------------------------------------------------
 // OpenAL debug stuff
@@ -89,7 +89,7 @@ struct openal_music
 {
     uint8_t     bits[TQ_MUSIC_LIMIT];
     libtq_stream *stream[TQ_MUSIC_LIMIT];
-    int32_t     decoder_id[TQ_MUSIC_LIMIT];
+    libtq_audio_dec *dec[TQ_MUSIC_LIMIT];
 };
 
 struct openal_channels
@@ -99,7 +99,7 @@ struct openal_channels
     libtq_thread thread[TQ_CHANNEL_LIMIT];
 
     libtq_stream *stream[TQ_CHANNEL_LIMIT];
-    int32_t     decoder_id[TQ_MUSIC_LIMIT];
+    libtq_audio_dec *dec[TQ_MUSIC_LIMIT];
     int         loop[TQ_CHANNEL_LIMIT];
 };
 
@@ -245,7 +245,7 @@ static void terminate(void)
      */
     for (int32_t music_id = 0; music_id < TQ_MUSIC_LIMIT; music_id++) {
         if (openal.music.bits[music_id] & MUSIC_BIT_OPEN) {
-            tq_sound_decoder_close(openal.music.decoder_id[music_id]);
+            libtq_audio_dec_close(openal.music.dec[music_id]);
             libtq_stream_close(openal.music.stream[music_id]);
         }
     }
@@ -284,32 +284,32 @@ static int32_t load_sound(libtq_stream *stream)
         return -1;
     }
 
-    int32_t decoder_id = tq_sound_decoder_open(stream);
+    libtq_audio_dec *dec = libtq_open_audio_dec(stream);
 
-    if (decoder_id == -1) {
+    if (!dec) {
         return -1;
     }
 
-    ALenum format = choose_format(tq_sound_decoder_get_num_channels(decoder_id));
+    ALenum format = choose_format(libtq_audio_dec_get_num_channels(dec));
 
     if (format == AL_INVALID_ENUM) {
-        tq_sound_decoder_close(decoder_id);
+        libtq_audio_dec_close(dec);
         return -1;
     }
 
     ALuint buffer = 0;
     CHECK_AL(alGenBuffers(1, &buffer));
 
-    long num_samples = tq_sound_decoder_get_num_samples(decoder_id);
-    int16_t *samples = tq_mem_alloc(sizeof(int16_t) * num_samples);
+    long long num_samples = libtq_audio_dec_get_num_samples(dec);
+    short *samples = libtq_malloc(sizeof(short) * num_samples);
 
-    tq_sound_decoder_read(decoder_id, samples, num_samples);
+    libtq_audio_dec_read(dec, samples, num_samples);
 
     CHECK_AL(alBufferData(buffer, format,
-        samples, sizeof(int16_t) * num_samples,
-        tq_sound_decoder_get_sample_rate(decoder_id)));
+        samples, sizeof(short) * num_samples,
+        libtq_audio_dec_get_sample_rate(dec)));
 
-    tq_sound_decoder_close(decoder_id);
+    libtq_audio_dec_close(dec);
 
     openal.sounds.bits[sound_id] = SOUND_BIT_LOADED;
     openal.sounds.buffer[sound_id] = buffer;
@@ -399,14 +399,14 @@ enum {
  */
 static int fill_buffer(ALuint buffer, ALenum format,
     int16_t *samples, int sample_rate,
-    int32_t decoder_id, int *loops_left)
+    libtq_audio_dec *dec, int *loops_left)
 {
-    uint64_t samples_read = tq_sound_decoder_read(decoder_id, samples, MUSIC_BUFFER_LENGTH);
+    long long samples_read = libtq_audio_dec_read(dec, samples, MUSIC_BUFFER_LENGTH);
 
     if (samples_read == 0) {
         if (*loops_left == -1 || *loops_left > 0) {
-            tq_sound_decoder_seek(decoder_id, 0);
-            samples_read = tq_sound_decoder_read(decoder_id, samples, MUSIC_BUFFER_LENGTH);
+            libtq_audio_dec_seek(dec, 0);
+            samples_read = libtq_audio_dec_read(dec, samples, MUSIC_BUFFER_LENGTH);
             
             if (*loops_left > 0) {
                 (*loops_left)--;
@@ -418,7 +418,7 @@ static int fill_buffer(ALuint buffer, ALenum format,
         return -1;
     }
 
-    CHECK_AL(alBufferData(buffer, format, samples, sizeof(int16_t) * samples_read, sample_rate));
+    CHECK_AL(alBufferData(buffer, format, samples, sizeof(short) * samples_read, sample_rate));
 
     return 0;
 }
@@ -444,12 +444,12 @@ static void clear_buffer_queue(ALuint source)
 static int music_main(void *data)
 {
     int32_t channel_id = (int32_t) ((intptr_t) data);
-    int32_t decoder_id = openal.channels.decoder_id[channel_id];
+    libtq_audio_dec *dec = openal.channels.dec[channel_id];
     ALuint source = openal.channels.source[channel_id];
 
     int16_t *samples = tq_mem_alloc(sizeof(int16_t) * MUSIC_BUFFER_LENGTH);
-    int sample_rate = tq_sound_decoder_get_sample_rate(decoder_id);
-    int num_channels = tq_sound_decoder_get_num_channels(decoder_id);
+    int sample_rate = libtq_audio_dec_get_sample_rate(dec);
+    int num_channels = libtq_audio_dec_get_num_channels(dec);
 
     ALenum format = choose_format(num_channels);
 
@@ -471,14 +471,14 @@ static int music_main(void *data)
     ALuint buffers[MUSIC_BUFFER_COUNT];
     CHECK_AL(alGenBuffers(MUSIC_BUFFER_COUNT, buffers));
 
-    tq_sound_decoder_seek(decoder_id, 0);
+    libtq_audio_dec_seek(dec, 0);
     clear_buffer_queue(source);
 
     /**
      * Fill the entire queue of buffers before we start streaming.
      */
     for (int n = 0; n < MUSIC_BUFFER_COUNT; n++) {
-        fill_buffer(buffers[n], format, samples, sample_rate, decoder_id, &loops_left);
+        fill_buffer(buffers[n], format, samples, sample_rate, dec, &loops_left);
         CHECK_AL(alSourceQueueBuffers(source, 1, &buffers[n]));
     }
 
@@ -517,7 +517,7 @@ static int music_main(void *data)
             ALuint buffer;
             CHECK_AL(alSourceUnqueueBuffers(source, 1, &buffer));
 
-            if (fill_buffer(buffer, format, samples, sample_rate, decoder_id, &loops_left) == -1) {
+            if (fill_buffer(buffer, format, samples, sample_rate, dec, &loops_left) == -1) {
                 break;
             }
 
@@ -551,15 +551,15 @@ static int32_t open_music(libtq_stream *stream)
         return -1;
     }
 
-    int32_t decoder_id = tq_sound_decoder_open(stream);
+    libtq_audio_dec *dec = libtq_open_audio_dec(stream);
 
-    if (decoder_id == -1) {
+    if (!dec) {
         return -1;
     }
 
     openal.music.bits[music_id] = MUSIC_BIT_OPEN;
     openal.music.stream[music_id] = stream;
-    openal.music.decoder_id[music_id] = decoder_id;
+    openal.music.dec[music_id] = dec;
 
     return music_id;
 }
@@ -588,12 +588,12 @@ static void close_music(int32_t music_id)
         }
     }
 
-    tq_sound_decoder_close(openal.music.decoder_id[music_id]);
+    libtq_audio_dec_close(openal.music.dec[music_id]);
     libtq_stream_close(openal.music.stream[music_id]);
 
     openal.music.bits[music_id] = 0;
     openal.music.stream[music_id] = NULL;
-    openal.music.decoder_id[music_id] = -1;
+    openal.music.dec[music_id] = NULL;
 }
 
 static int32_t play_music(int32_t music_id, int loop)
@@ -626,7 +626,7 @@ static int32_t play_music(int32_t music_id, int loop)
     openal.channels.bits[channel_id] = CHANNEL_BIT_USED | CHANNEL_BIT_STREAMING;
 
     openal.channels.stream[channel_id] = openal.music.stream[music_id];
-    openal.channels.decoder_id[channel_id] = openal.music.decoder_id[music_id];
+    openal.channels.dec[channel_id] = openal.music.dec[music_id];
     openal.channels.loop[channel_id] = loop;
 
     openal.channels.thread[channel_id] = libtq_create_thread("music",
