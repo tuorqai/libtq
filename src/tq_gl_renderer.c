@@ -842,7 +842,7 @@ static void bind_surface(int surface_id)
 
     if (!gl_surface_array_check(&surfaces, surface_id)) {
         framebuffer = 0;
-        tq_core_get_display_size(&width, &height);
+        libtq_get_display_size(&width, &height);
     } else {
         framebuffer = surfaces.data[surface_id].framebuffer;
         width = textures.data[surfaces.data[surface_id].texture_id].width;

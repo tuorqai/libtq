@@ -127,7 +127,7 @@ void tq_graphics_initialize(void)
 #endif
 
     int display_width, display_height;
-    tq_core_get_display_size(&display_width, &display_height);
+    libtq_get_display_size(&display_width, &display_height);
 
     if (!graphics.canvas_width || !graphics.canvas_height) {
         graphics.canvas_width = display_width;
@@ -185,7 +185,7 @@ void tq_graphics_process(void)
     renderer.bind_texture(canvas_texture_id);
 
     float canvas_aspect_ratio = graphics.canvas_aspect_ratio;
-    float display_aspect_ratio = core_get_display_aspect_ratio();
+    float display_aspect_ratio = libtq_get_display_aspect_ratio();
 
     float x0, x1, y0, y1;
 
@@ -275,10 +275,10 @@ void graphics_set_canvas_smooth(bool smooth)
 void graphics_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v)
 {
     int display_width, display_height;
-    tq_core_get_display_size(&display_width, &display_height);
+    libtq_get_display_size(&display_width, &display_height);
 
     float canvas_aspect = graphics.canvas_aspect_ratio;
-    float display_aspect = core_get_display_aspect_ratio();
+    float display_aspect = libtq_get_display_aspect_ratio();
 
     if (display_aspect > canvas_aspect) {
         float x_scale = display_height / (float) graphics.canvas_height;

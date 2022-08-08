@@ -211,7 +211,7 @@ static void initialize(void)
 
     CHECK_AL(alGenSources(TQ_CHANNEL_LIMIT, openal.channels.source));
 
-    openal.mutex = tq_core_create_mutex();
+    openal.mutex = libtq_create_mutex();
 
     tq_log_info("OpenAL audio module is initialized.\n");
 }
@@ -223,14 +223,14 @@ static void terminate(void)
      */
     for (int32_t channel_id = 0; channel_id < TQ_CHANNEL_LIMIT; channel_id++) {
         if (openal.channels.bits[channel_id] & CHANNEL_BIT_USED) {
-            tq_core_lock_mutex(openal.mutex);
+            libtq_lock_mutex(openal.mutex);
             {
                 CHECK_AL(alSourceStop(openal.channels.source[channel_id]));
             }
-            tq_core_unlock_mutex(openal.mutex);
+            libtq_unlock_mutex(openal.mutex);
 
             if (openal.channels.bits[channel_id] & CHANNEL_BIT_STREAMING) {
-                tq_core_wait_thread(openal.channels.thread[channel_id]);
+                libtq_wait_thread(openal.channels.thread[channel_id]);
             }
         }
     }
@@ -260,7 +260,7 @@ static void terminate(void)
         }
     }
 
-    tq_core_destroy_mutex(openal.mutex);
+    libtq_destroy_mutex(openal.mutex);
 
     alcMakeContextCurrent(NULL);
     alcDestroyContext(openal.context);
@@ -454,11 +454,11 @@ static int music_main(void *data)
     ALenum format = choose_format(num_channels);
 
     if (format == AL_INVALID_ENUM) {
-        tq_core_lock_mutex(openal.mutex);
+        libtq_lock_mutex(openal.mutex);
         {
             openal.channels.bits[channel_id] &= ~CHANNEL_BIT_STREAMING;
         }
-        tq_core_unlock_mutex(openal.mutex);
+        libtq_unlock_mutex(openal.mutex);
 
         return -1;
     }
@@ -489,7 +489,7 @@ static int music_main(void *data)
     while (true) {
         bool paused = false;
 
-        tq_core_lock_mutex(openal.mutex);
+        libtq_lock_mutex(openal.mutex);
         {
             ALint state;
             CHECK_AL(alGetSourcei(source, AL_SOURCE_STATE, &state));
@@ -500,7 +500,7 @@ static int music_main(void *data)
                 streaming = false;
             }
         }
-        tq_core_unlock_mutex(openal.mutex);
+        libtq_unlock_mutex(openal.mutex);
 
         if (paused) {
             continue;
@@ -524,18 +524,18 @@ static int music_main(void *data)
             CHECK_AL(alSourceQueueBuffers(source, 1, &buffer));
         }
 
-        tq_core_sleep(0.1);
+        libtq_sleep(0.1);
     }
 
     clear_buffer_queue(source);
     CHECK_AL(alDeleteBuffers(MUSIC_BUFFER_COUNT, buffers));
     tq_mem_free(samples);
 
-    tq_core_lock_mutex(openal.mutex);
+    libtq_lock_mutex(openal.mutex);
     {
         openal.channels.bits[channel_id] &= ~CHANNEL_BIT_STREAMING;
     }
-    tq_core_unlock_mutex(openal.mutex);
+    libtq_unlock_mutex(openal.mutex);
 
     return 0;
 }
@@ -577,13 +577,13 @@ static void close_music(int32_t music_id)
     for (int32_t channel_id = 0; channel_id < TQ_CHANNEL_LIMIT; channel_id++) {
         if (openal.channels.bits[channel_id] & CHANNEL_BIT_STREAMING) {
             if (openal.channels.stream[channel_id] == openal.music.stream[music_id]) {
-                tq_core_lock_mutex(openal.mutex);
+                libtq_lock_mutex(openal.mutex);
                 {
                     CHECK_AL(alSourceStop(openal.channels.source[channel_id]));
                 }
-                tq_core_unlock_mutex(openal.mutex);
+                libtq_unlock_mutex(openal.mutex);
 
-                tq_core_wait_thread(openal.channels.thread[channel_id]);
+                libtq_wait_thread(openal.channels.thread[channel_id]);
             }
         }
     }
@@ -629,7 +629,7 @@ static int32_t play_music(int32_t music_id, int loop)
     openal.channels.decoder_id[channel_id] = openal.music.decoder_id[music_id];
     openal.channels.loop[channel_id] = loop;
 
-    openal.channels.thread[channel_id] = tq_core_create_thread("music",
+    openal.channels.thread[channel_id] = libtq_create_thread("music",
         music_main, (void *) ((intptr_t) channel_id));
 
     return 0;
@@ -650,7 +650,7 @@ static tq_channel_state get_channel_state(int32_t channel_id)
 
     tq_channel_state result = TQ_CHANNEL_INACTIVE;
 
-    tq_core_lock_mutex(openal.mutex);
+    libtq_lock_mutex(openal.mutex);
     {
         ALint state;
         CHECK_AL(alGetSourcei(openal.channels.source[channel_id], AL_SOURCE_STATE, &state));
@@ -661,7 +661,7 @@ static tq_channel_state get_channel_state(int32_t channel_id)
             result = TQ_CHANNEL_PAUSED;
         }
     }
-    tq_core_unlock_mutex(openal.mutex);
+    libtq_unlock_mutex(openal.mutex);
 
     return result;
 }
@@ -676,11 +676,11 @@ static void pause_channel(int32_t channel_id)
         return;
     }
 
-    tq_core_lock_mutex(openal.mutex);
+    libtq_lock_mutex(openal.mutex);
     {
         CHECK_AL(alSourcePause(openal.channels.source[channel_id]));
     }
-    tq_core_unlock_mutex(openal.mutex);
+    libtq_unlock_mutex(openal.mutex);
 }
 
 static void unpause_channel(int32_t channel_id)
@@ -693,7 +693,7 @@ static void unpause_channel(int32_t channel_id)
         return;
     }
 
-    tq_core_lock_mutex(openal.mutex);
+    libtq_lock_mutex(openal.mutex);
     {
         ALint state;
         CHECK_AL(alGetSourcei(openal.channels.source[channel_id], AL_SOURCE_STATE, &state));
@@ -702,7 +702,7 @@ static void unpause_channel(int32_t channel_id)
             CHECK_AL(alSourcePlay(openal.channels.source[channel_id]));
         }
     }
-    tq_core_unlock_mutex(openal.mutex);
+    libtq_unlock_mutex(openal.mutex);
 }
 
 static void stop_channel(int32_t channel_id)
@@ -715,12 +715,12 @@ static void stop_channel(int32_t channel_id)
         return;
     }
 
-    tq_core_lock_mutex(openal.mutex);
+    libtq_lock_mutex(openal.mutex);
     {
         CHECK_AL(alSourceStop(openal.channels.source[channel_id]));
         openal.channels.bits[channel_id] &= ~CHANNEL_BIT_USED;
     }
-    tq_core_unlock_mutex(openal.mutex);
+    libtq_unlock_mutex(openal.mutex);
 }
 
 //------------------------------------------------------------------------------

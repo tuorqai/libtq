@@ -40,24 +40,24 @@ bool tq_process(void)
 tq_vec2i tq_get_display_size(void)
 {
     tq_vec2i size;
-    tq_core_get_display_size(&size.x, &size.y);
+    libtq_get_display_size(&size.x, &size.y);
 
     return size;
 }
 
 void tq_set_display_size(tq_vec2i size)
 {
-    tq_core_set_display_size(size.x, size.y);
+    libtq_set_display_size(size.x, size.y);
 }
 
 char const *tq_get_title(void)
 {
-    return tq_core_get_title();
+    return libtq_get_title();
 }
 
 void tq_set_title(char const *title)
 {
-    tq_core_set_title(title);
+    libtq_set_title(title);
 }
 
 //----------------------------------------------------------
@@ -65,32 +65,32 @@ void tq_set_title(char const *title)
 
 bool tq_is_key_autorepeat_enabled(void)
 {
-    return tq_core_is_key_autorepeat_enabled();
+    return libtq_is_key_autorepeat_enabled();
 }
 
 void tq_set_key_autorepeat_enabled(bool enabled)
 {
-    tq_core_set_key_autorepeat_enabled(enabled);
+    libtq_set_key_autorepeat_enabled(enabled);
 }
 
 bool tq_is_key_pressed(tq_key key)
 {
-    return tq_core_is_key_pressed(key);
+    return libtq_is_key_pressed(key);
 }
 
 bool tq_is_mouse_button_pressed(tq_mouse_button mouse_button)
 {
-    return tq_core_is_mouse_button_pressed(mouse_button);
+    return libtq_is_mouse_button_pressed(mouse_button);
 }
 
 void tq_on_key_pressed(tq_key_callback callback)
 {
-    tq_core_set_key_press_callback(callback);
+    libtq_set_key_press_callback(callback);
 }
 
 void tq_on_key_released(tq_key_callback callback)
 {
-    tq_core_set_key_release_callback(callback);
+    libtq_set_key_release_callback(callback);
 }
 
 //----------------------------------------------------------
@@ -98,40 +98,40 @@ void tq_on_key_released(tq_key_callback callback)
 
 bool tq_is_mouse_cursor_hidden(void)
 {
-    return core_is_mouse_cursor_hidden();
+    return libtq_is_mouse_cursor_hidden();
 }
 
 void tq_set_mouse_cursor_hidden(bool hidden)
 {
-    core_set_mouse_cursor_hidden(hidden);
+    libtq_set_mouse_cursor_hidden(hidden);
 }
 
 tq_vec2i tq_get_mouse_cursor_position(void)
 {
     tq_vec2i position;
-    tq_core_get_mouse_cursor_position(&position.x, &position.y);
+    libtq_get_mouse_cursor_position(&position.x, &position.y);
 
     return position;
 }
 
 void tq_on_mouse_button_pressed(tq_mouse_button_callback callback)
 {
-    tq_core_set_mouse_button_press_callback(callback);
+    libtq_set_mousebutton_press_callback(callback);
 }
 
 void tq_on_mouse_button_released(tq_mouse_button_callback callback)
 {
-    tq_core_set_mouse_button_release_callback(callback);
+    libtq_set_mousebutton_release_callback(callback);
 }
 
 void tq_on_mouse_cursor_moved(tq_mouse_cursor_callback callback)
 {
-    tq_core_set_mouse_cursor_move_callback(callback);
+    libtq_set_mousecursor_move_callback(callback);
 }
 
 void tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback callback)
 {
-    tq_core_set_mouse_wheel_scroll_callback(callback);
+    libtq_set_mousewheel_scroll_callback(callback);
 }
 
 //----------------------------------------------------------
@@ -139,25 +139,25 @@ void tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback callback)
 
 float tq_get_time_mediump(void)
 {
-    return tq_core_get_time_mediump();
+    return libtq_get_time_mediump();
 }
 
 double tq_get_time_highp(void)
 {
-    return tq_core_get_time_highp();
+    return libtq_get_time_highp();
 }
 
 double tq_get_delta_time(void)
 {
-    return tq_core_get_delta_time();
+    return libtq_get_delta_time();
 }
 
 //----------------------------------------------------------
 // Stats
 
-unsigned int tq_get_framerate(void)
+int tq_get_framerate(void)
 {
-    return tq_core_get_framerate();
+    return libtq_get_framerate();
 }
 
 //------------------------------------------------------------------------------

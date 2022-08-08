@@ -9,7 +9,7 @@
 
 //------------------------------------------------------------------------------
 
-static void initialize()
+static void initialize(void)
 {
 
 }

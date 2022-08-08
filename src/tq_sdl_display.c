@@ -179,14 +179,14 @@ static tq_mouse_button mouse_button_conv(int button)
 
 //------------------------------------------------------------------------------
 
-static void initialize(uint32_t a0, uint32_t a1, char const *a2)
+static void initialize(void)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         tq_error("Failed to initialize SDL: %s", SDL_GetError());
     }
 
     int width, height;
-    tq_core_get_display_size(&width, &height);
+    libtq_get_display_size(&width, &height);
 
     struct gl_version gl_versions[] = {
         { 4, 6, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
@@ -209,7 +209,7 @@ static void initialize(uint32_t a0, uint32_t a1, char const *a2)
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, gl_versions[n].flags);
 
         sdl.window = SDL_CreateWindow(
-            tq_core_get_title(),
+            libtq_get_title(),
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
             width, height,
@@ -245,7 +245,7 @@ static void initialize(uint32_t a0, uint32_t a1, char const *a2)
     SDL_ShowWindow(sdl.window);
     SDL_SetWindowMinimumSize(sdl.window, 256, 256);
 
-    sdl.key_autorepeat = tq_core_is_key_autorepeat_enabled();
+    sdl.key_autorepeat = libtq_is_key_autorepeat_enabled();
 
     tq_log_info("SDL window initialized.\n");
 }
@@ -274,29 +274,29 @@ static bool process_events(void)
             if (event.key.repeat && !sdl.key_autorepeat) {
                 break;
             }
-            tq_core_on_key_pressed(key_conv(&event.key.keysym));
+            libtq_on_key_pressed(key_conv(&event.key.keysym));
             break;
         case SDL_KEYUP:
-            tq_core_on_key_released(key_conv(&event.key.keysym));
+            libtq_on_key_released(key_conv(&event.key.keysym));
             break;
         case SDL_MOUSEBUTTONDOWN:
-            tq_core_on_mouse_button_pressed(mouse_button_conv(event.button.button));
+            libtq_on_mouse_button_pressed(mouse_button_conv(event.button.button));
             break;
         case SDL_MOUSEBUTTONUP:
-            tq_core_on_mouse_button_released(mouse_button_conv(event.button.button));
+            libtq_on_mouse_button_released(mouse_button_conv(event.button.button));
             break;
         case SDL_MOUSEMOTION:
-            tq_core_on_mouse_cursor_moved(event.button.x, event.button.y);
+            libtq_on_mouse_cursor_moved(event.button.x, event.button.y);
             break;
         case SDL_MOUSEWHEEL:
             if (event.wheel.y) {
-                tq_core_on_mouse_wheel_scrolled((float) event.wheel.x, (float) event.wheel.y);
+                libtq_on_mouse_wheel_scrolled((float) event.wheel.x, (float) event.wheel.y);
             }
             break;
         case SDL_WINDOWEVENT:
             switch (event.window.event) {
             case SDL_WINDOWEVENT_RESIZED:
-                tq_core_on_display_resized(event.window.data1, event.window.data2);
+                libtq_on_display_resize(event.window.data1, event.window.data2);
                 break;
             }
             break;

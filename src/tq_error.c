@@ -41,7 +41,7 @@ void libtq_error(char const *fmt, ...)
     libtq_log(LIBTQ_LOG_ERROR, "    %s\n", buffer);
     libtq_log(LIBTQ_LOG_ERROR, "------------------------------------------------------------\n");
 
-    tq_core_show_message_box("tq library error", buffer);
+    libtq_show_msgbox("tq library error", buffer);
 
     abort();
 }

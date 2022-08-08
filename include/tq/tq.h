@@ -553,7 +553,7 @@ TQ_API double TQ_CALL tq_get_delta_time(void);
 /**
  * Get the current framerate in frames per second.
  */
-TQ_API unsigned int TQ_CALL tq_get_framerate(void);
+TQ_API int TQ_CALL tq_get_framerate(void);
 
 //------------------------------------------------------------------------------
 // Graphics
