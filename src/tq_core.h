@@ -69,6 +69,8 @@ struct libtq_display_impl
     void        (*set_key_autorepeat_enabled)(bool enabled);
     void        (*set_mouse_cursor_hidden)(bool hidden);
     void        (*show_message_box)(char const *title, char const *message);
+    void        *(*get_gl_proc_addr)(char const *name);
+    bool        (*check_gl_ext)(char const *name);
 };
 
 #if defined(TQ_USE_SDL)
@@ -138,6 +140,9 @@ libtq_mutex     libtq_create_mutex(void);
 void            libtq_destroy_mutex(libtq_mutex mutex);
 void            libtq_lock_mutex(libtq_mutex mutex);
 void            libtq_unlock_mutex(libtq_mutex mutex);
+
+void            *libtq_get_gl_proc_addr(char const *name);
+bool            libtq_check_gl_ext(char const *name);
 
 //------------------------------------------------------------------------------
 

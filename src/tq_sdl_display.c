@@ -334,6 +334,16 @@ static void show_message_box(char const *title, char const *message)
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, message, sdl.window);
 }
 
+static void *get_gl_proc_addr(char const *name)
+{
+    return SDL_GL_GetProcAddress(name);
+}
+
+static bool check_gl_ext(char const *name)
+{
+    return SDL_GL_ExtensionSupported(name);
+}
+
 //------------------------------------------------------------------------------
 
 void libtq_construct_sdl_display(struct libtq_display_impl *display)
@@ -347,6 +357,8 @@ void libtq_construct_sdl_display(struct libtq_display_impl *display)
     display->set_key_autorepeat_enabled = set_key_autorepeat_enabled;
     display->set_mouse_cursor_hidden = set_mouse_cursor_hidden;
     display->show_message_box       = show_message_box;
+    display->get_gl_proc_addr       = get_gl_proc_addr;
+    display->check_gl_ext           = check_gl_ext;
 }
 
 //------------------------------------------------------------------------------

@@ -395,4 +395,14 @@ void libtq_unlock_mutex(libtq_mutex mutex)
     core.threads.unlock_mutex(mutex);
 }
 
+void *libtq_get_gl_proc_addr(char const *name)
+{
+    return core.display.get_gl_proc_addr(name);
+}
+
+bool libtq_check_gl_ext(char const *name)
+{
+    return core.display.check_gl_ext(name);
+}
+
 //------------------------------------------------------------------------------
