@@ -72,30 +72,50 @@ if(BUILD_SHARED_LIBS)
     target_compile_definitions(tq PRIVATE TQ_SHARED)
 endif()
 
-#---------------------------------------
-# Platform-specific
-#---------------------------------------
+#-------------------------------------------------------------------------------
+# Dependencies
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+# -- Common dependencies
+
+find_package(Threads REQUIRED)
+find_package(freetype CONFIG REQUIRED)
+find_package(harfbuzz CONFIG REQUIRED)
+
+target_link_libraries(tq
+    Threads::Threads
+    freetype
+    harfbuzz::harfbuzz)
+
+# -- Optional dependencies
+
+find_library(MATH_LIBRARY NAMES m)
+find_package(Vorbis)
+
+if(MATH_LIBRARY)
+    target_link_libraries(tq ${MATH_LIBRARY})
+endif()
+
+if(Vorbis_FOUND)
+    target_compile_definitions(tq PRIVATE TQ_USE_OGG)
+    target_link_libraries(tq Vorbis::vorbisfile)
+endif()
+
+# -- Platform-specific dependencies
 
 if(ANDROID)
-    set(APP_GLUE_PATH "${ANDROID_NDK}/sources/android/native_app_glue")
-    add_library(native_app_glue STATIC "${APP_GLUE_PATH}/android_native_app_glue.c")
-    target_link_libraries(tq PUBLIC android log native_app_glue GLESv2 EGL)
+    target_link_libraries(tq android log GLESv2 EGL)
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_ANDROID
         TQ_USE_OPENGL
         TQ_USE_OPENGL_ES)
-
-    add_subdirectory("android-bundle")
 elseif(WIN32 OR UNIX AND NOT APPLE)
-    find_package(SDL2 REQUIRED)
-    find_package(OpenGL REQUIRED)
-    find_package(GLEW REQUIRED)
-    find_package(OpenAL REQUIRED)
+    find_package(SDL2 CONFIG REQUIRED)
+    find_package(GLEW CONFIG REQUIRED)
+    find_package(OpenAL CONFIG REQUIRED)
 
-    target_include_directories(tq PRIVATE ${OPENAL_INCLUDE_DIR})
-    target_link_libraries(tq PUBLIC SDL2::SDL2 OpenGL::GL GLEW::GLEW ${OPENAL_LIBRARY})
+    find_package(OpenGL REQUIRED)
+
+    target_link_libraries(tq SDL2::SDL2 OpenGL::GL GLEW::GLEW OpenAL::OpenAL)
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_DESKTOP
         TQ_USE_SDL
@@ -105,31 +125,10 @@ elseif(WIN32 OR UNIX AND NOT APPLE)
     # Static utility library which contains WinMain
     if(WIN32)
         add_library(tq_win32_system STATIC "src/tq_win32_system.c")
-        target_link_libraries(tq INTERFACE tq_win32_system)
+        target_link_libraries(tq tq_win32_system)
     endif()
 else()
     message(FATAL_ERROR "Sorry, but your OS is not supported :(")
-endif()
-
-find_package(Threads REQUIRED)
-find_package(FreeType REQUIRED)
-find_package(HarfBuzz REQUIRED)
-find_package(VorbisFile)
-
-if(VorbisFile_FOUND)
-    target_compile_definitions(tq PRIVATE TQ_USE_OGG)
-endif()
-
-target_link_libraries(tq PUBLIC
-    Threads::Threads
-    FreeType::FreeType
-    HarfBuzz::HarfBuzz
-    Vorbis::VorbisFile)
-
-find_library(MATH_LIBRARY NAMES m)
-
-if(MATH_LIBRARY)
-    target_link_libraries(tq ${MATH_LIBRARY})
 endif()
 
 #-------------------------------------------------------------------------------
