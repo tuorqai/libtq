@@ -160,12 +160,13 @@ void libtq_initialize_graphics(void)
 
     renderer.initialize();
 
+    priv.antialiasing_level = renderer.request_antialiasing_level(priv.antialiasing_level);
+
     graphics.canvas_surface_id = renderer.create_surface(
         graphics.canvas_width,
         graphics.canvas_height
     );
 
-    priv.antialiasing_level = renderer.request_antialiasing_level(priv.antialiasing_level);
     renderer.update_projection(matrices.projection);
     renderer.update_model_view(matrices.model_view[0]);
 
