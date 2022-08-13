@@ -201,20 +201,15 @@ void libtq_process_graphics(void)
         y1 = +(display_aspect_ratio / canvas_aspect_ratio);
     }
 
-    float data[] = {
-        x0, y0, 0.0f, 0.0f,
-        x1, y0, 1.0f, 0.0f,
-        x1, y1, 1.0f, 1.0f,
-        x0, y1, 0.0f, 1.0f,
-    };
-
-    renderer.draw_canvas(data);
+    renderer.draw_canvas(x0, y0, x1, y1);
     renderer.bind_surface(graphics.canvas_surface_id);
 
     mat3_identity(matrices.model_view[0]);
     renderer.update_model_view(matrices.model_view[0]);
 
     matrices.current_model_view = 0;
+
+    renderer.post_process();
 }
 
 //------------------------------------------------------------------------------

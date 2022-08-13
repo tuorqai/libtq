@@ -65,8 +65,6 @@ static int              font_count;
 
 static float            *vertex_buffer;
 static int              vertex_buffer_size;
-static unsigned int     *index_buffer;
-static int              index_buffer_size;
 
 static tq_color         text_outline_color;
 static tq_color         text_fill_color;
@@ -265,30 +263,6 @@ static float *maintain_vertex_buffer(int required_size)
     return vertex_buffer;
 }
 
-static unsigned int *maintain_index_buffer(int required_size)
-{
-    if (index_buffer_size > required_size) {
-        return index_buffer;
-    }
-
-    int next_size = TQ_MAX(index_buffer_size * 2, INITIAL_INDEX_BUFFER_SIZE);
-
-    while (next_size < required_size) {
-        next_size *= 2;
-    }
-
-    unsigned int *next_buffer = mem_realloc(index_buffer, sizeof(unsigned int) * next_size);
-    
-    if (!next_buffer) {
-        out_of_memory();
-    }
-
-    index_buffer = next_buffer;
-    index_buffer_size = next_size;
-    
-    return index_buffer;
-}
-
 //------------------------------------------------------------------------------
 
 void text_initialize(struct libtq_renderer_impl const *_renderer)
@@ -306,15 +280,11 @@ void text_initialize(struct libtq_renderer_impl const *_renderer)
 
     vertex_buffer = NULL;
     vertex_buffer_size = 0;
-
-    index_buffer = NULL;
-    index_buffer_size = 0;
 }
 
 void text_terminate(void)
 {
     mem_free(vertex_buffer);
-    mem_free(index_buffer);
 
     for (int i = 0; i < font_count; i++) {
         text_delete_font(i);
@@ -507,8 +477,7 @@ void text_draw_text(int font_id, float x, float y, char const *text)
     float x_current = x + x_offset;
     float y_current = y;
 
-    float *v = maintain_vertex_buffer(16 * length);
-    unsigned int *n = maintain_index_buffer(6 * length);
+    float *v = maintain_vertex_buffer(24 * length);
 
     int quad_count = 0;
 
@@ -535,11 +504,9 @@ void text_draw_text(int font_id, float x, float y, char const *text)
         *v++ = x0;  *v++ = y0;  *v++ = s0;  *v++ = t0;
         *v++ = x1;  *v++ = y0;  *v++ = s1;  *v++ = t0;
         *v++ = x1;  *v++ = y1;  *v++ = s1;  *v++ = t1;
+        *v++ = x1;  *v++ = y1;  *v++ = s1;  *v++ = t1;
         *v++ = x0;  *v++ = y1;  *v++ = s0;  *v++ = t1;
-
-        *n++ = (4 * i) + 0;     *n++ = (4 * i) + 1;
-        *n++ = (4 * i) + 2;     *n++ = (4 * i) + 2;
-        *n++ = (4 * i) + 3;     *n++ = (4 * i) + 0;
+        *v++ = x0;  *v++ = y0;  *v++ = s0;  *v++ = t0;
 
         x_current += glyph->x_advance;
         y_current += glyph->y_advance;
@@ -549,7 +516,7 @@ void text_draw_text(int font_id, float x, float y, char const *text)
 
     renderer->bind_texture(fonts[font_id].atlas.texture_id);
     renderer->set_draw_color(text_fill_color);
-    renderer->draw_font(vertex_buffer, index_buffer, 6 * quad_count);
+    renderer->draw_font(vertex_buffer, 6 * quad_count);
 
     hb_buffer_destroy(buffer);
 }

@@ -7,12 +7,7 @@
 
 #include <string.h>
 
-#if !defined(TQ_USE_OPENGL_ES)
-#   include <GL/glew.h>
-#else
-#   include <GLES2/gl2.h>
-#   include <GLES2/gl2ext.h>
-#endif
+#include <GL/glew.h>
 
 #include "tq_core.h"
 #include "tq_error.h"
@@ -35,16 +30,16 @@
 static char const *get_gl_error_str(GLenum error)
 {
     switch (error) {
-    case GL_NO_ERROR:           return "No error, everything is OK.";
-    case GL_INVALID_ENUM:       return "Invalid enumeration.";
-    case GL_INVALID_VALUE:      return "Invalid value.";
-    case GL_INVALID_OPERATION:  return "Invalid operation.";
-    case GL_OUT_OF_MEMORY:      return "Out of memory.";
+    case GL_NO_ERROR:           return "No error, everything is OK";
+    case GL_INVALID_ENUM:       return "Invalid enumeration";
+    case GL_INVALID_VALUE:      return "Invalid value";
+    case GL_INVALID_OPERATION:  return "Invalid operation";
+    case GL_OUT_OF_MEMORY:      return "Out of memory";
     case GL_INVALID_FRAMEBUFFER_OPERATION:
-                                return "Invalid framebuffer operation.";
+                                return "Invalid framebuffer operation";
     }
 
-    return "Unknown error.";
+    return "Unknown error";
 }
 
 static void check_gl_errors(char const *call, char const *file, unsigned int line)
@@ -52,12 +47,16 @@ static void check_gl_errors(char const *call, char const *file, unsigned int lin
     GLenum error = glGetError();
 
     if (error != GL_NO_ERROR) {
-        log_error("OpenGL error(s) occured in %s at line %d:\n", file, line);
-        log_error("-- %d: %s\n", line, call);
+        // #ifdef _WIN32
+        // libtq_error("GL error: 0x%04x (%s) at %s:%d", error, get_gl_error_str(error), file, line);
+        // #endif
+        
+        libtq_log(LIBTQ_LOG_ERROR, "OpenGL error(s) occured in %s at line %d:\n", file, line);
+        libtq_log(LIBTQ_LOG_ERROR, "-- %d: %s\n", line, call);
     }
 
     while (error != GL_NO_ERROR) {
-        log_error(":: [0x%x] %s\n", error, get_gl_error_str(error));
+        libtq_log(LIBTQ_LOG_ERROR, ":: [0x%04x] %s\n", error, get_gl_error_str(error));
         error = glGetError();
     }
 }
@@ -145,6 +144,8 @@ static char const *fs_src_font =
 
 //------------------------------------------------------------------------------
 
+#define DEFAULT_VBO_SIZE            256
+
 /**
  * Vertex attributes.
  */
@@ -156,13 +157,14 @@ enum
 };
 
 /**
- * Vertex attribute bits.
+ * Vertex formats.
  */
 enum
 {
-    ATTRIB_BIT_POSITION = (1 << ATTRIB_POSITION),
-    ATTRIB_BIT_COLOR = (1 << ATTRIB_COLOR),
-    ATTRIB_BIT_TEXCOORD = (1 << ATTRIB_TEXCOORD)
+    VERTEX_FORMAT_SOLID,        // (x, y)
+    VERTEX_FORMAT_COLORED,      // (x, y), (r, g, b, a)
+    VERTEX_FORMAT_TEXTURED,     // (x, y), (s, t)
+    NUM_VERTEX_FORMATS,
 };
 
 /**
@@ -229,7 +231,6 @@ struct gl_program
 
 struct gl_state
 {
-    int vertex_format;
     int program_id;
     int bound_texture_id;
     int bound_surface_id;
@@ -239,6 +240,15 @@ struct gl_state
 DECLARE_FLEXIBLE_ARRAY(gl_texture)
 DECLARE_FLEXIBLE_ARRAY(gl_surface)
 
+struct libtq_gl_renderer_priv
+{
+    int             vertex_format;
+    GLuint          vao[NUM_VERTEX_FORMATS];
+    GLuint          vbo[NUM_VERTEX_FORMATS];
+    GLsizei         vbo_offset[NUM_VERTEX_FORMATS];
+    GLsizei         vbo_size[NUM_VERTEX_FORMATS];
+};
+
 //------------------------------------------------------------------------------
 
 static struct gl_colors colors;
@@ -247,6 +257,7 @@ static struct gl_texture_array textures;
 static struct gl_program programs[PROGRAM_COUNT];
 static struct gl_state state;
 static struct gl_surface_array surfaces;
+static struct libtq_gl_renderer_priv priv;
 
 //------------------------------------------------------------------------------
 
@@ -293,9 +304,9 @@ static GLenum conv_texture_format(int channels)
 {
     switch (channels) {
     case 1:
-        return GL_LUMINANCE;
+        return GL_RED;
     case 2:
-        return GL_LUMINANCE_ALPHA;
+        return GL_RG;
     case 3:
         return GL_RGB;
     case 4:
@@ -423,35 +434,122 @@ static GLuint link_program(GLuint vs, GLuint fs)
     return handle;
 }
 
-/**
- * Update current vertex format.
- * Doesn't do anything if the format is the same.
- */
+static void set_vertex_pointers(int vertex_format)
+{
+    switch (vertex_format) {
+    case VERTEX_FORMAT_SOLID:
+        CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE,
+            2 * sizeof(GLfloat), (void *) 0));
+        break;
+    case VERTEX_FORMAT_COLORED:
+        CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE,
+            6 * sizeof(GLfloat), (void *) 0));
+        CHECK_GL(glVertexAttribPointer(ATTRIB_COLOR, 4, GL_FLOAT, GL_FALSE,
+            6 * sizeof(GLfloat), (void *) (2 * sizeof(float))));
+        break;
+    case VERTEX_FORMAT_TEXTURED:
+        CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE,
+            4 * sizeof(GLfloat), (void *) 0));
+        CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE,
+            4 * sizeof(GLfloat), (void *) (2 * sizeof(float))));
+        break;
+    }
+}
+
+static void init_vertex_formats(void)
+{
+    CHECK_GL(glGenVertexArrays(NUM_VERTEX_FORMATS, priv.vao));
+    CHECK_GL(glGenBuffers(NUM_VERTEX_FORMATS, priv.vbo));
+
+    CHECK_GL(glBindVertexArray(priv.vao[VERTEX_FORMAT_SOLID]));
+    CHECK_GL(glEnableVertexAttribArray(ATTRIB_POSITION));
+    CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, priv.vbo[VERTEX_FORMAT_SOLID]));
+    CHECK_GL(glBufferData(GL_ARRAY_BUFFER, DEFAULT_VBO_SIZE, NULL, GL_DYNAMIC_DRAW));
+    set_vertex_pointers(VERTEX_FORMAT_SOLID);
+
+    CHECK_GL(glBindVertexArray(priv.vao[VERTEX_FORMAT_COLORED]));
+    CHECK_GL(glEnableVertexAttribArray(ATTRIB_POSITION));
+    CHECK_GL(glEnableVertexAttribArray(ATTRIB_COLOR));
+    CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, priv.vbo[VERTEX_FORMAT_COLORED]));
+    CHECK_GL(glBufferData(GL_ARRAY_BUFFER, DEFAULT_VBO_SIZE, NULL, GL_DYNAMIC_DRAW));
+    set_vertex_pointers(VERTEX_FORMAT_COLORED);
+
+    CHECK_GL(glBindVertexArray(priv.vao[VERTEX_FORMAT_TEXTURED]));
+    CHECK_GL(glEnableVertexAttribArray(ATTRIB_POSITION));
+    CHECK_GL(glEnableVertexAttribArray(ATTRIB_TEXCOORD));
+    CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, priv.vbo[VERTEX_FORMAT_TEXTURED]));
+    CHECK_GL(glBufferData(GL_ARRAY_BUFFER, DEFAULT_VBO_SIZE, NULL, GL_DYNAMIC_DRAW));
+    set_vertex_pointers(VERTEX_FORMAT_TEXTURED);
+
+    CHECK_GL(glBindVertexArray(0));
+
+    priv.vertex_format = -1;
+
+    for (int i = 0; i < NUM_VERTEX_FORMATS; i++) {
+        priv.vbo_offset[i] = 0;
+        priv.vbo_size[i] = DEFAULT_VBO_SIZE;
+    }
+}
+
+static void init_vbo(void)
+{
+    CHECK_GL(glGenBuffers(NUM_VERTEX_FORMATS, priv.vbo));
+
+    CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, priv.vbo[VERTEX_FORMAT_SOLID]));
+    CHECK_GL(glBufferData(GL_ARRAY_BUFFER, DEFAULT_VBO_SIZE, NULL, GL_DYNAMIC_DRAW));
+}
+
 static void set_vertex_format(int vertex_format)
 {
-    if (state.vertex_format == vertex_format) {
+    if (priv.vertex_format == vertex_format) {
         return;
     }
 
-    if (vertex_format & ATTRIB_BIT_POSITION) {
-        CHECK_GL(glEnableVertexAttribArray(ATTRIB_POSITION));
-    } else {
-        CHECK_GL(glDisableVertexAttribArray(ATTRIB_POSITION));
+    CHECK_GL(glBindVertexArray(priv.vao[vertex_format]));
+    priv.vertex_format = vertex_format;
+}
+
+static GLsizei append_data_to_vbo(void const *data, size_t size)
+{
+    int vbo = priv.vertex_format;
+
+    GLsizei offset = priv.vbo_offset[vbo];
+    GLsizei required_vbo_size = offset + size;
+
+    if (priv.vbo_size[vbo] < required_vbo_size) {
+        GLsizei next_vbo_size = priv.vbo_size[vbo];
+
+        while (next_vbo_size < required_vbo_size) {
+            next_vbo_size *= 2;
+        }
+
+        GLuint prev_vbo = priv.vbo[vbo];
+        GLsizei prev_vbo_size = priv.vbo_size[vbo];
+
+        GLuint next_vbo;
+        CHECK_GL(glGenBuffers(1, &next_vbo));
+        CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, next_vbo));
+        CHECK_GL(glBufferData(GL_ARRAY_BUFFER, next_vbo_size, NULL, GL_DYNAMIC_DRAW));
+
+        CHECK_GL(glBindBuffer(GL_COPY_READ_BUFFER, prev_vbo));
+        CHECK_GL(glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ARRAY_BUFFER,
+            0, 0, prev_vbo_size));
+        CHECK_GL(glBindBuffer(GL_COPY_READ_BUFFER, 0));
+
+        CHECK_GL(glDeleteBuffers(1, &prev_vbo));
+
+        set_vertex_pointers(priv.vertex_format);
+
+        priv.vbo[vbo] = next_vbo;
+        priv.vbo_size[vbo] = next_vbo_size;
     }
 
-    if (vertex_format & ATTRIB_BIT_COLOR) {
-        CHECK_GL(glEnableVertexAttribArray(ATTRIB_COLOR));
-    } else {
-        CHECK_GL(glDisableVertexAttribArray(ATTRIB_COLOR));
-    }
+    CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, priv.vbo[vbo]));
+    CHECK_GL(glBufferSubData(GL_ARRAY_BUFFER, offset, size, data));
+    
+    priv.vbo_offset[vbo] += size;
 
-    if (vertex_format & ATTRIB_BIT_TEXCOORD) {
-        CHECK_GL(glEnableVertexAttribArray(ATTRIB_TEXCOORD));
-    } else {
-        CHECK_GL(glDisableVertexAttribArray(ATTRIB_TEXCOORD));
-    }
-
-    state.vertex_format = vertex_format;
+    return offset;
 }
 
 /**
@@ -522,16 +620,9 @@ static void set_dirty_uniform(int program_id, int uniform_id)
  */
 static void initialize(void)
 {
-    #ifndef TQ_USE_OPENGL_ES
-        // Load OpenGL extensions.
-        if (glewInit()) {
-            tq_error("Failed to initialize GLEW.\n");
-        }
-
-        if (!GLEW_ARB_framebuffer_object) {
-            tq_error("ARB_framebuffer_object is not supported on this machine.\n");
-        }
-    #endif
+    if (glewInit()) {
+        tq_error("Failed to initialize GLEW.\n");
+    }
 
     mat4_identity(matrices.proj);
     mat4_identity(matrices.mv);
@@ -539,7 +630,8 @@ static void initialize(void)
     gl_texture_array_initialize(&textures, 16, gl_texture_dtor);
     gl_surface_array_initialize(&surfaces, 8, gl_surface_dtor);
 
-    state.vertex_format = 0;
+    init_vertex_formats();
+
     state.program_id = -1;
 
     GLuint vs_standard = compile_shader(GL_VERTEX_SHADER, vs_src_standard);
@@ -583,11 +675,7 @@ static void initialize(void)
     CHECK_GL(glDisable(GL_CULL_FACE));
     CHECK_GL(glDisable(GL_DEPTH_TEST));
 
-    #ifndef TQ_USE_OPENGL_ES
-        CHECK_GL(glEnable(GL_MULTISAMPLE));
-    #else
-        CHECK_GL(glEnable(GL_MULTISAMPLE_EXT));
-    #endif
+    CHECK_GL(glEnable(GL_MULTISAMPLE));
 
     CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
 
@@ -620,6 +708,13 @@ static void terminate(void)
 static void process(void)
 {
     CHECK_GL(glFlush());
+}
+
+static void post_process(void)
+{
+    for (int i = 0; i < NUM_VERTEX_FORMATS; i++) {
+        priv.vbo_offset[i] = 0;
+    }
 }
 
 /**
@@ -902,55 +997,68 @@ static void clear(void)
 
 static void draw_solid(int mode, float const *data, int num_vertices)
 {
-    set_vertex_format(ATTRIB_BIT_POSITION);
+    set_vertex_format(VERTEX_FORMAT_SOLID);
     set_program_id(PROGRAM_SOLID);
 
-    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0, data));
-    CHECK_GL(glDrawArrays(conv_mode(mode), 0, num_vertices));
+    GLsizei offset = append_data_to_vbo(data, 2 * sizeof(float) * num_vertices);
+    GLint start = offset / sizeof(float) / 2;
+
+    CHECK_GL(glDrawArrays(conv_mode(mode), start, num_vertices));
 }
 
 static void draw_colored(int mode, float const *data, int num_vertices)
 {
-    set_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_COLOR);
+    set_vertex_format(VERTEX_FORMAT_COLORED);
     set_program_id(PROGRAM_COLORED);
 
-    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 6, data + 0));
-    CHECK_GL(glVertexAttribPointer(ATTRIB_COLOR, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 6, data + 2));
-    CHECK_GL(glDrawArrays(conv_mode(mode), 0, num_vertices));
+    GLsizei offset = append_data_to_vbo(data, 6 * sizeof(float) * num_vertices);
+    GLint start = offset / sizeof(float) / 6;
+
+    CHECK_GL(glDrawArrays(conv_mode(mode), start, num_vertices));
 }
 
 static void draw_textured(int mode, float const *data, int num_vertices)
 {
-    set_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
+    set_vertex_format(VERTEX_FORMAT_TEXTURED);
     set_program_id(PROGRAM_TEXTURED);
 
-    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 0));
-    CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 2));
-    CHECK_GL(glDrawArrays(conv_mode(mode), 0, num_vertices));
+    GLsizei offset = append_data_to_vbo(data, 4 * sizeof(float) * num_vertices);
+    GLint start = offset / sizeof(float) / 4;
+
+    CHECK_GL(glDrawArrays(conv_mode(mode), start, num_vertices));
 }
 
-static void draw_font(float const *data, unsigned int const *indices, int num_indices)
+static void draw_font(float const *data, int num_vertices)
 {
-    set_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
+    set_vertex_format(VERTEX_FORMAT_TEXTURED);
     set_program_id(PROGRAM_FONT);
 
-    CHECK_GL(glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 0));
-    CHECK_GL(glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, data + 2));
-    CHECK_GL(glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, indices));
+    GLsizei offset = append_data_to_vbo(data, 4 * sizeof(float) * num_vertices);
+    GLint start = offset / sizeof(float) / 4;
+
+    CHECK_GL(glDrawArrays(GL_TRIANGLES, start, num_vertices));
 }
 
-static void draw_canvas(float const *data)
+static void draw_canvas(float x0, float y0, float x1, float y1)
 {
     CHECK_GL(glDisable(GL_BLEND));
     CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
 
-    set_vertex_format(ATTRIB_BIT_POSITION | ATTRIB_BIT_TEXCOORD);
+    set_vertex_format(VERTEX_FORMAT_TEXTURED);
     set_program_id(PROGRAM_BACKBUF);
 
-    glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, data + 0);
-    glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, data + 2);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    float data[] = {
+        x0, y0, 0.0f, 0.0f,
+        x1, y0, 1.0f, 0.0f,
+        x1, y1, 1.0f, 1.0f,
+        x0, y1, 0.0f, 1.0f,
+    };
+
+    GLsizei offset = append_data_to_vbo(data, 16 * sizeof(float));
+    GLint start = offset / sizeof(float) / 4;
+
+    CHECK_GL(glDrawArrays(GL_TRIANGLE_FAN, start, 4));
 
     CHECK_GL(glEnable(GL_BLEND));
     CHECK_GL(glClearColor(colors.clear[0], colors.clear[1], colors.clear[2], 1.0f));
@@ -968,6 +1076,7 @@ void libtq_construct_gl_renderer(struct libtq_renderer_impl *renderer)
         .initialize = initialize,
         .terminate = terminate,
         .process = process,
+        .post_process = process,
         
         .update_projection = update_projection,
         .update_model_view = update_model_view,

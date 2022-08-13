@@ -37,13 +37,6 @@
 //------------------------------------------------------------------------------
 // Declarations
 
-struct gl_version
-{
-    int major;
-    int minor;
-    int flags;
-};
-
 struct sdl_display_priv
 {
     SDL_Window      *window;
@@ -188,25 +181,15 @@ static void initialize(void)
     int width, height;
     libtq_get_display_size(&width, &height);
 
-    struct gl_version gl_versions[] = {
-        { 4, 6, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
-        { 4, 5, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
-        { 4, 4, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
-        { 4, 3, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
-        { 4, 2, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
-        { 4, 1, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
-        { 4, 0, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
-        { 3, 3, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
-        { 3, 2, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY },
-        { 3, 1, 0 },
-        { 3, 0, 0 },
-        { 2, 1, 0 },
-    };
+    int gl_versions[] = { 460, 450, 440, 430, 420, 410, 400, 330 };
 
     for (size_t n = 0; n < SDL_arraysize(gl_versions); n++) {
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_versions[n].major);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_versions[n].minor);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, gl_versions[n].flags);
+        int major = gl_versions[n] / 100;
+        int minor = (gl_versions[n] % 100) / 10;
+
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
         sdl.window = SDL_CreateWindow(
             libtq_get_title(),
@@ -227,8 +210,7 @@ static void initialize(void)
             continue;
         }
 
-        log_info("Created OpenGL context, version %d.%d\n",
-            gl_versions[n].major, gl_versions[n].minor);
+        log_info("Created OpenGL context, version %d.%d\n", major, minor);
         break;
     }
 
@@ -240,10 +222,10 @@ static void initialize(void)
         tq_error("Failed to activate OpenGL context: %s", SDL_GetError());
     }
 
-    SDL_GL_SetSwapInterval(1);
-
     SDL_ShowWindow(sdl.window);
     SDL_SetWindowMinimumSize(sdl.window, 256, 256);
+
+    SDL_GL_SetSwapInterval(1);
 
     sdl.key_autorepeat = libtq_is_key_autorepeat_enabled();
 

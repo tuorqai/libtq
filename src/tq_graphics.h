@@ -25,6 +25,7 @@ struct libtq_renderer_impl
     void    (*initialize)(void);
     void    (*terminate)(void);
     void    (*process)(void);
+    void    (*post_process)(void);
 
     void    (*update_projection)(float const *mat4);
     void    (*update_model_view)(float const *mat3);
@@ -50,8 +51,8 @@ struct libtq_renderer_impl
     void    (*draw_solid)(int mode, float const *data, int num_vertices);
     void    (*draw_colored)(int mode, float const *data, int num_vertices);
     void    (*draw_textured)(int mode, float const *data, int num_vertices);
-    void    (*draw_font)(float const *data, unsigned int const *indices, int num_indices);
-    void    (*draw_canvas)(float const *data);
+    void    (*draw_font)(float const *data, int num_vertices);
+    void    (*draw_canvas)(float x0, float y0, float x1, float y1);
 };
 
 #if defined(TQ_USE_OPENGL)
