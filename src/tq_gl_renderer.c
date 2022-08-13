@@ -220,6 +220,11 @@ struct gl_surface
     GLuint framebuffer;
     GLuint depth;
     int texture_id;
+
+    GLuint ms_framebuffer;
+    GLuint ms_color_attachment;
+
+    int samples;
 };
 
 struct gl_program
@@ -242,11 +247,15 @@ DECLARE_FLEXIBLE_ARRAY(gl_surface)
 
 struct libtq_gl_renderer_priv
 {
+    int             antialiasing_level;
+
     int             vertex_format;
     GLuint          vao[NUM_VERTEX_FORMATS];
     GLuint          vbo[NUM_VERTEX_FORMATS];
     GLsizei         vbo_offset[NUM_VERTEX_FORMATS];
     GLsizei         vbo_size[NUM_VERTEX_FORMATS];
+
+    GLint           max_samples;
 };
 
 //------------------------------------------------------------------------------
@@ -365,6 +374,11 @@ static void gl_surface_dtor(struct gl_surface *surface)
     CHECK_GL(glDeleteFramebuffers(1, &surface->framebuffer));
     CHECK_GL(glDeleteRenderbuffers(1, &surface->depth));
     gl_texture_array_remove(&textures, surface->texture_id);
+
+    if (surface->samples > 1) {
+        CHECK_GL(glDeleteFramebuffers(1, &surface->ms_framebuffer));
+        CHECK_GL(glDeleteRenderbuffers(1, &surface->ms_color_attachment));
+    }
 }
 
 /**
@@ -679,6 +693,10 @@ static void initialize(void)
 
     CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
 
+    CHECK_GL(glGetIntegerv(GL_MAX_SAMPLES, &priv.max_samples));
+
+    priv.antialiasing_level = 0;
+
     /**
      * Initialization is done.
      */
@@ -715,6 +733,17 @@ static void post_process(void)
     for (int i = 0; i < NUM_VERTEX_FORMATS; i++) {
         priv.vbo_offset[i] = 0;
     }
+}
+
+int request_antialiasing_level(int level)
+{
+    if (level == 0) {
+        priv.antialiasing_level = 1;
+    } else if (level <= priv.max_samples) {
+        priv.antialiasing_level = level;
+    }
+
+    return priv.antialiasing_level;
 }
 
 /**
@@ -871,7 +900,9 @@ static void bind_texture(int texture_id)
  */
 static int create_surface(int width, int height)
 {
-    struct gl_surface surface;
+    struct gl_surface surface = {0};
+
+    surface.samples = priv.antialiasing_level;
 
     CHECK_GL(glGenRenderbuffers(1, &surface.depth));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, surface.depth));
@@ -893,7 +924,26 @@ static int create_surface(int width, int height)
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        tq_error("Failed to create surface.\n");
+        libtq_error("Failed to create surface.\n");
+    }
+
+    if (surface.samples > 1) {
+        CHECK_GL(glGenRenderbuffers(1, &surface.ms_color_attachment));
+        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, surface.ms_color_attachment));
+        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, surface.samples,
+            GL_RGBA8, width, height));
+
+        CHECK_GL(glGenFramebuffers(1, &surface.ms_framebuffer));
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, surface.ms_framebuffer));
+
+        CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_RENDERBUFFER, surface.ms_color_attachment));
+
+        status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+        if (status != GL_FRAMEBUFFER_COMPLETE) {
+            libtq_error("Failed to create surface.\n");
+        }
     }
 
     int surface_id = gl_surface_array_add(&surfaces, &surface);
@@ -927,8 +977,27 @@ static int get_surface_texture_id(int surface_id)
  */
 static void bind_surface(int surface_id)
 {
-    if (state.bound_surface_id == surface_id) {
+    int prev_surface_id = state.bound_surface_id;
+
+    if (prev_surface_id == surface_id) {
         return;
+    }
+
+    if (prev_surface_id != -1 && (surfaces.data[prev_surface_id].samples > 1)) {
+        GLuint prev_framebuffer = surfaces.data[prev_surface_id].framebuffer;
+        GLuint prev_ms_framebuffer = surfaces.data[prev_surface_id].ms_framebuffer;
+
+        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, prev_framebuffer));
+        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, prev_ms_framebuffer));
+
+        int prev_width = textures.data[surfaces.data[prev_surface_id].texture_id].width;
+        int prev_height = textures.data[surfaces.data[prev_surface_id].texture_id].height;
+
+        CHECK_GL(glBlitFramebuffer(
+            0, 0, prev_width, prev_height,
+            0, 0, prev_width, prev_height,
+            GL_COLOR_BUFFER_BIT, GL_NEAREST
+        ));
     }
 
     GLuint framebuffer;
@@ -939,7 +1008,11 @@ static void bind_surface(int surface_id)
         framebuffer = 0;
         libtq_get_display_size(&width, &height);
     } else {
-        framebuffer = surfaces.data[surface_id].framebuffer;
+        if (surfaces.data[surface_id].samples > 1) {
+            framebuffer = surfaces.data[surface_id].ms_framebuffer;
+        } else {
+            framebuffer = surfaces.data[surface_id].framebuffer;
+        }
         width = textures.data[surfaces.data[surface_id].texture_id].width;
         height = textures.data[surfaces.data[surface_id].texture_id].height;
     }
@@ -1076,7 +1149,9 @@ void libtq_construct_gl_renderer(struct libtq_renderer_impl *renderer)
         .initialize = initialize,
         .terminate = terminate,
         .process = process,
-        .post_process = process,
+        .post_process = post_process,
+
+        .request_antialiasing_level = request_antialiasing_level,
         
         .update_projection = update_projection,
         .update_model_view = update_model_view,

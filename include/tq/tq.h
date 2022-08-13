@@ -588,6 +588,18 @@ static inline tq_color tq_c32(unsigned char r, unsigned char g, unsigned char b,
 }
 
 //----------------------------------------------------------
+// Options
+
+/**
+ * Set anti-aliasing level. It's applied to both canvas and surfaces.
+ * If the level isn't supported, no changes are made.
+ * Possible values are 0, 1, 2, 4, 8 and 16. Level 0 is equal to 1.
+ * Default level is 0.
+ * It's safe to call this function before tq_initialize().
+ */
+TQ_API void TQ_CALL tq_set_antialiasing_level(int level);
+
+//----------------------------------------------------------
 // Canvas
 
 /**

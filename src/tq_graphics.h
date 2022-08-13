@@ -27,6 +27,8 @@ struct libtq_renderer_impl
     void    (*process)(void);
     void    (*post_process)(void);
 
+    int     (*request_antialiasing_level)(int level);
+
     void    (*update_projection)(float const *mat4);
     void    (*update_model_view)(float const *mat3);
 
@@ -64,6 +66,9 @@ struct libtq_renderer_impl
 void        libtq_initialize_graphics(void);
 void        libtq_terminate_graphics(void);
 void        libtq_process_graphics(void);
+
+int         libtq_get_antialiasing_level(void);
+void        libtq_set_antialiasing_level(int level);
 
 void        libtq_clear(void);
 tq_color    libtq_get_clear_color(void);

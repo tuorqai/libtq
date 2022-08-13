@@ -164,6 +164,14 @@ int tq_get_framerate(void)
 // Graphics
 
 //----------------------------------------------------------
+// Options
+
+void tq_set_antialiasing_level(int level)
+{
+    libtq_set_antialiasing_level(level);
+}
+
+//----------------------------------------------------------
 // Canvas
 
 void tq_clear(void)

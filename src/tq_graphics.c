@@ -55,10 +55,16 @@ struct graphics
     float canvas_aspect_ratio;
 };
 
+struct libtq_graphics_priv
+{
+    int antialiasing_level;
+};
+
 static struct graphics graphics;
 static struct libtq_renderer_impl renderer;
 static struct matrices matrices;
 static struct color colors[COLOR_COUNT];
+static struct libtq_graphics_priv priv;
 
 //------------------------------------------------------------------------------
 // Utility functions
@@ -159,6 +165,7 @@ void libtq_initialize_graphics(void)
         graphics.canvas_height
     );
 
+    priv.antialiasing_level = renderer.request_antialiasing_level(priv.antialiasing_level);
     renderer.update_projection(matrices.projection);
     renderer.update_model_view(matrices.model_view[0]);
 
@@ -210,6 +217,22 @@ void libtq_process_graphics(void)
     matrices.current_model_view = 0;
 
     renderer.post_process();
+}
+
+//------------------------------------------------------------------------------
+
+int libtq_get_antialiasing_level(void)
+{
+    return priv.antialiasing_level;
+}
+
+void libtq_set_antialiasing_level(int level)
+{
+    priv.antialiasing_level = level;
+
+    if (renderer.request_antialiasing_level) {
+        priv.antialiasing_level = renderer.request_antialiasing_level(level);
+    }
 }
 
 //------------------------------------------------------------------------------
