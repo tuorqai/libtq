@@ -20,9 +20,12 @@ extern int main(int, char **);
 
 // Nothing happens here. But in the future, some pre-initialization might be
 // done inside this entry point.
+// edit: no longer true
 
 int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
+    SetProcessDPIAware();
+
     return main(__argc, __targv);
 }
 
