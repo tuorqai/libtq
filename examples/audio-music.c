@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
 {
     tq_set_display_size((tq_vec2i) {512, 512});
     tq_set_title("[tq library] audio/music");
+    tq_set_antialiasing_level(8);
 
     tq_initialize();
     atexit(tq_terminate);
