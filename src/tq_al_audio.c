@@ -503,6 +503,7 @@ static int music_main(void *data)
         libtq_unlock_mutex(openal.mutex);
 
         if (paused) {
+            libtq_sleep(0.1);
             continue;
         }
 
