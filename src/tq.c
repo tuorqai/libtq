@@ -478,7 +478,7 @@ void tq_print_text(tq_font font, tq_vec2f position, char const *fmt, ...)
                 buffer_size *= 2;
             }
 
-            buffer = mem_realloc(buffer, buffer_size);
+            buffer = libtq_realloc(buffer, buffer_size);
             vsnprintf(buffer, buffer_size, fmt, ap);
         }
     }

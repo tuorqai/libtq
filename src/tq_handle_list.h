@@ -33,8 +33,8 @@
         int initial_count, \
         void (*dtor)(struct Struct *item)) \
     { \
-        array->data = mem_malloc(initial_count * sizeof(struct Struct)); \
-        array->init = mem_malloc(initial_count * sizeof(int)); \
+        array->data = libtq_malloc(initial_count * sizeof(struct Struct)); \
+        array->init = libtq_malloc(initial_count * sizeof(int)); \
         \
         if (!array->data || !array->init) { \
             out_of_memory(); \
@@ -58,8 +58,8 @@
             } \
         } \
         \
-        mem_free(array->data); \
-        mem_free(array->init); \
+        libtq_free(array->data); \
+        libtq_free(array->init); \
     }
 
 #define _FLEXIBLE_ARRAY_GEN_CHECK_FUNC(Struct) \
@@ -83,8 +83,8 @@
         if (id == -1) { \
             int old_count = array->count; \
             array->count *= 2; \
-            array->data = mem_realloc(array->data, sizeof(struct Struct) * array->count); \
-            array->init = mem_realloc(array->init, sizeof(int) * array->count); \
+            array->data = libtq_realloc(array->data, sizeof(struct Struct) * array->count); \
+            array->init = libtq_realloc(array->init, sizeof(int) * array->count); \
             \
             if (!array->data || !array->init) { \
                 out_of_memory(); \

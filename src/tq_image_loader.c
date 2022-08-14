@@ -5,9 +5,9 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 
-#define STBI_MALLOC     mem_malloc
-#define STBI_REALLOC    mem_realloc
-#define STBI_FREE       mem_free
+#define STBI_MALLOC     libtq_malloc
+#define STBI_REALLOC    libtq_realloc
+#define STBI_FREE       libtq_free
 
 #include <stb_image.h>
 
@@ -44,7 +44,7 @@ static int stream_eof(void *user)
 struct image image_create(unsigned int width, unsigned int height, unsigned int channels)
 {
     return (struct image) {
-        .pixels = mem_calloc(1, width * height * channels),
+        .pixels = libtq_calloc(1, width * height * channels),
         .width = width,
         .height = height,
         .channels = channels,

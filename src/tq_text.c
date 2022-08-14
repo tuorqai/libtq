@@ -101,7 +101,7 @@ static int get_font_id(void)
     }
 
     int next_count = TQ_MAX(font_count * 2, INITIAL_FONT_COUNT);
-    struct font *next_array = mem_realloc(fonts,
+    struct font *next_array = libtq_realloc(fonts,
         sizeof(struct font) * next_count);
 
     if (!next_array) {
@@ -130,7 +130,7 @@ static int get_glyph_id(int font_id)
     }
 
     int next_count = TQ_MAX(fonts[font_id].glyph_count * 2, INITIAL_GLYPH_COUNT);
-    struct font_glyph *next_array = mem_realloc(fonts[font_id].glyphs,
+    struct font_glyph *next_array = libtq_realloc(fonts[font_id].glyphs,
         sizeof(struct font_glyph) * next_count);
     
     if (!next_array) {
@@ -184,7 +184,7 @@ static int cache_glyph(int font_id, unsigned long codepoint, float x_advance, fl
 
         if (atlas->cursor_y >= (atlas->height - atlas->y_padding - bitmap_height)) {
             atlas->height *= 2;
-            atlas->bitmap = mem_realloc(atlas->bitmap, atlas->width * atlas->height);
+            atlas->bitmap = libtq_realloc(atlas->bitmap, atlas->width * atlas->height);
 
             if (!atlas->bitmap) {
                 out_of_memory();
@@ -251,7 +251,7 @@ static float *maintain_vertex_buffer(int required_size)
         next_size *= 2;
     }
 
-    float *next_buffer = mem_realloc(vertex_buffer, sizeof(float) * next_size);
+    float *next_buffer = libtq_realloc(vertex_buffer, sizeof(float) * next_size);
     
     if (!next_buffer) {
         out_of_memory();
@@ -284,13 +284,13 @@ void text_initialize(struct libtq_renderer_impl const *_renderer)
 
 void text_terminate(void)
 {
-    mem_free(vertex_buffer);
+    libtq_free(vertex_buffer);
 
     for (int i = 0; i < font_count; i++) {
         text_delete_font(i);
     }
 
-    mem_free(fonts);
+    libtq_free(fonts);
 }
 
 int text_load_font(libtq_stream *stream, float pt, int weight)
@@ -352,7 +352,7 @@ int text_load_font(libtq_stream *stream, float pt, int weight)
     fonts[font_id].atlas.texture_id = renderer->create_texture(width, height,
         PIXEL_FORMAT_GRAYSCALE);
 
-    fonts[font_id].atlas.bitmap = mem_malloc(width * height);
+    fonts[font_id].atlas.bitmap = libtq_malloc(width * height);
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -361,7 +361,7 @@ int text_load_font(libtq_stream *stream, float pt, int weight)
     }
 
     if (fonts[font_id].atlas.texture_id == -1 || !fonts[font_id].atlas.bitmap) {
-        mem_free(fonts[font_id].atlas.bitmap);
+        libtq_free(fonts[font_id].atlas.bitmap);
         hb_font_destroy(fonts[font_id].font);
 
         fonts[font_id].face = NULL;
@@ -431,8 +431,8 @@ void text_delete_font(int font_id)
         return;
     }
 
-    mem_free(fonts[font_id].glyphs);
-    mem_free(fonts[font_id].atlas.bitmap);
+    libtq_free(fonts[font_id].glyphs);
+    libtq_free(fonts[font_id].atlas.bitmap);
     renderer->delete_texture(fonts[font_id].atlas.texture_id);
     hb_font_destroy(fonts[font_id].font);
 

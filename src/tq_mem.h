@@ -42,16 +42,5 @@
     free(ptr)
 
 //------------------------------------------------------------------------------
-// Deprecated:
-
-#define tq_mem_alloc            libtq_malloc
-#define tq_mem_realloc          libtq_realloc
-#define tq_mem_free             libtq_free
-#define mem_malloc              libtq_malloc
-#define mem_calloc              libtq_calloc
-#define mem_realloc             libtq_realloc
-#define mem_free                libtq_free
-
-//------------------------------------------------------------------------------
 
 #endif // TQ_MEM_H_INC

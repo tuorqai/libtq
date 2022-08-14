@@ -101,7 +101,7 @@ static float *make_circle(float x, float y, float radius, int color_id, int *len
     float angle = acosf(2.0f * (1.0f - e / radius) * (1.0f - e / radius) - 1.0f);
 
     int count = (int) ceilf(2.0f * M_PI / angle);
-    float *data = mem_malloc(2 * sizeof(float) * count);
+    float *data = libtq_malloc(2 * sizeof(float) * count);
 
     for (int v = 0; v < count; v++) {
         data[2 * v + 0] = x + (radius * cos(v * angle));
@@ -462,7 +462,7 @@ void libtq_outline_circle(float x, float y, float radius)
     renderer.set_draw_color(colors[COLOR_OUTLINE].value);
     renderer.draw_solid(LIBTQ_LINE_LOOP, data, length);
 
-    mem_free(data);
+    libtq_free(data);
 }
 
 void libtq_fill_triangle(float ax, float ay, float bx, float by, float cx, float cy)
@@ -499,7 +499,7 @@ void libtq_fill_circle(float x, float y, float radius)
     renderer.set_draw_color(colors[COLOR_FILL].value);
     renderer.draw_solid(LIBTQ_TRIANGLE_FAN, data, length - 1);
 
-    mem_free(data);
+    libtq_free(data);
 }
 
 tq_color libtq_get_point_color(void)
@@ -558,12 +558,12 @@ int libtq_load_texture(libtq_stream *stream)
     int texture_id = renderer.create_texture(image.width, image.height, image.channels);
 
     if (texture_id == -1) {
-        mem_free(image.pixels);
+        libtq_free(image.pixels);
         return -1;
     }
 
     renderer.update_texture(texture_id, 0, 0, -1, -1, image.pixels);
-    mem_free(image.pixels);
+    libtq_free(image.pixels);
 
     return texture_id;
 }

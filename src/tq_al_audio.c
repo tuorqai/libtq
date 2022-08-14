@@ -256,7 +256,7 @@ static void terminate(void)
     for (int32_t sound_id = 0; sound_id < TQ_SOUND_LIMIT; sound_id++) {
         if (openal.sounds.bits[sound_id] & SOUND_BIT_LOADED) {
             CHECK_AL(alDeleteBuffers(1, &openal.sounds.buffer[sound_id]));
-            tq_mem_free(openal.sounds.samples[sound_id]);
+            libtq_free(openal.sounds.samples[sound_id]);
         }
     }
 
@@ -346,7 +346,7 @@ static void delete_sound(int32_t sound_id)
     }
 
     CHECK_AL(alDeleteBuffers(1, &openal.sounds.buffer[sound_id]));
-    tq_mem_free(openal.sounds.samples[sound_id]);
+    libtq_free(openal.sounds.samples[sound_id]);
 
     openal.sounds.bits[sound_id] = 0;
     openal.sounds.buffer[sound_id] = 0;
@@ -447,7 +447,7 @@ static int music_main(void *data)
     libtq_audio_dec *dec = openal.channels.dec[channel_id];
     ALuint source = openal.channels.source[channel_id];
 
-    int16_t *samples = tq_mem_alloc(sizeof(int16_t) * MUSIC_BUFFER_LENGTH);
+    int16_t *samples = libtq_malloc(sizeof(int16_t) * MUSIC_BUFFER_LENGTH);
     int sample_rate = libtq_audio_dec_get_sample_rate(dec);
     int num_channels = libtq_audio_dec_get_num_channels(dec);
 
@@ -530,7 +530,7 @@ static int music_main(void *data)
 
     clear_buffer_queue(source);
     CHECK_AL(alDeleteBuffers(MUSIC_BUFFER_COUNT, buffers));
-    tq_mem_free(samples);
+    libtq_free(samples);
 
     libtq_lock_mutex(openal.mutex);
     {
