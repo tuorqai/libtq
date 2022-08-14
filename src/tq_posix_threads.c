@@ -152,7 +152,7 @@ static void unlock_mutex(libtq_mutex mutex)
 
 //------------------------------------------------------------------------------
 
-void libtq_construct_threads(struct libtq_threads_impl *threads)
+void libtq_construct_posix_threads(struct libtq_threads_impl *threads)
 {
     *threads = (struct libtq_threads_impl) {
         .initialize             = initialize,
