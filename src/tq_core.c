@@ -85,7 +85,7 @@ void libtq_initialize_core(void)
         #if defined(_WIN32)
             libtq_construct_win32_clock(&core.clock);
             libtq_construct_win32_threads(&core.threads);
-        #elif defined(unix)
+        #else
             libtq_construct_posix_clock(&core.clock);
             libtq_construct_posix_threads(&core.threads);
         #endif
@@ -118,7 +118,7 @@ void libtq_initialize_core(void)
         core.key_autorepeat = 1;
     }
 
-    core.display.initialize(0, 0, NULL);
+    core.display.initialize();
 
     core.current_time = core.clock.get_time_highp();
     core.delta_time = 0.0;
