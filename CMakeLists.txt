@@ -1,14 +1,49 @@
 
+#-------------------------------------------------------------------------------
+
 cmake_minimum_required(VERSION 3.13)
-project(tq)
 
-#---------------------------------------
+#-------------------------------------------------------------------------------
+
+# Quite dirty regex to pick up version from tq.h
+set(TQ_VERSION_REGEX "#define TQ_VERSION[ \t]+\"(.+)\"")
+
+# Read a line with version #define to TQ_VERSION variable
+file(STRINGS "${CMAKE_SOURCE_DIR}/include/tq/tq.h"
+    TQ_VERSION
+        REGEX ${TQ_VERSION_REGEX})
+
+# Leave just version number in TQ_VERSION
+string(REGEX REPLACE ${TQ_VERSION_REGEX} "\\1" TQ_VERSION "${TQ_VERSION}")
+
+# Finally, declare project()
+project(tq
+    VERSION ${TQ_VERSION}
+    DESCRIPTION "Easy-to-use C99 library for simple 2D games"
+    LANGUAGES C)
+
+#-------------------------------------------------------------------------------
+# Check if platform is supported
+
+if(NOT WIN32 AND NOT (UNIX AND NOT APPLE) AND NOT ANDROID)
+    message(FATAL_ERROR "Sorry, but tq library doesn't support this platform.")
+endif()
+
+#-------------------------------------------------------------------------------
+# Common properties
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+
+#-------------------------------------------------------------------------------
 # Compiler settings
-#---------------------------------------
 
-if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+if(MSVC)
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+else()
     add_compile_options(
-        -pedantic
         -Wall
         -Wextra
         -Wno-switch
@@ -17,13 +52,8 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
         -Wno-unused-variable)
 endif()
 
-if(MSVC)
-    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-endif()
-
-#---------------------------------------
-# Library target
-#---------------------------------------
+#-------------------------------------------------------------------------------
+# tq target
 
 add_library(tq
     "src/tq.c"
@@ -53,86 +83,119 @@ target_include_directories(tq PUBLIC "include")
 target_include_directories(tq PRIVATE "third-party")
 target_compile_definitions(tq PRIVATE TQ_BUILD)
 
-#---------------------------------------
-# Symbols should be exported explicitly
-#---------------------------------------
+#-------------------------------------------------------------------------------
+# Shared library support
 
-set_target_properties(tq PROPERTIES
-    C_VISIBILITY_PRESET hidden
-    CXX_VISIBILITY_PRESET hidden)
-
-#---------------------------------------
-# Options
-#---------------------------------------
-
-option(BUILD_SHARED_LIBS "Build shared libraries" NO)
-option(BUILD_EXAMPLES "Build examples" NO)
+option(BUILD_SHARED_LIBS "Build shared libraries" YES)
 
 if(BUILD_SHARED_LIBS)
+    if(ANDROID)
+        message(FATAL_ERROR "Shared library build is not supported on Android.")
+    endif()
+
     target_compile_definitions(tq PRIVATE TQ_SHARED)
 endif()
 
 #-------------------------------------------------------------------------------
 # Dependencies
 
-# -- Common dependencies
+# Standard math library.
+find_library(MATH_LIB NAMES m)
 
-find_package(Threads REQUIRED)
-find_package(freetype CONFIG REQUIRED)
-find_package(harfbuzz CONFIG REQUIRED)
-
-target_link_libraries(tq
-    Threads::Threads
-    freetype
-    harfbuzz::harfbuzz)
-
-# -- Optional dependencies
-
-find_library(MATH_LIBRARY NAMES m)
-find_package(Vorbis)
-
-if(MATH_LIBRARY)
-    target_link_libraries(tq ${MATH_LIBRARY})
+if(MATH_LIB)
+    target_link_libraries(tq PRIVATE ${MATH_LIB})
 endif()
+
+# System-dependent threading library.
+# Win32 threads on Windows, pthreads otherwise.
+find_package(Threads MODULE REQUIRED) # Imports `Threads::Threads` target
+target_link_libraries(tq PRIVATE Threads::Threads)
+
+# FreeType font renderer.
+find_package(Freetype MODULE REQUIRED) # Imports `Freetype::Freetype` target
+target_link_libraries(tq PRIVATE Freetype::Freetype)
+
+# HarfBuzz text shaper.
+find_package(harfbuzz CONFIG REQUIRED) # Imports `harfbuzz::harfbuzz` target
+target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
+
+# Vorbis library. We need only vorbisfile from it.
+# This is an optional dependency.
+find_package(Vorbis CONFIG) # Imports Vorbis::vorbisenc and Vorbis::vorbisfile
 
 if(Vorbis_FOUND)
     target_compile_definitions(tq PRIVATE TQ_USE_OGG)
-    target_link_libraries(tq Vorbis::vorbisfile)
+    target_link_libraries(tq PRIVATE Vorbis::vorbisfile)
 endif()
 
-# -- Platform-specific dependencies
-
+# Platform-specific dependencies.
 if(ANDROID)
-    target_link_libraries(tq android log GLESv2 EGL)
-    target_compile_definitions(tq PRIVATE
-        TQ_PLATFORM_ANDROID
-        TQ_USE_OPENGL
-        TQ_USE_OPENGL_ES)
-elseif(WIN32 OR UNIX AND NOT APPLE)
-    find_package(SDL2 CONFIG REQUIRED)
-    find_package(GLEW CONFIG REQUIRED)
-    find_package(OpenAL CONFIG REQUIRED)
+    # -landroid
+    find_library(ANDROID_LIB NAMES android)
 
-    find_package(OpenGL REQUIRED)
+    # -llog
+    find_library(LOG_LIB NAMES log)
 
-    target_link_libraries(tq SDL2::SDL2 OpenGL::GL GLEW::GLEW OpenAL::OpenAL)
+    # -lGLESv2
+    find_library(GLESV2_LIB NAMES GLESv2)
+
+    # -lEGL
+    find_library(EGL_LIB NAMES EGL)
+
+    target_compile_definitions(tq PRIVATE TQ_PLATFORM_ANDROID)
+    target_link_libraries(tq PRIVATE
+        ${ANDROID_LIB}
+        ${LOG_LIB}
+        ${GLESV2_LIB}
+        ${EGL_LIB})
+else()
+    # Simple DirectMedia Layer 2
+    find_package(SDL2 CONFIG REQUIRED) # Imports SDL2::SDL2
+
+    # OpenGL
+    find_package(OpenGL MODULE REQUIRED) # Imports OpenGL::GL and others
+
+    # OpenGL Extension Wrangler
+    find_package(GLEW MODULE REQUIRED) # Imports GLEW::GLEW
+
+    # OpenAL
+    find_package(OpenAL CONFIG REQUIRED) # Imports OpenAL::OpenAL
+
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_DESKTOP
         TQ_USE_SDL
         TQ_USE_OPENGL
         TQ_USE_OPENAL)
-    
-    # Static utility library which contains WinMain
+
+    target_link_libraries(tq PRIVATE
+        SDL2::SDL2
+        OpenGL::GL
+        GLEW::GLEW
+        OpenAL::OpenAL)
+
+    # WinMain() provider
     if(WIN32)
-        add_library(tq_win32_system STATIC "src/tq_win32_system.c")
-        target_link_libraries(tq tq_win32_system)
+        if(BUILD_SHARED_LIBS)
+            add_library(tq-main STATIC "src/tq_win32_system.c")
+            target_link_libraries(tq INTERFACE tq-main)
+        else()
+            target_sources(tq PUBLIC "src/tq_win32_system.c")
+        endif()
     endif()
-else()
-    message(FATAL_ERROR "Sorry, but your OS is not supported :(")
 endif()
 
 #-------------------------------------------------------------------------------
 # Examples
+
+set(EXAMPLES
+    "audio-music"
+    "core-hello"
+    "core-keyboard"
+    "core-mouse"
+    "graphics-textures"
+    "graphics-surfaces"
+    "graphics-text"
+    "graphics-blend")
 
 if(BUILD_EXAMPLES)
     # Copy assets to build directory
@@ -142,19 +205,36 @@ if(BUILD_EXAMPLES)
             ${CMAKE_SOURCE_DIR}/assets
             $<TARGET_FILE_DIR:tq>/assets)
 
-    set(EXAMPLES
-        "audio-music"
-        "core-hello"
-        "core-keyboard"
-        "core-mouse"
-        "graphics-textures"
-        "graphics-surfaces"
-        "graphics-text"
-        "graphics-blend")
-
     foreach(EXAMPLE ${EXAMPLES})
         add_executable(${EXAMPLE} "examples/${EXAMPLE}.c")
         target_link_libraries(${EXAMPLE} tq)
         set_target_properties(${EXAMPLE} PROPERTIES WIN32_EXECUTABLE YES)
     endforeach()
+endif()
+
+#-------------------------------------------------------------------------------
+# Installation
+
+include(GNUInstallDirs)
+
+install(TARGETS tq)
+install(DIRECTORY "include/tq" TYPE INCLUDE)
+
+if(WIN32 AND BUILD_SHARED_LIBS)
+    install(TARGETS tq-main)
+endif()
+
+# -- Support example installation for Windows only
+if(WIN32 AND BUILD_EXAMPLES)
+    install(DIRECTORY "assets" DESTINATION "examples")
+
+    foreach(EXAMPLE ${EXAMPLES})
+        install(FILES "examples/${EXAMPLE}.c" DESTINATION "examples/src")
+        install(TARGETS ${EXAMPLE} DESTINATION "examples")
+    endforeach()
+
+    # -- Put DLL to examples directory
+    if(BUILD_SHARED_LIBS)
+        install(TARGETS tq DESTINATION "examples")
+    endif()
 endif()
