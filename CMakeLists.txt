@@ -99,11 +99,15 @@ endif()
 #-------------------------------------------------------------------------------
 # Dependencies
 
+# Check if pkg-config is available.
+# We will be using it as a fallback.
+find_package(PkgConfig MODULE)
+
 # Standard math library.
 find_library(MATH_LIB NAMES m)
 
 if(MATH_LIB)
-    target_link_libraries(tq PRIVATE ${MATH_LIB})
+    target_link_libraries(tq PUBLIC ${MATH_LIB})
 endif()
 
 # System-dependent threading library.
@@ -121,15 +125,25 @@ target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
 
 # Vorbis library. We need only vorbisfile from it.
 # This is an optional dependency.
-find_package(Vorbis CONFIG) # Imports Vorbis::vorbisenc and Vorbis::vorbisfile
+find_package(Vorbis CONFIG QUIET) # Imports Vorbis::vorbisenc and Vorbis::vorbisfile
 
 if(Vorbis_FOUND)
     target_compile_definitions(tq PRIVATE TQ_USE_OGG)
     target_link_libraries(tq PRIVATE Vorbis::vorbisfile)
+elseif(PKG_CONFIG_FOUND)
+    pkg_check_modules(PC_vorbisfile IMPORTED_TARGET vorbisfile)
+
+    if(PC_vorbisfile_FOUND)
+        target_compile_definitions(tq PRIVATE TQ_USE_OGG)
+        target_link_libraries(tq PRIVATE PkgConfig::PC_vorbisfile)
+    endif()
 endif()
 
 # Platform-specific dependencies.
 if(ANDROID)
+    # Android-specific compile definitions
+    target_compile_definitions(tq PRIVATE TQ_PLATFORM_ANDROID)
+
     # -landroid
     find_library(ANDROID_LIB NAMES android)
 
@@ -142,36 +156,42 @@ if(ANDROID)
     # -lEGL
     find_library(EGL_LIB NAMES EGL)
 
-    target_compile_definitions(tq PRIVATE TQ_PLATFORM_ANDROID)
     target_link_libraries(tq PRIVATE
         ${ANDROID_LIB}
         ${LOG_LIB}
         ${GLESV2_LIB}
         ${EGL_LIB})
 else()
-    # Simple DirectMedia Layer 2
-    find_package(SDL2 CONFIG REQUIRED) # Imports SDL2::SDL2
-
-    # OpenGL
-    find_package(OpenGL MODULE REQUIRED) # Imports OpenGL::GL and others
-
-    # OpenGL Extension Wrangler
-    find_package(GLEW MODULE REQUIRED) # Imports GLEW::GLEW
-
-    # OpenAL
-    find_package(OpenAL CONFIG REQUIRED) # Imports OpenAL::OpenAL
-
+    # Desktop-specific compile definitions
     target_compile_definitions(tq PRIVATE
         TQ_PLATFORM_DESKTOP
         TQ_USE_SDL
         TQ_USE_OPENGL
         TQ_USE_OPENAL)
 
-    target_link_libraries(tq PRIVATE
-        SDL2::SDL2
-        OpenGL::GL
-        GLEW::GLEW
-        OpenAL::OpenAL)
+    # Simple DirectMedia Layer 2
+    find_package(SDL2 CONFIG REQUIRED) # Imports SDL2::SDL2
+    target_link_libraries(tq PRIVATE SDL2::SDL2)
+
+    # OpenGL
+    find_package(OpenGL MODULE REQUIRED) # Imports OpenGL::GL and others
+    target_link_libraries(tq PRIVATE OpenGL::GL)
+
+    # OpenGL Extension Wrangler
+    find_package(GLEW MODULE REQUIRED) # Imports GLEW::GLEW
+    target_link_libraries(tq PRIVATE GLEW::GLEW)
+
+    # OpenAL
+    find_package(OpenAL CONFIG QUIET) # Imports OpenAL::OpenAL
+
+    if(OpenAL_FOUND)
+        target_link_libraries(tq PRIVATE OpenAL::OpenAL)
+    elseif(PKG_CONFIG_FOUND)
+        pkg_check_modules(PC_openal REQUIRED IMPORTED_TARGET openal)
+        target_link_libraries(tq PRIVATE PkgConfig::PC_openal)
+    else()
+        message(FATAL_ERROR "OpenAL is required, but not found.")
+    endif()
 
     # WinMain() provider
     if(WIN32)
