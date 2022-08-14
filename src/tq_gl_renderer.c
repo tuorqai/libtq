@@ -407,8 +407,8 @@ static GLuint compile_shader(GLenum type, char const *source)
             type_str = "unknown";
         }
 
-        log_error("** Failed to compile GLSL %s shader. **\n", type_str);
-        log_error("%s\n", buffer);
+        libtq_log(LIBTQ_LOG_WARNING, "** Failed to compile GLSL %s shader. **\n", type_str);
+        libtq_log(LIBTQ_LOG_WARNING, "%s\n", buffer);
 
         return 0;
     }
@@ -439,8 +439,8 @@ static GLuint link_program(GLuint vs, GLuint fs)
         GLchar buffer[1024];
         CHECK_GL(glGetProgramInfoLog(handle, sizeof(buffer), NULL, buffer));
 
-        log_error("** Failed to link GLSL program. **\n");
-        log_error("%s\n", buffer);
+        libtq_log(LIBTQ_LOG_WARNING, "** Failed to link GLSL program. **\n");
+        libtq_log(LIBTQ_LOG_WARNING, "%s\n", buffer);
 
         return 0;
     }
@@ -701,10 +701,10 @@ static void initialize(void)
      * Initialization is done.
      */
 
-    log_info("OpenGL renderer initialized.\n");
-    log_info("GL_VENDOR: %s\n", glGetString(GL_VENDOR));
-    log_info("GL_RENDERER: %s\n", glGetString(GL_RENDERER));
-    log_info("GL_VERSION: %s\n", glGetString(GL_VERSION));
+    libtq_log(0, "OpenGL renderer initialized.\n");
+    libtq_log(0, "GL_VENDOR: %s\n", glGetString(GL_VENDOR));
+    libtq_log(0, "GL_RENDERER: %s\n", glGetString(GL_RENDERER));
+    libtq_log(0, "GL_VERSION: %s\n", glGetString(GL_VERSION));
 }
 
 /**

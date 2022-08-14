@@ -45,12 +45,12 @@ static void check_al_errors(char const *call, char const *file, unsigned int lin
     ALenum error = alGetError();
 
     if (error != AL_NO_ERROR) {
-        log_error("OpenAL error(s) occured in %s at line %d:\n", file, line);
-        log_error("-- %d: %s\n", line, call);
+        libtq_log(LIBTQ_LOG_WARNING, "OpenAL error(s) occured in %s at line %d:\n", file, line);
+        libtq_log(LIBTQ_LOG_WARNING, "-- %d: %s\n", line, call);
     }
 
     while (error != AL_NO_ERROR) {
-        log_error(":: [0x%x] %s\n", error, get_al_error_str(error));
+        libtq_log(LIBTQ_LOG_WARNING, ":: [0x%x] %s\n", error, get_al_error_str(error));
         error = alGetError();
     }
 }
@@ -213,7 +213,7 @@ static void initialize(void)
 
     openal.mutex = libtq_create_mutex();
 
-    tq_log_info("OpenAL audio module is initialized.\n");
+    libtq_log(0, "OpenAL audio module is initialized.\n");
 }
 
 static void terminate(void)
@@ -266,7 +266,7 @@ static void terminate(void)
     alcDestroyContext(openal.context);
     alcCloseDevice(openal.device);
 
-    tq_log_info("OpenAL audio module is terminated.\n");
+    libtq_log(0, "OpenAL audio module is terminated.\n");
 }
 
 static void process(void)

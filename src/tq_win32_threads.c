@@ -109,7 +109,7 @@ static libtq_thread create_thread(char const *name, int (*func)(void *), void *d
     info->thread = CreateThread(NULL, 0, thread_main, info, 0, &info->id);
 
     if (info->thread == NULL) {
-        tq_log_error("Failed to create thread \"%s\".\n", name);
+        libtq_log(LIBTQ_LOG_ERROR, "Failed to create thread \"%s\".\n", name);
         HeapFree(GetProcessHeap(), 0, info);
         return NULL;
     }

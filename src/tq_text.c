@@ -320,7 +320,7 @@ int text_load_font(libtq_stream *stream, float pt, int weight)
     FT_Error error = FT_Open_Face(freetype, &args, 0, &fonts[font_id].face);
 
     if (error) {
-        log_error("Failed to open font %s. Reason: %s\n",
+        libtq_log(LIBTQ_LOG_WARNING, "Failed to open font %s. Reason: %s\n",
             libtq_stream_repr(stream), FT_Error_String(error));
 
         fonts[font_id].face = NULL;

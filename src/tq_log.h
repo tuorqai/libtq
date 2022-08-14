@@ -43,17 +43,5 @@ void libtq_log(int level, char const *fmt, ...);
 #endif
 
 //------------------------------------------------------------------------------
-// Deprecated macros:
-
-#define tq_log_debug(...)   libtq_debug(__VA_ARGS__)
-#define tq_log_info(...)    libtq_log(LIBTQ_LOG_INFO, __VA_ARGS__)
-#define tq_log_warning(...) libtq_log(LIBTQ_LOG_WARNING, __VA_ARGS__)
-#define tq_log_error(...)   libtq_log(LIBTQ_LOG_ERROR, __VA_ARGS__)
-#define log_debug(...)      libtq_debug(__VA_ARGS__)
-#define log_info(...)       libtq_log(LIBTQ_LOG_INFO, __VA_ARGS__)
-#define log_warning(...)    libtq_log(LIBTQ_LOG_WARNING, __VA_ARGS__)
-#define log_error(...)      libtq_log(LIBTQ_LOG_ERROR, __VA_ARGS__)
-
-//------------------------------------------------------------------------------
 
 #endif // TQ_LOG_H_INC

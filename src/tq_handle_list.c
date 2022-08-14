@@ -37,7 +37,7 @@ handle_list_t *handle_list_create(size_t item_size, handle_list_item_dtor item_d
 {
     handle_list_t *handle_list = calloc(1, sizeof(handle_list_t));
     if (!handle_list) {
-        // log_error("handle_list_create(): Failed to allocate list.\n");
+        // libtq_log(LIBTQ_LOG_WARNING, "handle_list_create(): Failed to allocate list.\n");
         return NULL;
     }
 
@@ -66,14 +66,14 @@ int32_t handle_list_append(handle_list_t *handle_list, void *item)
     handle_list_node_t *node = malloc(sizeof(handle_list_node_t) + handle_list->item_size);
 
     if (!node) {
-        // log_error("handle_list_append(): Failed to allocate list node.\n");
+        // libtq_log(LIBTQ_LOG_WARNING, "handle_list_append(): Failed to allocate list node.\n");
         return -1;
     }
 
     int32_t handle = map_node(handle_list, node);
 
     if (handle == -1) {
-        // log_error("handle_list_append(): Failed to map list node.\n");
+        // libtq_log(LIBTQ_LOG_WARNING, "handle_list_append(): Failed to map list node.\n");
 
         if (handle_list->item_dtor) {
             handle_list->item_dtor(item);
@@ -100,12 +100,12 @@ int32_t handle_list_append(handle_list_t *handle_list, void *item)
 void handle_list_erase(handle_list_t *handle_list, int32_t handle)
 {
     if (handle < 0 || handle >= (int64_t) handle_list->map_used) {
-        // log_warning("handle_list_erase(): Handle is out of bounds.\n");
+        // libtq_log(LIBTQ_LOG_WARNING, "handle_list_erase(): Handle is out of bounds.\n");
         return;
     }
 
     if (!handle_list->map[handle]) {
-        // log_warning("handle_list_erase(): Item is already erased.\n");
+        // libtq_log(LIBTQ_LOG_WARNING, "handle_list_erase(): Item is already erased.\n");
         return;
     }
 
@@ -134,12 +134,12 @@ void handle_list_erase(handle_list_t *handle_list, int32_t handle)
 void *handle_list_get(handle_list_t *handle_list, int32_t handle)
 {
     if (handle < 0 || handle >= (int64_t) handle_list->map_used) {
-        // log_error("handle_list_get(): Handle is out of bounds.\n");
+        // libtq_log(LIBTQ_LOG_WARNING, "handle_list_get(): Handle is out of bounds.\n");
         return NULL;
     }
 
     if (!handle_list->map[handle]) {
-        // log_error("handle_list_get(): Item is erased.\n");
+        // libtq_log(LIBTQ_LOG_WARNING, "handle_list_get(): Item is erased.\n");
         return NULL;
     }
 

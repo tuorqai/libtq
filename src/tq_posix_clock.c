@@ -34,12 +34,12 @@ static void initialize(void)
     priv.start_mediump = (ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
     priv.start_highp = (double) ts.tv_sec + (ts.tv_nsec / 1.0e9);
 
-    log_info("posix_clock: initialize()\n");
+    libtq_log(0, "posix_clock: initialize()\n");
 }
 
 static void terminate(void)
 {
-    log_info("posix_clock: terminate()\n");
+    libtq_log(0, "posix_clock: terminate()\n");
 }
 
 static float get_time_mediump(void)

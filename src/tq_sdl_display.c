@@ -210,7 +210,7 @@ static void initialize(void)
             continue;
         }
 
-        log_info("Created OpenGL context, version %d.%d\n", major, minor);
+        libtq_log(0, "Created OpenGL context, version %d.%d\n", major, minor);
         break;
     }
 
@@ -229,7 +229,7 @@ static void initialize(void)
 
     sdl.key_autorepeat = libtq_is_key_autorepeat_enabled();
 
-    tq_log_info("SDL window initialized.\n");
+    libtq_log(0, "SDL window initialized.\n");
 }
 
 static void terminate(void)
@@ -237,7 +237,7 @@ static void terminate(void)
     SDL_GL_DeleteContext(sdl.gl_context);
     SDL_DestroyWindow(sdl.window);
 
-    tq_log_info("SDL window terminated.\n");
+    libtq_log(0, "SDL window terminated.\n");
 }
 
 static void present(void)
