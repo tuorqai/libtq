@@ -129,7 +129,7 @@ void libtq_initialize_graphics(void)
 #if defined(TQ_USE_OPENGL)
     libtq_construct_gl_renderer(&renderer);
 #else
-    #error Invalid configuration. Check your build settings.
+    libtq_construct_null_renderer(&renderer);
 #endif
 
     int display_width, display_height;

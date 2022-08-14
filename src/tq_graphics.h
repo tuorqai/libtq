@@ -61,6 +61,8 @@ struct libtq_renderer_impl
     void libtq_construct_gl_renderer(struct libtq_renderer_impl *renderer);
 #endif
 
+void libtq_construct_null_renderer(struct libtq_renderer_impl *impl);
+
 //------------------------------------------------------------------------------
 
 void        libtq_initialize_graphics(void);

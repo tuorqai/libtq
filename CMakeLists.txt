@@ -71,6 +71,7 @@ add_library(tq
     "src/tq_math.c"
     "src/tq_meta.c"
     "src/tq_null_audio.c"
+    "src/tq_null_renderer.c"
     "src/tq_posix_clock.c"
     "src/tq_posix_threads.c"
     "src/tq_sdl_display.c"
