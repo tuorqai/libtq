@@ -27,6 +27,13 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    // In order to add more life to this, let's move some object.
+    // The mushroom in the bottom of the screen will be moved
+    // in the way that mushrooms in Mario games move.
+
+    tq_vec2f mushie_position = {32, 416};
+    float mushie_direction = -1.0f; // positive value is right, negative is left
+
     // In tq library, all resources are wrapped in structures which contain
     // only one integer number member `id`, such as `tq_texture`, `tq_sound`
     // and others.
@@ -41,6 +48,19 @@ int main(int argc, char *argv[])
     // quite error-prone.
 
     while (tq_process()) {
+        // Move mushroom back and forth.
+
+        // 64 pixels per second
+        mushie_position.x += mushie_direction * 64.0f * (float) tq_get_delta_time();
+
+        if (mushie_position.x < 0.0f) {
+            mushie_position.x = 0.0f;
+            mushie_direction = 1.0f;
+        } else if (mushie_position.x > 320.0f) {
+            mushie_position.x = 320.0f;
+            mushie_direction = -1.0f;
+        }
+
         tq_clear();
 
         // Draw first texture to the whole screen.
@@ -56,7 +76,7 @@ int main(int argc, char *argv[])
         // use tq_draw_subtexture().
         {
             tq_rectf sub = {48, 144, 16, 16};
-            tq_rectf dst = {32, 416, 32, 32};
+            tq_rectf dst = {mushie_position.x, mushie_position.y, 32, 32};
 
             tq_draw_subtexture(field, sub, dst);
         }
