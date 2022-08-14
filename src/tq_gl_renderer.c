@@ -635,7 +635,7 @@ static void set_dirty_uniform(int program_id, int uniform_id)
 static void initialize(void)
 {
     if (glewInit()) {
-        tq_error("Failed to initialize GLEW.\n");
+        libtq_error("Failed to initialize GLEW.\n");
     }
 
     mat4_identity(matrices.proj);

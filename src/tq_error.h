@@ -31,11 +31,5 @@ TQ_NO_RET void libtq_error(char const *fmt, ...);
 TQ_NO_RET void libtq_out_of_memory(void);
 
 //------------------------------------------------------------------------------
-// Deprecated:
-
-#define tq_error                libtq_error
-#define out_of_memory           libtq_out_of_memory
-
-//------------------------------------------------------------------------------
 
 #endif // TQ_ERROR_H_INC

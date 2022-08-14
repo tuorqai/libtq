@@ -175,7 +175,7 @@ static tq_mouse_button mouse_button_conv(int button)
 static void initialize(void)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        tq_error("Failed to initialize SDL: %s", SDL_GetError());
+        libtq_error("Failed to initialize SDL: %s", SDL_GetError());
     }
 
     int width, height;
@@ -200,7 +200,7 @@ static void initialize(void)
         );
 
         if (!sdl.window) {
-            tq_error("Failed to create SDL window: %s", SDL_GetError());
+            libtq_error("Failed to create SDL window: %s", SDL_GetError());
         }
 
         sdl.gl_context = SDL_GL_CreateContext(sdl.window);
@@ -215,11 +215,11 @@ static void initialize(void)
     }
 
     if (!sdl.gl_context) {
-        tq_error("Failed to create OpenGL context: %s", SDL_GetError());
+        libtq_error("Failed to create OpenGL context: %s", SDL_GetError());
     }
 
     if (SDL_GL_MakeCurrent(sdl.window, sdl.gl_context) < 0) {
-        tq_error("Failed to activate OpenGL context: %s", SDL_GetError());
+        libtq_error("Failed to activate OpenGL context: %s", SDL_GetError());
     }
 
     SDL_ShowWindow(sdl.window);

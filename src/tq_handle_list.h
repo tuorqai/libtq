@@ -37,7 +37,7 @@
         array->init = libtq_malloc(initial_count * sizeof(int)); \
         \
         if (!array->data || !array->init) { \
-            out_of_memory(); \
+            libtq_out_of_memory(); \
         } \
         array->count = initial_count; \
         array->dtor = dtor; \
@@ -87,7 +87,7 @@
             array->init = libtq_realloc(array->init, sizeof(int) * array->count); \
             \
             if (!array->data || !array->init) { \
-                out_of_memory(); \
+                libtq_out_of_memory(); \
             } \
             \
             for (int i = old_count; i < array->count; i++) { \

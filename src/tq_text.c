@@ -105,7 +105,7 @@ static int get_font_id(void)
         sizeof(struct font) * next_count);
 
     if (!next_array) {
-        out_of_memory();
+        libtq_out_of_memory();
     }
 
     int font_id = font_count;
@@ -134,7 +134,7 @@ static int get_glyph_id(int font_id)
         sizeof(struct font_glyph) * next_count);
     
     if (!next_array) {
-        out_of_memory();
+        libtq_out_of_memory();
     }
 
     int glyph_id = fonts[font_id].glyph_count;
@@ -187,7 +187,7 @@ static int cache_glyph(int font_id, unsigned long codepoint, float x_advance, fl
             atlas->bitmap = libtq_realloc(atlas->bitmap, atlas->width * atlas->height);
 
             if (!atlas->bitmap) {
-                out_of_memory();
+                libtq_out_of_memory();
             }
 
             for (int y = atlas->height / 2; y < atlas->height; y++) {
@@ -254,7 +254,7 @@ static float *maintain_vertex_buffer(int required_size)
     float *next_buffer = libtq_realloc(vertex_buffer, sizeof(float) * next_size);
     
     if (!next_buffer) {
-        out_of_memory();
+        libtq_out_of_memory();
     }
 
     vertex_buffer = next_buffer;
@@ -275,7 +275,7 @@ void text_initialize(struct libtq_renderer_impl const *_renderer)
     FT_Error error = FT_Init_FreeType(&freetype);
 
     if (error) {
-        tq_error("Failed to initialize Freetype library. Reason: %s\n", FT_Error_String(error));
+        libtq_error("Failed to initialize Freetype library. Reason: %s\n", FT_Error_String(error));
     }
 
     vertex_buffer = NULL;

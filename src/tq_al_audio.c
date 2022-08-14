@@ -196,17 +196,17 @@ static void initialize(void)
     openal.device = alcOpenDevice(NULL);
 
     if (openal.device == NULL) {
-        tq_error("OpenAL: failed to open audio device.");
+        libtq_error("OpenAL: failed to open audio device.");
     }
 
     openal.context = alcCreateContext(openal.device, NULL);
 
     if (openal.context == NULL) {
-        tq_error("OpenAL: failed to create context.");
+        libtq_error("OpenAL: failed to create context.");
     }
 
     if (!alcMakeContextCurrent(openal.context)) {
-        tq_error("OpenAL: failed to activate context.");
+        libtq_error("OpenAL: failed to activate context.");
     }
 
     CHECK_AL(alGenSources(TQ_CHANNEL_LIMIT, openal.channels.source));
