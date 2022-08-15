@@ -5,35 +5,50 @@
 
 //------------------------------------------------------------------------------
 // [core/mouse]
-// This example shows how to use mouse routines.
+// This example shows how to use mouse-related functions.
+//
+// What happens here:
+// Spawn circles (bubbles) under the mouse cursor if a user presses left mouse
+// button. While they hold the button, make the bubble larger.
+// When the button is released, the bubble starts to shrink until it disappears.
 //------------------------------------------------------------------------------
 
-// Global variable that holds circle radius.
-float circle_radius = 16.0f;
+// Maximum number of bubbles is 64.
+#define NUM_BUBBLES 64
 
-// Mouse wheel callback function.
-// This function will be called by tq library when mouse wheel
-// is scrolled.
-// `cursor` parameter holds current mouse cursor position, meanwhile
-// `wheel` parameter holds wheel scroll delta.
-// X coordinate is, obviously, a horizontal scroll delta and Y one
-// is vertical.
-void on_mouse_wheel_scrolled(tq_vec2i cursor, tq_vec2f wheel)
+// Define a struct to hold bubble information.
+typedef struct Bubble
 {
-    if (wheel.y < 0.0f) {
-        circle_radius -= 4.0f; // Make circle smaller
-    } else if (wheel.y > 0.0f) {
-        circle_radius += 4.0f; // Make it bigger
+    tq_vec2f pos;   // Center
+    float rad;      // Radius
+} Bubble;
+
+// Static array of bubbles.
+Bubble bubbles[NUM_BUBBLES];
+
+int current_bubble = 0;     // Index that should be used next.
+int active_bubble = -1;     // Index of active bubble (-1: none)
+
+// Mouse button callback function.
+// This function will be called by tq library when mouse button is pressed.
+// 1st parameter holds current mouse cursor position, meanwhile
+// the 2nd one tells you which button is pressed.
+void on_button_down(tq_vec2i pos, tq_mouse_button button)
+{
+    if (button == TQ_MOUSE_BUTTON_LEFT) {
+        bubbles[current_bubble].pos = tq_vec2i_cast(pos);
+        bubbles[current_bubble].rad = 16.0f;
+
+        active_bubble = current_bubble;
+        current_bubble = (current_bubble + 1) % NUM_BUBBLES;
     }
+}
 
-    // But keep it larger than 8px and smaller than 64px.
-
-    if (circle_radius < 8.0f) {
-        circle_radius = 8.0f;
-    }
-
-    if (circle_radius > 64.0f) {
-        circle_radius = 64.0f;
+// Same as above, but called when a button is released.
+void on_button_up(tq_vec2i pos, tq_mouse_button button)
+{
+    if (button == TQ_MOUSE_BUTTON_LEFT) {
+        active_bubble = -1;
     }
 }
 
@@ -41,41 +56,75 @@ int main(int argc, char *argv[])
 {
     tq_set_display_size((tq_vec2i) {512, 512});
     tq_set_title("[tq library] core/mouse");
+    tq_set_antialiasing_level(4);
 
     tq_initialize();
     atexit(tq_terminate);
 
-    // Set dark gray background.
-    tq_set_clear_color((tq_color) {20, 20, 20, 255});
+    // Set light gray background.
+    tq_set_clear_color((tq_color) {224, 224, 224, 255});
 
-    // Set mouse wheel callback function.
+    // These colors won't change in this sample, so they can be set here.
+    tq_set_line_color((tq_color) {255, 0, 0, 255}); // for red crosshair
+    tq_set_fill_color((tq_color) {32, 32, 32, 255});
+    tq_set_outline_color((tq_color) {224, 224, 224, 255});
+
+    // Set mouse wheel callback functions.
     // To remove the callback, you can pass NULL pointer.
-    tq_on_mouse_wheel_scrolled(on_mouse_wheel_scrolled);
+    tq_on_mouse_button_pressed(on_button_down);
+    tq_on_mouse_button_released(on_button_up);
 
     // Other than this, tq library also supports setting callbacks for
     // these events:
-    // * mouse button is clicked (tq_on_mouse_button_pressed())
-    // * mouse button is released (tq_on_mouse_button_released())
     // * mouse cursor is moved (tq_on_mouse_cursor_moved())
+    // * mouse wheel is scrolled (tq_on_mouse_wheel_scrolled())
+
+    // You can also hide mouse cursor.
+    tq_set_mouse_cursor_hidden(true);
 
     while (tq_process()) {
-        tq_clear();
-
-        // If left mouse button is pressed, then make our circle red.
-        // Or white, if the button isn't pressed.
-        if (tq_is_mouse_button_pressed(TQ_MOUSE_BUTTON_LEFT)) {
-            tq_set_outline_color((tq_color) {255, 0, 0, 255});
-        } else {
-            tq_set_outline_color((tq_color) {255, 255, 255, 255});
-        }
+        // Get delta time. It's an amount of time passed between current
+        // and previous frames, in seconds.
+        float dt = (float) tq_get_delta_time();
 
         // Get mouse cursor position (integer vector).
         // Since in most API functions we need floating-point vectors,
         // an integer vector can be easily cast to floating-point one
         // with tq_vec2i_cast().
-        tq_vec2f cursor = tq_vec2i_cast(tq_get_mouse_cursor_position());
+        tq_vec2f cursor_pos = tq_vec2i_cast(tq_get_mouse_cursor_position());
 
-        tq_outline_circle(cursor, circle_radius);
+        // Logic of bubbles goes here. It's pretty simple.
+        // If bubble has radius more than 0, it should slowly shrink.
+        // But if it's last spawned bubble (the user is holding a button)
+        // it should grow and follow cursor.
+        for (int i = 0; i < NUM_BUBBLES; i++) {
+            if (bubbles[i].rad > 0.0f) {
+                if (active_bubble == i) {
+                    bubbles[i].pos = cursor_pos;
+                    bubbles[i].rad += 24.0f * dt;
+                } else {
+                    bubbles[i].rad -= 16.0f * dt;
+                }
+            }
+        }
+
+        // Clear screen.
+        tq_clear();
+
+        // Draw all bubbles with positive radius.
+        for (int i = 0; i < NUM_BUBBLES; i++) {
+            if (bubbles[i].rad > 0.0f) {
+                // Fill and outline circle area.
+                tq_draw_circle(bubbles[i].pos, bubbles[i].rad);
+            }
+        }
+
+        // Draw crosshair.
+        tq_push_matrix();
+        tq_translate_matrix(cursor_pos);
+        tq_draw_line((tq_vec2f) {-8.0f, 0.0f}, (tq_vec2f) {8.0f, 0.0f});
+        tq_draw_line((tq_vec2f) {0.0f, -8.0f}, (tq_vec2f) {0.0f, 8.0f});
+        tq_pop_matrix();
     }
 
     return 0;
