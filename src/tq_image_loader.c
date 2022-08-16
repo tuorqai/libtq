@@ -11,6 +11,7 @@
 
 #include <stb_image.h>
 
+#include "tq_graphics.h"
 #include "tq_image_loader.h"
 #include "tq_log.h"
 
@@ -64,6 +65,8 @@ struct image image_load(libtq_stream *stream)
         return image;
     }
 
+    tq_color *color_key = libtq_get_color_key();
+
     image.pixels = stbi_load_from_callbacks(
         &(stbi_io_callbacks) {
             .read = stream_read,
@@ -74,12 +77,33 @@ struct image image_load(libtq_stream *stream)
         &image.width,
         &image.height,
         &image.channels,
-        0
+        (color_key) ? 4 : 0
     );
 
     if (image.pixels == NULL) {
         libtq_log(LIBTQ_LOG_ERROR, "stbi image loader error: %s\n", stbi_failure_reason());
         return image;
+    }
+
+    if (color_key) {
+        image.channels = 4;
+
+        for (int y = 0; y < image.height; y++) {
+            unsigned char *row = image.pixels + (4 * image.width * y);
+
+            for (int x = 0; x < image.width; x++) {
+                unsigned char r = row[4 * x + 0];
+                unsigned char g = row[4 * x + 1];
+                unsigned char b = row[4 * x + 2];
+
+                if (r == color_key->r && g == color_key->g && b == color_key->b) {
+                    row[4 * x + 0] = 0;
+                    row[4 * x + 1] = 0;
+                    row[4 * x + 2] = 0;
+                    row[4 * x + 3] = 0;
+                }
+            }
+        }
     }
 
     return image;

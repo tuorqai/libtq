@@ -69,6 +69,9 @@ void        libtq_initialize_graphics(void);
 void        libtq_terminate_graphics(void);
 void        libtq_process_graphics(void);
 
+tq_color    *libtq_get_color_key(void);
+void        libtq_set_color_key(tq_color color);
+
 int         libtq_get_antialiasing_level(void);
 void        libtq_set_antialiasing_level(int level);
 

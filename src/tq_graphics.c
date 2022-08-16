@@ -57,6 +57,8 @@ struct graphics
 
 struct libtq_graphics_priv
 {
+    bool color_key_enabled;
+    tq_color color_key;
     int antialiasing_level;
 };
 
@@ -227,6 +229,26 @@ void libtq_process_graphics(void)
 }
 
 //------------------------------------------------------------------------------
+
+tq_color *libtq_get_color_key(void)
+{
+    if (!priv.color_key_enabled) {
+        return NULL;
+    }
+
+    return &priv.color_key;
+}
+
+void libtq_set_color_key(tq_color color)
+{
+    if (color.r == 0 && color.g == 0 && color.b == 0 && color.a == 0) {
+        priv.color_key_enabled = false;
+        return;
+    }
+
+    priv.color_key_enabled = true;
+    priv.color_key = color;
+}
 
 int libtq_get_antialiasing_level(void)
 {

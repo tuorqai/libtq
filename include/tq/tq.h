@@ -596,6 +596,17 @@ static inline tq_color tq_c32(unsigned char r, unsigned char g, unsigned char b,
 // Options
 
 /**
+ * Set color key value. Pass {0, 0, 0, 0} to disable this.
+ * If color keying is enabled, all image loading operations
+ * will convert that color (alpha ignored) to fully transparent value.
+ * For example, if you set this value to {255, 0, 0, 255}, then all
+ * red pixels will be converted to transparent pixels.
+ * Color keying is disabled by default.
+ * It's advised not to use this function and use proper textures instead.
+ */
+TQ_API void TQ_CALL tq_set_color_key(tq_color color);
+
+/**
  * Set anti-aliasing level. It's applied to both canvas and surfaces.
  * If the level isn't supported, no changes are made.
  * Possible values are 0, 1, 2, 4, 8 and 16. Level 0 is equal to 1.

@@ -166,6 +166,11 @@ int tq_get_framerate(void)
 //----------------------------------------------------------
 // Options
 
+void tq_set_color_key(tq_color color)
+{
+    libtq_set_color_key(color);
+}
+
 void tq_set_antialiasing_level(int level)
 {
     libtq_set_antialiasing_level(level);
