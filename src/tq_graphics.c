@@ -101,6 +101,12 @@ static float *make_circle(float x, float y, float radius, int color_id, int *len
     float angle = acosf(2.0f * (1.0f - e / radius) * (1.0f - e / radius) - 1.0f);
 
     int count = (int) ceilf(2.0f * M_PI / angle);
+
+    if (count <= 0) {
+        *length = 0;
+        return NULL;
+    }
+
     float *data = libtq_malloc(2 * sizeof(float) * count);
 
     for (int v = 0; v < count; v++) {
@@ -459,6 +465,10 @@ void libtq_outline_circle(float x, float y, float radius)
 
     float *data = make_circle(x, y, radius, COLOR_OUTLINE, &length);
 
+    if (!data) {
+        return;
+    }
+
     renderer.set_draw_color(colors[COLOR_OUTLINE].value);
     renderer.draw_solid(LIBTQ_LINE_LOOP, data, length);
 
@@ -495,6 +505,10 @@ void libtq_fill_circle(float x, float y, float radius)
     int length;
 
     float *data = make_circle(x, y, radius, COLOR_FILL, &length);
+
+    if (!data) {
+        return;
+    }
 
     renderer.set_draw_color(colors[COLOR_FILL].value);
     renderer.draw_solid(LIBTQ_TRIANGLE_FAN, data, length - 1);
