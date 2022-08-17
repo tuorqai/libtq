@@ -908,7 +908,7 @@ static int create_surface(int width, int height)
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, surface.depth));
     CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height));
 
-    surface.texture_id = create_texture(width, height, PIXEL_FORMAT_RGBA);
+    surface.texture_id = create_texture(width, height, LIBTQ_RGBA);
     set_texture_smooth(surface.texture_id, true);
     CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
     CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));

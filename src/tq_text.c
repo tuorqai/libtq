@@ -198,7 +198,7 @@ static int cache_glyph(int font_id, unsigned long codepoint, float x_advance, fl
 
             renderer->delete_texture(atlas->texture_id);
             atlas->texture_id = renderer->create_texture(atlas->width, atlas->height,
-                PIXEL_FORMAT_GRAYSCALE);
+                LIBTQ_GRAYSCALE);
             renderer->update_texture(atlas->texture_id, 0, 0,
                 atlas->width, atlas->height, atlas->bitmap);
         }
@@ -350,7 +350,7 @@ int text_load_font(libtq_stream *stream, float pt, int weight)
     }
 
     fonts[font_id].atlas.texture_id = renderer->create_texture(width, height,
-        PIXEL_FORMAT_GRAYSCALE);
+        LIBTQ_GRAYSCALE);
 
     fonts[font_id].atlas.bitmap = libtq_malloc(width * height);
 

@@ -584,22 +584,22 @@ void libtq_set_fill_color(tq_color fill_color)
 
 int libtq_load_texture(libtq_stream *stream)
 {
-    struct image image = image_load(stream);
+    libtq_image *image = libtq_load_image(stream);
     libtq_stream_close(stream);
 
-    if (!image.pixels) {
+    if (!image) {
         return -1;
     }
 
-    int texture_id = renderer.create_texture(image.width, image.height, image.channels);
+    int texture_id = renderer.create_texture(image->width, image->height, image->channels);
 
     if (texture_id == -1) {
-        libtq_free(image.pixels);
+        libtq_free(image);
         return -1;
     }
 
-    renderer.update_texture(texture_id, 0, 0, -1, -1, image.pixels);
-    libtq_free(image.pixels);
+    renderer.update_texture(texture_id, 0, 0, -1, -1, image->pixels);
+    libtq_free(image);
 
     return texture_id;
 }

@@ -25,10 +25,15 @@
 
 enum
 {
+    LIBTQ_DEBUG = -1,
+    LIBTQ_INFO = 0,
+    LIBTQ_WARNING = 1,
+    LIBTQ_ERROR = 2,
+
     LIBTQ_LOG_DEBUG = -1,
     LIBTQ_LOG_INFO = 0,
-    LIBTQ_LOG_WARNING,
-    LIBTQ_LOG_ERROR,
+    LIBTQ_LOG_WARNING = 1,
+    LIBTQ_LOG_ERROR = 2,
 };
 
 //------------------------------------------------------------------------------
@@ -39,7 +44,7 @@ void libtq_log(int level, char const *fmt, ...);
     #define libtq_debug
 #else
     #define libtq_debug(...) \
-        libtq_log(LIBTQ_LOG_DEBUG, __VA_ARGS__)
+        libtq_log(LIBTQ_DEBUG, __VA_ARGS__)
 #endif
 
 //------------------------------------------------------------------------------

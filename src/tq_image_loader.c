@@ -42,69 +42,141 @@ static int stream_eof(void *user)
 
 //------------------------------------------------------------------------------
 
-struct image image_create(unsigned int width, unsigned int height, unsigned int channels)
+static void copy_pixels_with_key(unsigned char *dst, unsigned char const *src,
+    int width, int height, int channels, tq_color key)
 {
-    return (struct image) {
-        .pixels = libtq_calloc(1, width * height * channels),
-        .width = width,
-        .height = height,
-        .channels = channels,
-    };
+    for (int y = 0; y < height; y++) {
+        size_t row = 4 * width * y;
+
+        for (int x = 0; x < width; x++) {
+            size_t src_idx = (channels * width * y) + (channels * x);
+            size_t dst_idx = (4 * width * y) + (4 * x);
+
+            unsigned char r, g, b, a;
+
+            switch (channels) {
+            case 1:
+                r = src[src_idx];
+                g = src[src_idx];
+                b = src[src_idx];
+                a = 255;
+                break;
+            case 2:
+                r = src[src_idx + 0];
+                g = src[src_idx + 0];
+                b = src[src_idx + 0];
+                a = src[src_idx + 1];
+                break;
+            case 3:
+                r = src[src_idx + 0];
+                g = src[src_idx + 1];
+                b = src[src_idx + 2];
+                a = 255;
+                break;
+            case 4:
+                r = src[src_idx + 0];
+                g = src[src_idx + 1];
+                b = src[src_idx + 2];
+                a = src[src_idx + 3];
+                break;
+            }
+
+            if (r == key.r && g == key.g && b == key.b) {
+                dst[dst_idx + 0] = 0;
+                dst[dst_idx + 1] = 0;
+                dst[dst_idx + 2] = 0;
+                dst[dst_idx + 3] = 0;
+            } else {
+                dst[dst_idx + 0] = r;
+                dst[dst_idx + 1] = g;
+                dst[dst_idx + 2] = b;
+                dst[dst_idx + 3] = a;
+            }
+        }
+    }
 }
 
-struct image image_load(libtq_stream *stream)
+//------------------------------------------------------------------------------
+
+libtq_image *libtq_create_image(int width, int height, int channels)
 {
-    struct image image = { 0 };
+    size_t volume = width * height * channels;
+    libtq_image *image = libtq_calloc(1, sizeof(libtq_image) + volume);
 
-    void const *buffer = libtq_stream_buffer(stream);
-    size_t size = libtq_stream_size(stream);
+    if (!image) {
+        return NULL;
+    }
 
-    if (buffer == NULL || size == 0) {
-        libtq_log(LIBTQ_LOG_ERROR, "Can't load image from empty stream: %s\n",
-            libtq_stream_repr(stream));
-        return image;
+    image->width = width;
+    image->height = height;
+    image->channels = channels;
+
+    return image;
+}
+
+libtq_image *libtq_load_image(libtq_stream *stream)
+{
+    if (!stream) {
+        return NULL;
+    }
+
+    size_t stream_size = libtq_stream_size(stream);
+    void const *stream_buffer = libtq_stream_buffer(stream);
+
+    if (!stream_buffer || !stream_size) {
+        return NULL;
     }
 
     tq_color *color_key = libtq_get_color_key();
 
-    image.pixels = stbi_load_from_callbacks(
+    int width;
+    int height;
+    int channels;
+
+    unsigned char *pixels = stbi_load_from_callbacks(
         &(stbi_io_callbacks) {
             .read = stream_read,
             .skip = stream_skip,
             .eof = stream_eof,
         },
-        stream,
-        &image.width,
-        &image.height,
-        &image.channels,
-        (color_key) ? 4 : 0
+        stream, &width, &height, &channels, 0
     );
 
-    if (image.pixels == NULL) {
+    if (!pixels) {
         libtq_log(LIBTQ_LOG_ERROR, "stbi image loader error: %s\n", stbi_failure_reason());
-        return image;
+        return NULL;
     }
+
+    int actual_channels;
 
     if (color_key) {
-        image.channels = 4;
-
-        for (int y = 0; y < image.height; y++) {
-            unsigned char *row = image.pixels + (4 * image.width * y);
-
-            for (int x = 0; x < image.width; x++) {
-                unsigned char r = row[4 * x + 0];
-                unsigned char g = row[4 * x + 1];
-                unsigned char b = row[4 * x + 2];
-
-                if (r == color_key->r && g == color_key->g && b == color_key->b) {
-                    row[4 * x + 0] = 0;
-                    row[4 * x + 1] = 0;
-                    row[4 * x + 2] = 0;
-                    row[4 * x + 3] = 0;
-                }
-            }
-        }
+        actual_channels = 4;
+    } else {
+        actual_channels = channels;
     }
+
+    size_t volume = width * height * actual_channels;
+    libtq_image *image = libtq_malloc(sizeof(libtq_image) + volume);
+
+    if (!image) {
+        stbi_image_free(pixels);
+        return NULL;
+    }
+
+    image->width = width;
+    image->height = height;
+    image->channels = actual_channels;
+
+    if (color_key) {
+        copy_pixels_with_key(image->pixels, pixels, width, height, channels, *color_key);
+    } else {
+        memcpy(image->pixels, pixels, volume);
+    }
+
+    stbi_image_free(pixels);
+
+    libtq_log(LIBTQ_INFO, "Loaded %dx%dx%d image from stream %s.\n",
+        width, height, channels, libtq_stream_repr(stream));
 
     return image;
 }

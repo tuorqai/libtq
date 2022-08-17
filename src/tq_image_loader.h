@@ -12,30 +12,29 @@
 
 enum
 {
-    PIXEL_FORMAT_NONE,
-    PIXEL_FORMAT_GRAYSCALE,
-    PIXEL_FORMAT_GRAYSCALE_ALPHA,
-    PIXEL_FORMAT_RGB,
-    PIXEL_FORMAT_RGBA,
+    LIBTQ_GRAYSCALE = 1,
+    LIBTQ_GRAYSCALE_ALPHA = 2,
+    LIBTQ_RGB = 3,
+    LIBTQ_RGBA = 4,
 };
 
-struct image
+typedef struct libtq_image
 {
-    unsigned char *pixels;
     int width;
     int height;
     int channels;
-};
+    unsigned char pixels[];
+} libtq_image;
 
 /**
  * Create an empty image using given parameters.
  */
-struct image image_create(unsigned int width, unsigned int height, unsigned int channels);
+libtq_image *libtq_create_image(int width, int height, int channels);
 
 /**
  * Load image from an input stream.
  */
-struct image image_load(libtq_stream *stream);
+libtq_image *libtq_load_image(libtq_stream *stream);
 
 //------------------------------------------------------------------------------
 
