@@ -78,6 +78,7 @@ add_library(tq
     "src/tq_stream.c"
     "src/tq_text.c"
     "src/tq_win32_clock.c"
+    "src/tq_win32_display.c"
     "src/tq_win32_threads.c")
 
 target_include_directories(tq PUBLIC "include")

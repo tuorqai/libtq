@@ -85,12 +85,12 @@ void libtq_initialize_core(void)
         #if defined(_WIN32)
             libtq_construct_win32_clock(&core.clock);
             libtq_construct_win32_threads(&core.threads);
+            libtq_construct_win32_display(&core.display);
         #else
             libtq_construct_posix_clock(&core.clock);
             libtq_construct_posix_threads(&core.threads);
+            libtq_construct_sdl_display(&core.display);
         #endif
-
-        libtq_construct_sdl_display(&core.display);
     #elif defined(TQ_PLATFORM_ANDROID)
         libtq_construct_posix_clock(&core.clock);
         libtq_construct_posix_threads(&core.threads);

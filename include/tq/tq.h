@@ -245,6 +245,8 @@ typedef enum tq_mouse_button
     TQ_MOUSE_BUTTON_LEFT,
     TQ_MOUSE_BUTTON_RIGHT,
     TQ_MOUSE_BUTTON_MIDDLE,
+    TQ_MOUSE_BUTTON_X4,
+    TQ_MOUSE_BUTTON_X5,
     TQ_TOTAL_MOUSE_BUTTONS,
 } tq_mouse_button;
 

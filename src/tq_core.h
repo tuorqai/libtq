@@ -73,6 +73,10 @@ struct libtq_display_impl
     bool        (*check_gl_ext)(char const *name);
 };
 
+#if defined(_WIN32)
+    void libtq_construct_win32_display(struct libtq_display_impl *display);
+#endif
+
 #if defined(TQ_USE_SDL)
     void libtq_construct_sdl_display(struct libtq_display_impl *display);
 #endif
