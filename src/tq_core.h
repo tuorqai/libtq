@@ -125,6 +125,9 @@ void            libtq_on_mouse_wheel_scrolled(float x_delta, float y_delta);
 
 void            libtq_on_display_resize(int width, int height);
 
+void            libtq_on_focus_gain(void);
+void            libtq_on_focus_loss(void);
+
 void            libtq_set_key_press_callback(tq_key_callback callback);
 void            libtq_set_key_release_callback(tq_key_callback callback);
 void            libtq_set_mousebutton_press_callback(tq_mouse_button_callback callback);

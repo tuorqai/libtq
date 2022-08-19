@@ -28,6 +28,7 @@ Bubble bubbles[NUM_BUBBLES];
 
 int current_bubble = 0;     // Index that should be used next.
 int active_bubble = -1;     // Index of active bubble (-1: none)
+float crosshair_size = 8;   // Size of crosshair, in pixels
 
 // Mouse button callback function.
 // This function will be called by tq library when mouse button is pressed.
@@ -52,6 +53,20 @@ void on_button_up(tq_vec2i pos, tq_mouse_button button)
     }
 }
 
+// TODO: comments.
+void on_wheel_scroll(tq_vec2i cursor, tq_vec2f wheel)
+{
+    crosshair_size += wheel.y * 2.0f;
+
+    if (crosshair_size < 2) {
+        crosshair_size = 2;
+    }
+
+    if (crosshair_size > 64) {
+        crosshair_size = 64;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     tq_set_display_size((tq_vec2i) {512, 512});
@@ -69,15 +84,15 @@ int main(int argc, char *argv[])
     tq_set_fill_color((tq_color) {32, 32, 32, 255});
     tq_set_outline_color((tq_color) {224, 224, 224, 255});
 
-    // Set mouse wheel callback functions.
+    // Set mouse callback functions.
     // To remove the callback, you can pass NULL pointer.
     tq_on_mouse_button_pressed(on_button_down);
     tq_on_mouse_button_released(on_button_up);
+    tq_on_mouse_wheel_scrolled(on_wheel_scroll);
 
     // Other than this, tq library also supports setting callbacks for
     // these events:
     // * mouse cursor is moved (tq_on_mouse_cursor_moved())
-    // * mouse wheel is scrolled (tq_on_mouse_wheel_scrolled())
 
     // You can also hide mouse cursor.
     tq_set_mouse_cursor_hidden(true);
@@ -122,8 +137,8 @@ int main(int argc, char *argv[])
         // Draw crosshair.
         tq_push_matrix();
         tq_translate_matrix(cursor_pos);
-        tq_draw_line((tq_vec2f) {-8.0f, 0.0f}, (tq_vec2f) {8.0f, 0.0f});
-        tq_draw_line((tq_vec2f) {0.0f, -8.0f}, (tq_vec2f) {0.0f, 8.0f});
+        tq_draw_line((tq_vec2f) {-crosshair_size, 0.0f}, (tq_vec2f) {crosshair_size, 0.0f});
+        tq_draw_line((tq_vec2f) {0.0f, -crosshair_size}, (tq_vec2f) {0.0f, crosshair_size});
         tq_pop_matrix();
     }
 

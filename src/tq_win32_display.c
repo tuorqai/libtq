@@ -85,6 +85,8 @@ struct libtq_win32_display_priv
     HCURSOR     cursor;
     BOOL        hide_cursor;
     BOOL        key_autorepeat;
+    UINT        mouse_button_ordinal;
+    UINT        mouse_buttons;
 
 #if defined(UNICODE)
     WCHAR       wide_title[256];
@@ -166,7 +168,7 @@ void initialize(void)
 
     WNDCLASSEX wcex = {
         .cbSize         = sizeof(WNDCLASSEX),
-        .style          = CS_VREDRAW | CS_HREDRAW | CS_DBLCLKS | CS_OWNDC,
+        .style          = CS_VREDRAW | CS_HREDRAW | CS_OWNDC,
         .lpfnWndProc    = wndproc,
         .cbClsExtra     = 0,
         .cbWndExtra     = 0,
@@ -301,35 +303,75 @@ LRESULT wndproc(HWND window, UINT msg, WPARAM wp, LPARAM lp)
     case WM_SIZE:
         libtq_on_display_resize(LOWORD(lp), HIWORD(lp));
         return 0;
+    case WM_ACTIVATE:
+        if (LOWORD(wp) == WA_ACTIVE && HIWORD(wp) == 0) {
+            // Send release message for all pressed buttons when
+            // switching from another window
+            for (int i = 0; i < TQ_TOTAL_MOUSE_BUTTONS; i++) {
+                if (priv.mouse_buttons & (1 << i)) {
+                    libtq_on_mouse_button_released(i);
+                }
+            }
+
+            priv.mouse_buttons = 0;
+            libtq_on_focus_gain();
+        } else if (LOWORD(wp) == WA_INACTIVE) {
+            if (priv.mouse_button_ordinal > 0) {
+                priv.mouse_button_ordinal = 0;
+                ReleaseCapture();
+            }
+
+            libtq_on_focus_loss();
+        }
+        return 0;
     case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
         if ((lp & 0x40000000) && !priv.key_autorepeat) {
             break;
         }
         libtq_on_key_pressed(key_conv(wp, lp));
         return 0;
     case WM_KEYUP:
+    case WM_SYSKEYUP:
         libtq_on_key_released(key_conv(wp, lp));
         return 0;
     case WM_LBUTTONDOWN:
     case WM_RBUTTONDOWN:
     case WM_MBUTTONDOWN:
     case WM_XBUTTONDOWN:
+        if (priv.mouse_button_ordinal == 0) {
+            SetCapture(priv.window);
+        }
+        priv.mouse_button_ordinal++;
+        priv.mouse_buttons |= (1 << mb_conv(msg, wp));
         libtq_on_mouse_button_pressed(mb_conv(msg, wp));
         return 0;
     case WM_LBUTTONUP:
     case WM_RBUTTONUP:
     case WM_MBUTTONUP:
     case WM_XBUTTONUP:
+        priv.mouse_button_ordinal--;
+        if (priv.mouse_button_ordinal == 0) {
+            ReleaseCapture();
+        }
+        priv.mouse_buttons &= ~(1 << mb_conv(msg, wp));
         libtq_on_mouse_button_released(mb_conv(msg, wp));
         return 0;
     case WM_MOUSEMOVE:
         libtq_on_mouse_cursor_moved(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
+        return 0;
+    case WM_MOUSEWHEEL:
+        libtq_on_mouse_wheel_scrolled(0.0f, GET_WHEEL_DELTA_WPARAM(wp) / (float) WHEEL_DELTA);
+        return 0;
+    case WM_MOUSEHWHEEL:
+        libtq_on_mouse_wheel_scrolled(GET_WHEEL_DELTA_WPARAM(wp) / (float) WHEEL_DELTA, 0.0f);
         return 0;
     case WM_SETCURSOR:
         if (LOWORD(lp) == HTCLIENT) {
             SetCursor(priv.hide_cursor ? NULL : priv.cursor);
             return 0;
         }
+        break;
     }
 
     return DefWindowProc(window, msg, wp, lp);
