@@ -271,9 +271,7 @@ static bool process_events(void)
             libtq_on_mouse_cursor_moved(event.button.x, event.button.y);
             break;
         case SDL_MOUSEWHEEL:
-            if (event.wheel.y) {
-                libtq_on_mouse_wheel_scrolled((float) event.wheel.x, (float) event.wheel.y);
-            }
+            libtq_on_mouse_wheel_scrolled(event.wheel.preciseX, event.wheel.preciseY);
             break;
         case SDL_WINDOWEVENT:
             switch (event.window.event) {
