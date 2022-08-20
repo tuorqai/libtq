@@ -5,18 +5,22 @@
 
 //------------------------------------------------------------------------------
 // [core/keyboard]
-// This example shows how to use mouse routines.
+// This example shows how to use keyboard-related functions.
 //------------------------------------------------------------------------------
 
-// Default position of a circle: center of the screen.
-tq_vec2f circle_pos = {256, 256};
+bool alphabet[26]; // array of pressed letter keys
 
 void on_key_pressed(tq_key key)
 {
-    // Reset circle position if Space key is pressed.
+    if (key >= TQ_KEY_A && key <= TQ_KEY_Z) {
+        alphabet[key - TQ_KEY_A] = true;
+    }
+}
 
-    if (key == TQ_KEY_SPACE) {
-        circle_pos = (tq_vec2f) {256, 256};
+void on_key_released(tq_key key)
+{
+    if (key >= TQ_KEY_A && key <= TQ_KEY_Z) {
+        alphabet[key - TQ_KEY_A] = false;
     }
 }
 
@@ -30,59 +34,39 @@ int main(int argc, char *argv[])
 
     // Set key press callback.
     tq_on_key_pressed(on_key_pressed);
+    tq_on_key_released(on_key_released);
 
-    // Set dark green background.
-    tq_set_clear_color((tq_color) {10, 22, 15, 255});
+    // Set dark gray background.
+    tq_set_clear_color((tq_color) {24, 24, 24, 255});
 
-    // Set white outline.
-    tq_set_outline_color((tq_color) {255, 255, 255, 255});
+    tq_font unispace = tq_load_font_from_file("assets/fonts/unispace.ttf", 36.0f, 400);
 
     while (tq_process()) {
-        // Use tq_get_delta_time() function to get delta time.
-        float speed = 400.0f * tq_get_delta_time();
-
-        // Move circle up if Up key is pressed.
-        if (tq_is_key_pressed(TQ_KEY_UP)) {
-            circle_pos.y -= speed;
-        }
-
-        // Move circle down if Down key is pressed.
-        if (tq_is_key_pressed(TQ_KEY_DOWN)) {
-            circle_pos.y += speed;
-        }
-
-        // Move circle left if Left key is pressed.
-        if (tq_is_key_pressed(TQ_KEY_LEFT)) {
-            circle_pos.x -= speed;
-        }
-
-        // Move circle right if Right key is pressed.
-        if (tq_is_key_pressed(TQ_KEY_RIGHT)) {
-            circle_pos.x += speed;
-        }
-
-        // Keep circle inside of screen.
-        if (circle_pos.x < 0.0f) {
-            circle_pos.x = 0.0f;
-        }
-
-        if (circle_pos.y < 0.0f) {
-            circle_pos.y = 0.0f;
-        }
-
-        if (circle_pos.x > 512.0f) {
-            circle_pos.x = 512.0f;
-        }
-
-        if (circle_pos.y > 512.0f) {
-            circle_pos.y = 512.0f;
-        }
-
         // Clear the screen before drawing.
         tq_clear();
 
-        // Draw our circle.
-        tq_outline_circle(circle_pos, 32.0f);
+        // Draw alphabet.
+        tq_set_fill_color((tq_color) {255, 255, 255, 255});
+        tq_draw_text(unispace, (tq_vec2f) {60, 120}, "Alphabet:");
+
+        tq_vec2f char_pos = { 60, 200 };
+
+        for (int i = 0; i < 26; i++) {
+            if (alphabet[i]) {
+                tq_set_fill_color((tq_color) {0, 255, 0, 255});
+            } else {
+                tq_set_fill_color((tq_color) {255, 255, 255, 255});
+            }
+
+            tq_print_text(unispace, char_pos, "%c", 'A' + i);
+
+            char_pos.x += 40.0f;
+
+            if ((i + 1) % 10 == 0) {
+                char_pos.x = 60.0f;
+                char_pos.y += 50.0f;
+            }
+        }
     }
 
     return 0;

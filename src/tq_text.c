@@ -338,12 +338,8 @@ int text_load_font(libtq_stream *stream, float pt, int weight)
         return -1;
     }
 
-    int width = 16;
+    int width = 4096;
     int height = 16;
-
-    while (width < (pt * 8)) {
-        width *= 2;
-    }
 
     while (height < (pt * 4)) {
         height *= 2;
