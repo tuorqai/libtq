@@ -23,10 +23,16 @@ project(tq
     LANGUAGES C)
 
 #-------------------------------------------------------------------------------
-# Check if platform is supported
+# Platforms
 
-if(NOT WIN32 AND NOT (UNIX AND NOT APPLE) AND NOT ANDROID)
-    message(FATAL_ERROR "Sorry, but tq library doesn't support this platform.")
+if(WIN32)
+    set(TQ_PLATFORM_WIN32 YES)
+elseif(UNIX)
+    if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+        set(TQ_PLATFORM_LINUX YES)
+    endif()
+elseif(ANDROID) # is UNIX defined on Android?
+    set(TQ_PLATFORM_ANDROID YES)
 endif()
 
 #-------------------------------------------------------------------------------
@@ -85,6 +91,14 @@ target_include_directories(tq PUBLIC "include")
 target_include_directories(tq PRIVATE "third-party")
 target_compile_definitions(tq PRIVATE TQ_BUILD)
 
+if(TQ_PLATFORM_WIN32)
+    target_compile_definitions(tq PRIVATE TQ_WIN32)
+elseif(TQ_PLATFORM_LINUX)
+    target_compile_definitions(tq PRIVATE TQ_LINUX)
+elseif(TQ_PLATFORM_ANDROID)
+    target_compile_definitions(tq PRIVATE TQ_ANDROID)
+endif()
+
 #-------------------------------------------------------------------------------
 # Shared library support
 
@@ -102,7 +116,7 @@ endif()
 # Dependencies
 
 # Check if pkg-config is available.
-# We will be using it as a fallback.
+# It will be used as a fallback.
 find_package(PkgConfig MODULE)
 
 # Standard math library.
@@ -125,7 +139,7 @@ target_link_libraries(tq PRIVATE Freetype::Freetype)
 find_package(harfbuzz CONFIG REQUIRED) # Imports `harfbuzz::harfbuzz` target
 target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
 
-# Vorbis library. We need only vorbisfile from it.
+# Vorbis library.
 # This is an optional dependency.
 find_package(Vorbis CONFIG QUIET) # Imports Vorbis::vorbisenc and Vorbis::vorbisfile
 
@@ -141,11 +155,48 @@ elseif(PKG_CONFIG_FOUND)
     endif()
 endif()
 
-# Platform-specific dependencies.
-if(ANDROID)
-    # Android-specific compile definitions
-    target_compile_definitions(tq PRIVATE TQ_PLATFORM_ANDROID)
+#-------------------------------------------------------------------------------
+# Platform-specific dependencies
 
+if(TQ_PLATFORM_WIN32)
+    if(BUILD_SHARED_LIBS)
+        add_library(tq-main STATIC "src/tq_win32_system.c")
+        target_compile_definitions(tq-main PRIVATE TQ_WIN32)
+        target_link_libraries(tq INTERFACE tq-main)
+    else()
+        target_sources(tq PUBLIC "src/tq_win32_system.c")
+    endif()
+endif()
+
+if(TQ_PLATFORM_LINUX)
+    # Simple DirectMedia Layer 2
+    find_package(SDL2 CONFIG REQUIRED) # Imports SDL2::SDL2
+    target_link_libraries(tq PRIVATE SDL2::SDL2)
+endif()
+
+if(TQ_PLATFORM_WIN32 OR TQ_PLATFORM_LINUX)
+    # OpenAL
+    find_package(OpenAL CONFIG QUIET) # Imports OpenAL::OpenAL
+
+    if(OpenAL_FOUND)
+        target_link_libraries(tq PRIVATE OpenAL::OpenAL)
+    elseif(PKG_CONFIG_FOUND)
+        pkg_check_modules(PC_openal REQUIRED IMPORTED_TARGET openal)
+        target_link_libraries(tq PRIVATE PkgConfig::PC_openal)
+    else()
+        message(FATAL_ERROR "OpenAL is required, but not found.")
+    endif()
+
+    # OpenGL
+    find_package(OpenGL MODULE REQUIRED) # Imports OpenGL::GL and others
+    target_link_libraries(tq PRIVATE OpenGL::GL)
+
+    # OpenGL Extension Wrangler
+    find_package(GLEW MODULE REQUIRED) # Imports GLEW::GLEW
+    target_link_libraries(tq PRIVATE GLEW::GLEW)
+endif()
+
+if(TQ_PLATFORM_ANDROID)
     # -landroid
     find_library(ANDROID_LIB NAMES android)
 
@@ -163,47 +214,6 @@ if(ANDROID)
         ${LOG_LIB}
         ${GLESV2_LIB}
         ${EGL_LIB})
-else()
-    # Desktop-specific compile definitions
-    target_compile_definitions(tq PRIVATE
-        TQ_PLATFORM_DESKTOP
-        TQ_USE_SDL
-        TQ_USE_OPENGL
-        TQ_USE_OPENAL)
-
-    # Simple DirectMedia Layer 2
-    find_package(SDL2 CONFIG REQUIRED) # Imports SDL2::SDL2
-    target_link_libraries(tq PRIVATE SDL2::SDL2)
-
-    # OpenGL
-    find_package(OpenGL MODULE REQUIRED) # Imports OpenGL::GL and others
-    target_link_libraries(tq PRIVATE OpenGL::GL)
-
-    # OpenGL Extension Wrangler
-    find_package(GLEW MODULE REQUIRED) # Imports GLEW::GLEW
-    target_link_libraries(tq PRIVATE GLEW::GLEW)
-
-    # OpenAL
-    find_package(OpenAL CONFIG QUIET) # Imports OpenAL::OpenAL
-
-    if(OpenAL_FOUND)
-        target_link_libraries(tq PRIVATE OpenAL::OpenAL)
-    elseif(PKG_CONFIG_FOUND)
-        pkg_check_modules(PC_openal REQUIRED IMPORTED_TARGET openal)
-        target_link_libraries(tq PRIVATE PkgConfig::PC_openal)
-    else()
-        message(FATAL_ERROR "OpenAL is required, but not found.")
-    endif()
-
-    # WinMain() provider
-    if(WIN32)
-        if(BUILD_SHARED_LIBS)
-            add_library(tq-main STATIC "src/tq_win32_system.c")
-            target_link_libraries(tq INTERFACE tq-main)
-        else()
-            target_sources(tq PUBLIC "src/tq_win32_system.c")
-        endif()
-    endif()
 endif()
 
 #-------------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 
 //------------------------------------------------------------------------------
 
-#if defined(TQ_USE_OPENAL)
+#if defined(TQ_WIN32) || defined(TQ_LINUX)
 
 //------------------------------------------------------------------------------
 
@@ -746,4 +746,4 @@ void libtq_construct_al_audio(struct libtq_audio_impl *impl)
 
 //------------------------------------------------------------------------------
 
-#endif // defined(TQ_USE_OPENAL)
+#endif // defined(TQ_WIN32) || defined(TQ_LINUX)

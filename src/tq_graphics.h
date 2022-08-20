@@ -57,7 +57,7 @@ struct libtq_renderer_impl
     void    (*draw_canvas)(float x0, float y0, float x1, float y1);
 };
 
-#if defined(TQ_USE_OPENGL)
+#if defined(TQ_WIN32) || defined(TQ_LINUX)
     void libtq_construct_gl_renderer(struct libtq_renderer_impl *renderer);
 #endif
 

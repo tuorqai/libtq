@@ -1,7 +1,7 @@
 
 //------------------------------------------------------------------------------
 
-#if defined(TQ_USE_OPENGL)
+#if defined(TQ_WIN32) || defined(TQ_LINUX)
 
 //------------------------------------------------------------------------------
 
@@ -47,10 +47,6 @@ static void check_gl_errors(char const *call, char const *file, unsigned int lin
     GLenum error = glGetError();
 
     if (error != GL_NO_ERROR) {
-        // #ifdef _WIN32
-        // libtq_error("GL error: 0x%04x (%s) at %s:%d", error, get_gl_error_str(error), file, line);
-        // #endif
-        
         libtq_log(LIBTQ_LOG_ERROR, "OpenGL error(s) occured in %s at line %d:\n", file, line);
         libtq_log(LIBTQ_LOG_ERROR, "-- %d: %s\n", line, call);
     }
@@ -1184,6 +1180,6 @@ void libtq_construct_gl_renderer(struct libtq_renderer_impl *renderer)
 
 //------------------------------------------------------------------------------
 
-#endif // defined(TQ_USE_OPENGL)
+#endif // defined(TQ_WIN32) || defined(TQ_LINUX)
 
 //------------------------------------------------------------------------------

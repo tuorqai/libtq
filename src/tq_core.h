@@ -18,11 +18,11 @@ struct libtq_clock_impl
     double      (*get_time_highp)(void);
 };
 
-#if defined(_WIN32)
+#if defined(TQ_WIN32)
     void libtq_construct_win32_clock(struct libtq_clock_impl *clock);
 #endif
 
-#if defined(__unix__)
+#if defined(TQ_LINUX) || defined(TQ_ANDROID)
     void libtq_construct_posix_clock(struct libtq_clock_impl *clock);
 #endif
 
@@ -48,11 +48,11 @@ struct libtq_threads_impl
     void            (*unlock_mutex)(libtq_mutex mutex);
 };
 
-#if defined(_WIN32)
+#if defined(TQ_WIN32)
     void libtq_construct_win32_threads(struct libtq_threads_impl *threads);
 #endif
 
-#if defined(__unix__)
+#if defined(TQ_LINUX) || defined(TQ_ANDROID)
     void libtq_construct_posix_threads(struct libtq_threads_impl *threads);
 #endif
 
@@ -73,15 +73,15 @@ struct libtq_display_impl
     bool        (*check_gl_ext)(char const *name);
 };
 
-#if defined(_WIN32)
+#if defined(TQ_WIN32)
     void libtq_construct_win32_display(struct libtq_display_impl *display);
 #endif
 
-#if defined(TQ_USE_SDL)
+#if defined(TQ_LINUX)
     void libtq_construct_sdl_display(struct libtq_display_impl *display);
 #endif
 
-#if defined(TQ_PLATFORM_ANDROID)
+#if defined(TQ_ANDROID)
     void libtq_construct_android_display(struct libtq_display_impl *display);
 #endif
 

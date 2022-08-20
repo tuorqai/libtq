@@ -81,17 +81,15 @@ void libtq_initialize_core(void)
      * Construct clock, thread and display implementations.
      */
 
-    #if defined(TQ_PLATFORM_DESKTOP)
-        #if defined(_WIN32)
-            libtq_construct_win32_clock(&core.clock);
-            libtq_construct_win32_threads(&core.threads);
-            libtq_construct_win32_display(&core.display);
-        #else
-            libtq_construct_posix_clock(&core.clock);
-            libtq_construct_posix_threads(&core.threads);
-            libtq_construct_sdl_display(&core.display);
-        #endif
-    #elif defined(TQ_PLATFORM_ANDROID)
+    #if defined(TQ_WIN32)
+        libtq_construct_win32_clock(&core.clock);
+        libtq_construct_win32_threads(&core.threads);
+        libtq_construct_win32_display(&core.display);
+    #elif defined(TQ_LINUX)
+        libtq_construct_posix_clock(&core.clock);
+        libtq_construct_posix_threads(&core.threads);
+        libtq_construct_sdl_display(&core.display);
+    #elif defined(TQ_ANDROID)
         libtq_construct_posix_clock(&core.clock);
         libtq_construct_posix_threads(&core.threads);
         libtq_construct_android_display(&core.display);

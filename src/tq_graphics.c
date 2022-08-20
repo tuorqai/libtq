@@ -134,7 +134,7 @@ static float const *get_inverse_projection(void)
 
 void libtq_initialize_graphics(void)
 {
-#if defined(TQ_USE_OPENGL)
+#if defined(TQ_WIN32) || defined(TQ_LINUX)
     libtq_construct_gl_renderer(&renderer);
 #else
     libtq_construct_null_renderer(&renderer);

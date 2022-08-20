@@ -26,11 +26,11 @@ static struct libtq_audio_priv priv;
 
 void libtq_initialize_audio(void)
 {
-    #if defined(TQ_USE_OPENAL)
-        libtq_construct_al_audio(&priv.impl);
-    #else
-        libtq_construct_null_audio(&priv.impl);
-    #endif
+#if defined(TQ_WIN32) || defined(TQ_LINUX)
+    libtq_construct_al_audio(&priv.impl);
+#else
+    libtq_construct_null_audio(&priv.impl);
+#endif
 
     priv.impl.initialize();
 }
