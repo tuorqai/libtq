@@ -138,6 +138,9 @@ int         libtq_get_surface_texture_id(int surface_id);
 
 void        libtq_set_blend_mode(tq_blend_mode mode);
 
+void        libtq_on_rc_create(int rc);
+void        libtq_on_rc_destroy(void);
+
 //------------------------------------------------------------------------------
 
 #endif // TQ_GRAPHICS_H_INC

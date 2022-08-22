@@ -47,8 +47,6 @@ struct color
 
 struct graphics
 {
-    int ready;
-
     int canvas_surface_id;
     int canvas_width;
     int canvas_height;
@@ -57,6 +55,8 @@ struct graphics
 
 struct libtq_graphics_priv
 {
+    bool ready;
+    bool active_rc;
     bool color_key_enabled;
     tq_color color_key;
     int antialiasing_level;
@@ -166,29 +166,20 @@ void libtq_initialize_graphics(void)
     libtq_set_outline_color(tq_c24(255, 255, 255));
     libtq_set_fill_color(tq_c24(0, 0, 0));
 
-    renderer.initialize();
+    priv.ready = true;
 
-    priv.antialiasing_level = renderer.request_antialiasing_level(priv.antialiasing_level);
-
-    graphics.canvas_surface_id = renderer.create_surface(
-        graphics.canvas_width,
-        graphics.canvas_height
-    );
-
-    renderer.update_projection(matrices.projection);
-    renderer.update_model_view(matrices.model_view[0]);
-
-    text_initialize(&renderer);
-
-    graphics.ready = 1;
+    if (priv.active_rc > 0) {
+        libtq_on_rc_create(priv.active_rc);
+    }
 }
 
 void libtq_terminate_graphics(void)
 {
-    text_terminate();
-    renderer.terminate();
+    if (priv.active_rc > 0) {
+        libtq_on_rc_destroy();
+    }
 
-    graphics.ready = 0;
+    priv.ready = false;
 }
 
 void libtq_process_graphics(void)
@@ -294,7 +285,7 @@ void libtq_set_canvas_size(int width, int height)
     graphics.canvas_height = height;
     graphics.canvas_aspect_ratio = (float) width / (float) height;
 
-    if (graphics.ready) {
+    if (priv.ready && priv.active_rc > 0) {
         renderer.delete_surface(graphics.canvas_surface_id);
         graphics.canvas_surface_id = renderer.create_surface(width, height);
     }
@@ -711,6 +702,43 @@ int libtq_get_surface_texture_id(int surface_id)
 void libtq_set_blend_mode(tq_blend_mode mode)
 {
     renderer.set_blend_mode(mode);
+}
+
+//------------------------------------------------------------------------------
+
+void libtq_on_rc_create(int rc)
+{
+    priv.active_rc = rc;
+
+    if (!priv.ready) {
+        return;
+    }
+
+    renderer.initialize();
+
+    priv.antialiasing_level = renderer.request_antialiasing_level(priv.antialiasing_level);
+
+    graphics.canvas_surface_id = renderer.create_surface(
+        graphics.canvas_width,
+        graphics.canvas_height
+    );
+
+    renderer.update_projection(matrices.projection);
+    renderer.update_model_view(matrices.model_view[0]);
+
+    text_initialize(&renderer);
+}
+
+void libtq_on_rc_destroy(void)
+{
+    if (priv.active_rc == 0) {
+        return;
+    }
+
+    priv.active_rc = 0;
+
+    text_terminate();
+    renderer.terminate();
 }
 
 //------------------------------------------------------------------------------
