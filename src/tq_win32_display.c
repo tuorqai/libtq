@@ -12,6 +12,7 @@
 #include "windowsx.h"
 
 #include "tq_core.h"
+#include "tq_graphics.h"
 #include "tq_log.h"
 #include "tq_error.h"
 
@@ -110,6 +111,8 @@ static void     set_title(char const *);
 static void     set_key_autorepeat_enabled(bool enabled);
 static void     set_mouse_cursor_hidden(bool hidden);
 static void     show_message_box(char const *title, char const *message);
+static void     *get_gl_proc_addr(char const *name);
+static bool     check_gl_ext(char const *name);
 
 static LRESULT CALLBACK wndproc(HWND, UINT, WPARAM, LPARAM);
 static int      init_wgl_context(HWND);
@@ -132,6 +135,8 @@ void libtq_construct_win32_display(struct libtq_display_impl *display)
         .set_key_autorepeat_enabled = set_key_autorepeat_enabled,
         .set_mouse_cursor_hidden = set_mouse_cursor_hidden,
         .show_message_box = show_message_box,
+        .get_gl_proc_addr = get_gl_proc_addr,
+        .check_gl_ext = check_gl_ext,
     };
 }
 
@@ -292,6 +297,36 @@ void set_mouse_cursor_hidden(bool hidden)
 void show_message_box(char const *title, char const *message)
 {
     MessageBox(NULL, message, title, MB_OK | MB_ICONSTOP);
+}
+
+void *get_gl_proc_addr(char const *name)
+{
+    return (void *) wglGetProcAddress(name);
+}
+
+bool check_gl_ext(char const *name)
+{
+    if (!wglGetExtensionsStringARB) {
+        return false;
+    }
+
+    char const *str = wglGetExtensionsStringARB(priv.dc);
+
+    if (!str) {
+        return false;
+    }
+
+    char *token = strtok(str, " ");
+
+    while (token) {
+        if (strcmp(token, name) == 0) {
+            return true;
+        }
+
+        token = strtok(NULL, " ");
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------------
