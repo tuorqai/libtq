@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.13)
 set(TQ_VERSION_REGEX "#define TQ_VERSION[ \t]+\"(.+)\"")
 
 # Read a line with version #define to TQ_VERSION variable
-file(STRINGS "${CMAKE_SOURCE_DIR}/include/tq/tq.h"
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/include/tq/tq.h"
     TQ_VERSION
         REGEX ${TQ_VERSION_REGEX})
 
