@@ -274,6 +274,14 @@ static void process(void)
 }
 
 //------------------------------------------------------------------------------
+// Options
+
+static void set_master_volume(float volume)
+{
+    CHECK_AL(alListenerf(AL_GAIN, volume));
+}
+
+//------------------------------------------------------------------------------
 // Sounds
 
 static int32_t load_sound(libtq_stream *stream)
@@ -732,6 +740,7 @@ void libtq_construct_al_audio(struct libtq_audio_impl *impl)
     impl->initialize            = initialize;
     impl->terminate             = terminate;
     impl->process               = process;
+    impl->set_master_volume     = set_master_volume;
     impl->load_sound            = load_sound;
     impl->delete_sound          = delete_sound;
     impl->play_sound            = play_sound;

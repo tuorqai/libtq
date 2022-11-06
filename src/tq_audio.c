@@ -45,6 +45,11 @@ void libtq_process_audio(void)
     priv.impl.process();
 }
 
+void libtq_set_master_volume(float volume)
+{
+    priv.impl.set_master_volume(volume);
+}
+
 int libtq_load_sound(libtq_stream *stream)
 {
     if (!stream) {

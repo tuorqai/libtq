@@ -16,6 +16,8 @@ struct libtq_audio_impl
     void                (*terminate)(void);
     void                (*process)(void);
 
+    void                (*set_master_volume)(float volume);
+
     int                 (*load_sound)(libtq_stream *stream);
     void                (*delete_sound)(int sound_id);
     int                 (*play_sound)(int sound_id, int loop);
@@ -44,6 +46,7 @@ void                libtq_initialize_audio(void);
 void                libtq_terminate_audio(void);
 void                libtq_process_audio(void);
 
+void                libtq_set_master_volume(float volume);
 int                 libtq_load_sound(libtq_stream *stream);
 void                libtq_delete_sound(int sound_id);
 int                 libtq_play_sound(int sound_id, int loop);

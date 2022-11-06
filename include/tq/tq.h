@@ -970,6 +970,11 @@ TQ_API void TQ_CALL tq_set_blend_mode(tq_blend_mode mode);
 // Audio
 
 /**
+ * Set master volume.
+ */
+TQ_API void TQ_CALL tq_set_master_volume(float volume);
+
+/**
  * Decode and load sound to memory from a file.
  */
 TQ_API tq_sound TQ_CALL tq_load_sound_from_file(char const *path);

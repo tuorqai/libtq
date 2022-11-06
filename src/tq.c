@@ -506,6 +506,11 @@ void tq_set_blend_mode(tq_blend_mode mode)
 //----------------------------------------------------------
 // Sounds
 
+void tq_set_master_volume(float volume)
+{
+    libtq_set_master_volume(volume);
+}
+
 tq_sound tq_load_sound_from_file(char const *path)
 {
     return (tq_sound) {libtq_load_sound(libtq_open_file_stream(path))};
