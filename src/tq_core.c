@@ -242,8 +242,6 @@ int libtq_get_framerate(void)
 
 void libtq_on_key_pressed(tq_key key)
 {
-    libtq_debug("core: on_key_pressed: [%d]\n", key);
-
     set_key_state(key, true);
 
     if (core.key_press_callback) {
@@ -253,8 +251,6 @@ void libtq_on_key_pressed(tq_key key)
 
 void libtq_on_key_released(tq_key key)
 {
-    libtq_debug("core: on_key_released: [%d]\n", key);
-
     set_key_state(key, false);
 
     if (core.key_release_callback) {
@@ -275,8 +271,6 @@ void libtq_set_mouse_cursor_hidden(bool hidden)
 
 void libtq_on_mouse_button_pressed(tq_mouse_button mouse_button)
 {
-    libtq_debug("core: on_mouse_button_pressed: [%d]\n", mouse_button);
-
     core.mouse_button_state |= (1 << mouse_button);
 
     if (core.mouse_button_press_callback) {
@@ -287,8 +281,6 @@ void libtq_on_mouse_button_pressed(tq_mouse_button mouse_button)
 
 void libtq_on_mouse_button_released(tq_mouse_button mouse_button)
 {
-    libtq_debug("core: on_mouse_button_released: [%d]\n", mouse_button);
-
     core.mouse_button_state &= ~(1 << mouse_button);
 
     if (core.mouse_button_release_callback) {
@@ -299,8 +291,6 @@ void libtq_on_mouse_button_released(tq_mouse_button mouse_button)
 
 void libtq_on_mouse_cursor_moved(int32_t x, int32_t y)
 {
-    // libtq_debug("core: on_mouse_cursor_moved: [%d, %d]\n", x, y);
-
     libtq_conv_display_coord_to_canvas_coord(x, y, &core.mouse_cursor_x, &core.mouse_cursor_y);
 
     if (core.mouse_cursor_move_callback) {
@@ -311,8 +301,6 @@ void libtq_on_mouse_cursor_moved(int32_t x, int32_t y)
 
 void libtq_on_mouse_wheel_scrolled(float x_delta, float y_delta)
 {
-    libtq_debug("core: on_mouse_wheel_scrolled: [%f, %f]\n", x_delta, y_delta);
-
     if (core.mouse_wheel_scroll_callback) {
         tq_vec2i cursor = {core.mouse_cursor_x, core.mouse_cursor_y};
         tq_vec2f wheel = {x_delta, y_delta};

@@ -31,6 +31,7 @@
 
 #include "tq_core.h"
 #include "tq_error.h"
+#include "tq_graphics.h"
 #include "tq_log.h"
 #include "tq_mem.h"
 
