@@ -23,6 +23,13 @@ project(tq
     LANGUAGES C)
 
 #-------------------------------------------------------------------------------
+# Options
+
+option(BUILD_SHARED_LIBS "Build shared libraries" YES)
+option(BUILD_EXAMPLES "Build examples" YES)
+option(USE_GLES2 "Force OpenGL ES 2.0 usage on Linux" NO)
+
+#-------------------------------------------------------------------------------
 # Platforms
 
 if(WIN32)
@@ -70,6 +77,7 @@ add_library(tq
     "src/tq_core.c"
     "src/tq_error.c"
     "src/tq_gl_renderer.c"
+    "src/tq_gles2_renderer.c"
     "src/tq_graphics.c"
     "src/tq_handle_list.c"
     "src/tq_image_loader.c"
@@ -95,14 +103,22 @@ if(TQ_PLATFORM_WIN32)
     target_compile_definitions(tq PRIVATE TQ_WIN32)
 elseif(TQ_PLATFORM_LINUX)
     target_compile_definitions(tq PRIVATE TQ_LINUX)
+
+    if(USE_GLES2)
+        target_compile_definitions(tq PRIVATE TQ_USE_GLES2)
+    endif()
 elseif(TQ_PLATFORM_ANDROID)
     target_compile_definitions(tq PRIVATE TQ_ANDROID)
 endif()
 
+# Enable AddressSanitizer for debug build
+if(NOT MSVC)
+    target_compile_options(tq PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
+    target_link_libraries(tq PUBLIC $<$<CONFIG:Debug>:-fsanitize=address>)
+endif()
+
 #-------------------------------------------------------------------------------
 # Shared library support
-
-option(BUILD_SHARED_LIBS "Build shared libraries" YES)
 
 if(BUILD_SHARED_LIBS)
     if(ANDROID)
@@ -194,6 +210,11 @@ if(TQ_PLATFORM_WIN32 OR TQ_PLATFORM_LINUX)
     # OpenGL Extension Wrangler
     find_package(GLEW MODULE REQUIRED) # Imports GLEW::GLEW
     target_link_libraries(tq PRIVATE GLEW::GLEW)
+
+    if(USE_GLES2)
+        # OpenGL ES 2.0
+        target_link_libraries(tq PRIVATE GLESv2) # should be ok?
+    endif()
 endif()
 
 if(TQ_PLATFORM_ANDROID)

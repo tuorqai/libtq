@@ -97,18 +97,9 @@ static void make_default_projection_for_surface(float *dst, int w, int h)
     mat4_ortho(dst, 0.0f, (float) w, 0.0f, (float) h, -1.0f, +1.0f);
 }
 
-static float *make_circle(float x, float y, float radius, int color_id, int *length)
+static float *make_circle(float x, float y, float radius, int count)
 {
-    float e = 0.25f;
-    float angle = acosf(2.0f * (1.0f - e / radius) * (1.0f - e / radius) - 1.0f);
-
-    int count = (int) ceilf(2.0f * M_PI / angle);
-
-    if (count <= 0) {
-        *length = 0;
-        return NULL;
-    }
-
+    float angle = TQ_DEG2RAD(360.0f / count);
     float *data = libtq_malloc(2 * sizeof(float) * count);
 
     for (int v = 0; v < count; v++) {
@@ -116,7 +107,6 @@ static float *make_circle(float x, float y, float radius, int color_id, int *len
         data[2 * v + 1] = y + (radius * sin(v * angle));
     }
 
-    *length = count;
     return data;
 }
 
@@ -134,7 +124,9 @@ static float const *get_inverse_projection(void)
 
 void libtq_initialize_graphics(void)
 {
-#if defined(TQ_WIN32) || defined(TQ_LINUX)
+#if defined(TQ_ANDROID) || defined(TQ_USE_GLES2)
+    libtq_construct_gles2_renderer(&renderer);
+#elif defined(TQ_WIN32) || defined(TQ_LINUX)
     libtq_construct_gl_renderer(&renderer);
 #else
     libtq_construct_null_renderer(&renderer);
@@ -474,16 +466,15 @@ void libtq_outline_rectangle(float x, float y, float w, float h)
 
 void libtq_outline_circle(float x, float y, float radius)
 {
-    int length;
-
-    float *data = make_circle(x, y, radius, COLOR_OUTLINE, &length);
+    int precision = 32;
+    float *data = make_circle(x, y, radius, precision);
 
     if (!data) {
         return;
     }
 
     renderer.set_draw_color(colors[COLOR_OUTLINE].value);
-    renderer.draw_solid(LIBTQ_LINE_LOOP, data, length);
+    renderer.draw_solid(LIBTQ_LINE_LOOP, data, precision);
 
     libtq_free(data);
 }
@@ -515,16 +506,15 @@ void libtq_fill_rectangle(float x, float y, float w, float h)
 
 void libtq_fill_circle(float x, float y, float radius)
 {
-    int length;
-
-    float *data = make_circle(x, y, radius, COLOR_FILL, &length);
+    int precision = 32;
+    float *data = make_circle(x, y, radius, precision);
 
     if (!data) {
         return;
     }
 
     renderer.set_draw_color(colors[COLOR_FILL].value);
-    renderer.draw_solid(LIBTQ_TRIANGLE_FAN, data, length - 1);
+    renderer.draw_solid(LIBTQ_TRIANGLE_FAN, data, precision - 1);
 
     libtq_free(data);
 }

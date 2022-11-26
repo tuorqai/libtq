@@ -61,6 +61,10 @@ struct libtq_renderer_impl
     void libtq_construct_gl_renderer(struct libtq_renderer_impl *renderer);
 #endif
 
+#if defined(TQ_ANDROID) || defined(TQ_USE_GLES2)
+    void libtq_construct_gles2_renderer(struct libtq_renderer_impl *renderer);
+#endif
+
 void libtq_construct_null_renderer(struct libtq_renderer_impl *impl);
 
 //------------------------------------------------------------------------------
