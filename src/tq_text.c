@@ -432,6 +432,8 @@ void text_delete_font(int font_id)
     renderer->delete_texture(fonts[font_id].atlas.texture_id);
     hb_font_destroy(fonts[font_id].font);
 
+    libtq_stream_close(fonts[font_id].stream.descriptor.pointer);
+
     fonts[font_id].face = NULL;
     fonts[font_id].font = NULL;
 }
