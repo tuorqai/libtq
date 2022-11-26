@@ -968,7 +968,7 @@ static void draw_canvas(float x0, float y0, float x1, float y1)
 {
     CHECK_GLES2(glDisable(GL_BLEND));
 
-    CHECK_GLES2(glClearColor(1.0f, 0.0f, 1.0f, 1.0f));
+    CHECK_GLES2(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
     CHECK_GLES2(glClear(GL_COLOR_BUFFER_BIT));
 
     set_vertex_format(VERTEX_FORMAT_TEXTURED);
