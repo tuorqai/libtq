@@ -36,6 +36,11 @@ libtq_image *libtq_create_image(int width, int height, int channels);
  */
 libtq_image *libtq_load_image(libtq_stream *stream);
 
+/**
+ * Load image from an input stream with color key.
+ */
+libtq_image *libtq_load_image_with_key(libtq_stream *stream, tq_color key);
+
 //------------------------------------------------------------------------------
 
 #endif // TQ_IMAGE_LOADER_H_INC

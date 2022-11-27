@@ -127,7 +127,57 @@ libtq_image *libtq_load_image(libtq_stream *stream)
         return NULL;
     }
 
-    tq_color *color_key = libtq_get_color_key();
+    int width;
+    int height;
+    int channels;
+
+    unsigned char *pixels = stbi_load_from_callbacks(
+        &(stbi_io_callbacks) {
+            .read = stream_read,
+            .skip = stream_skip,
+            .eof = stream_eof,
+        },
+        stream, &width, &height, &channels, 0
+    );
+
+    if (!pixels) {
+        libtq_log(LIBTQ_LOG_ERROR, "stbi image loader error: %s\n", stbi_failure_reason());
+        return NULL;
+    }
+
+    size_t volume = width * height * channels;
+    libtq_image *image = libtq_malloc(sizeof(libtq_image) + volume);
+
+    if (!image) {
+        stbi_image_free(pixels);
+        return NULL;
+    }
+
+    image->width = width;
+    image->height = height;
+    image->channels = channels;
+    memcpy(image->pixels, pixels, volume);
+
+    stbi_image_free(pixels);
+
+    libtq_log(LIBTQ_INFO, "Loaded %dx%dx%d image from stream %s.\n",
+        width, height, channels, libtq_stream_repr(stream));
+
+    return image;
+}
+
+libtq_image *libtq_load_image_with_key(libtq_stream *stream, tq_color key)
+{
+    if (!stream) {
+        return NULL;
+    }
+
+    size_t stream_size = libtq_stream_size(stream);
+    void const *stream_buffer = libtq_stream_buffer(stream);
+
+    if (!stream_buffer || !stream_size) {
+        return NULL;
+    }
 
     int width;
     int height;
@@ -147,15 +197,7 @@ libtq_image *libtq_load_image(libtq_stream *stream)
         return NULL;
     }
 
-    int actual_channels;
-
-    if (color_key) {
-        actual_channels = 4;
-    } else {
-        actual_channels = channels;
-    }
-
-    size_t volume = width * height * actual_channels;
+    size_t volume = width * height * 4;
     libtq_image *image = libtq_malloc(sizeof(libtq_image) + volume);
 
     if (!image) {
@@ -165,17 +207,12 @@ libtq_image *libtq_load_image(libtq_stream *stream)
 
     image->width = width;
     image->height = height;
-    image->channels = actual_channels;
-
-    if (color_key) {
-        copy_pixels_with_key(image->pixels, pixels, width, height, channels, *color_key);
-    } else {
-        memcpy(image->pixels, pixels, volume);
-    }
+    image->channels = 4;
+    copy_pixels_with_key(image->pixels, pixels, width, height, channels, key);
 
     stbi_image_free(pixels);
 
-    libtq_log(LIBTQ_INFO, "Loaded %dx%dx%d image from stream %s.\n",
+    libtq_log(LIBTQ_INFO, "Loaded %dx%dx%d image (keyed) from stream %s.\n",
         width, height, channels, libtq_stream_repr(stream));
 
     return image;

@@ -232,7 +232,7 @@ static void initialize(void)
         libtq_error("Failed to activate OpenGL context: %s", SDL_GetError());
     }
 
-    libtq_on_rc_create(1);
+    tq_on_rc_create(1);
 
     SDL_ShowWindow(sdl.window);
     SDL_SetWindowMinimumSize(sdl.window, 256, 256);
@@ -246,7 +246,7 @@ static void initialize(void)
 
 static void terminate(void)
 {
-    libtq_on_rc_destroy();
+    tq_on_rc_destroy();
 
     SDL_GL_DeleteContext(sdl.gl_context);
     SDL_DestroyWindow(sdl.window);

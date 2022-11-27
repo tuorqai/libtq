@@ -57,7 +57,7 @@ struct font
 
 //------------------------------------------------------------------------------
 
-static struct libtq_renderer_impl const *renderer;
+static tq_renderer_impl *renderer;
 
 static FT_Library       freetype;
 static struct font      *fonts;
@@ -265,7 +265,7 @@ static float *maintain_vertex_buffer(int required_size)
 
 //------------------------------------------------------------------------------
 
-void text_initialize(struct libtq_renderer_impl const *_renderer)
+void text_initialize(tq_renderer_impl *_renderer)
 {
     renderer = _renderer;
 
@@ -287,13 +287,13 @@ void text_terminate(void)
     libtq_free(vertex_buffer);
 
     for (int i = 0; i < font_count; i++) {
-        text_delete_font(i);
+        tq_delete_font((tq_font) { i });
     }
 
     libtq_free(fonts);
 }
 
-int text_load_font(libtq_stream *stream, float pt, int weight)
+static int load_font(libtq_stream *stream, float pt, int weight)
 {
     int font_id = get_font_id();
 
@@ -399,57 +399,57 @@ int text_load_font(libtq_stream *stream, float pt, int weight)
     return font_id;
 }
 
-int text_load_font_from_file(char const *path, float pt, int weight)
+tq_font tq_load_font_from_file(char const *path, float pt, int weight)
 {
     libtq_stream *stream = libtq_open_file_stream(path);
 
     if (!stream) {
-        return -1;
+        return (tq_font) { -1 };
     }
 
-    return text_load_font(stream, pt, weight);
+    return (tq_font) { load_font(stream, pt, weight) };
 }
 
-int text_load_font_from_memory(void const *buffer, size_t size, float pt, int weight)
+tq_font tq_load_font_from_memory(uint8_t const *buffer, size_t size, float pt, int weight)
 {
     libtq_stream *stream = libtq_open_memory_stream(buffer, size);
 
     if (!stream) {
-        return -1;
+        return (tq_font) { -1 };
     }
 
-    return text_load_font(stream, pt, weight);
+    return (tq_font) { load_font(stream, pt, weight) };
 }
 
-void text_delete_font(int font_id)
+void tq_delete_font(tq_font font)
 {
-    if (font_id < 0 || font_id >= font_count || !fonts[font_id].face) {
+    if (font.id < 0 || font.id >= font_count || !fonts[font.id].face) {
         return;
     }
 
-    libtq_free(fonts[font_id].glyphs);
-    libtq_free(fonts[font_id].atlas.bitmap);
-    renderer->delete_texture(fonts[font_id].atlas.texture_id);
-    hb_font_destroy(fonts[font_id].font);
+    libtq_free(fonts[font.id].glyphs);
+    libtq_free(fonts[font.id].atlas.bitmap);
+    renderer->delete_texture(fonts[font.id].atlas.texture_id);
+    hb_font_destroy(fonts[font.id].font);
 
-    libtq_stream_close(fonts[font_id].stream.descriptor.pointer);
+    libtq_stream_close(fonts[font.id].stream.descriptor.pointer);
 
-    fonts[font_id].face = NULL;
-    fonts[font_id].font = NULL;
+    fonts[font.id].face = NULL;
+    fonts[font.id].font = NULL;
 }
 
-int text_get_font_texture(int font_id)
+tq_texture tq_get_font_texture(tq_font font)
 {
-    if (font_id < 0 || font_id >= font_count || !fonts[font_id].face) {
-        return -1;
+    if (font.id < 0 || font.id >= font_count || !fonts[font.id].face) {
+        return (tq_texture) { -1 };
     }
 
-    return fonts[font_id].atlas.texture_id;
+    return (tq_texture) { fonts[font.id].atlas.texture_id };
 }
 
-void text_draw_text(int font_id, float x, float y, char const *text)
+void tq_draw_text(tq_font font, tq_vec2f position, char const *text)
 {
-    if (font_id < 0 || font_id >= font_count || !fonts[font_id].face) {
+    if (font.id < 0 || font.id >= font_count || !fonts[font.id].face) {
         return;
     }
 
@@ -458,7 +458,7 @@ void text_draw_text(int font_id, float x, float y, char const *text)
     hb_buffer_add_utf8(buffer, text, -1, 0, -1);
     hb_buffer_guess_segment_properties(buffer);
 
-    hb_shape(fonts[font_id].font, buffer, NULL, 0);
+    hb_shape(fonts[font.id].font, buffer, NULL, 0);
 
     unsigned int length = hb_buffer_get_length(buffer);
     hb_glyph_info_t *info = hb_buffer_get_glyph_infos(buffer, NULL);
@@ -472,32 +472,32 @@ void text_draw_text(int font_id, float x, float y, char const *text)
         }
     }
 
-    float x_current = x + x_offset;
-    float y_current = y;
+    float x_current = position.x + x_offset;
+    float y_current = position.y;
 
     float *v = maintain_vertex_buffer(24 * length);
 
     int quad_count = 0;
 
     for (unsigned int i = 0; i < length; i++) {
-        int glyph_id = cache_glyph(font_id, info[i].codepoint,
+        int glyph_id = cache_glyph(font.id, info[i].codepoint,
             pos[i].x_advance / 64.0f, pos[i].y_advance / 64.0f);
 
         if (glyph_id == -1) {
             continue;
         }
 
-        struct font_glyph *glyph = &fonts[font_id].glyphs[glyph_id];
+        struct font_glyph *glyph = &fonts[font.id].glyphs[glyph_id];
 
         float x0 = x_current + glyph->x_bearing;
-        float y0 = y_current - glyph->y_bearing + fonts[font_id].height;
+        float y0 = y_current - glyph->y_bearing + fonts[font.id].height;
         float x1 = x0 + glyph->s1 - glyph->s0;
         float y1 = y0 + glyph->t1 - glyph->t0;
 
-        float s0 = glyph->s0 / (float) fonts[font_id].atlas.width;
-        float t0 = glyph->t0 / (float) fonts[font_id].atlas.height;
-        float s1 = glyph->s1 / (float) fonts[font_id].atlas.width;
-        float t1 = glyph->t1 / (float) fonts[font_id].atlas.height;
+        float s0 = glyph->s0 / (float) fonts[font.id].atlas.width;
+        float t0 = glyph->t0 / (float) fonts[font.id].atlas.height;
+        float s1 = glyph->s1 / (float) fonts[font.id].atlas.width;
+        float t1 = glyph->t1 / (float) fonts[font.id].atlas.height;
 
         *v++ = x0;  *v++ = y0;  *v++ = s0;  *v++ = t0;
         *v++ = x1;  *v++ = y0;  *v++ = s1;  *v++ = t0;
@@ -512,11 +512,40 @@ void text_draw_text(int font_id, float x, float y, char const *text)
         quad_count++;
     }
 
-    renderer->bind_texture(fonts[font_id].atlas.texture_id);
+    renderer->bind_texture(fonts[font.id].atlas.texture_id);
     renderer->set_draw_color(text_fill_color);
     renderer->draw_font(vertex_buffer, 6 * quad_count);
 
     hb_buffer_destroy(buffer);
+}
+
+void tq_print_text(tq_font font, tq_vec2f position, char const *fmt, ...)
+{
+    static int buffer_size = 0;
+    static char *buffer = NULL;
+
+    va_list ap;
+
+    va_start(ap, fmt);
+    {
+        int bytes_required = vsnprintf(buffer, buffer_size, fmt, ap);
+
+        if (bytes_required >= buffer_size) {
+            if (buffer_size == 0) {
+                buffer_size = 64;
+            }
+
+            while (buffer_size < (bytes_required + 1)) {
+                buffer_size *= 2;
+            }
+
+            buffer = libtq_realloc(buffer, buffer_size);
+            vsnprintf(buffer, buffer_size, fmt, ap);
+        }
+    }
+    va_end(ap);
+
+    tq_draw_text(font, position, buffer);
 }
 
 void text_set_outline_color(tq_color outline_color)

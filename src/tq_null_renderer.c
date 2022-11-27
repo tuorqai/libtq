@@ -158,9 +158,9 @@ void draw_canvas(float x0, float y0, float x1, float y1)
 
 //------------------------------------------------------------------------------
 
-void libtq_construct_null_renderer(struct libtq_renderer_impl *impl)
+void tq_construct_null_renderer(tq_renderer_impl *impl)
 {
-    *impl = (struct libtq_renderer_impl) {
+    *impl = (tq_renderer_impl) {
         .initialize             = initialize,
         .terminate              = terminate,
         .process                = process,

@@ -337,7 +337,7 @@ LRESULT wndproc(HWND window, UINT msg, WPARAM wp, LPARAM lp)
     case WM_CREATE:
         return init_wgl_context(window);
     case WM_DESTROY:
-        libtq_on_rc_destroy();
+        tq_on_rc_destroy();
         return 0;
     case WM_CLOSE:
         PostQuitMessage(0);
@@ -495,7 +495,7 @@ int init_wgl_context(HWND window)
 
     libtq_log(LIBTQ_INFO, "WGL: OpenGL context is successfully created.\n");
 
-    libtq_on_rc_create(1);
+    tq_on_rc_create(1);
 
     return 0;
 }

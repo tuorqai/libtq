@@ -11,16 +11,16 @@
 
 //------------------------------------------------------------------------------
 
-enum
+typedef enum tq_primitive
 {
-    LIBTQ_POINTS,
-    LIBTQ_LINE_STRIP,
-    LIBTQ_LINE_LOOP,
-    LIBTQ_TRIANGLES,
-    LIBTQ_TRIANGLE_FAN,
-};
+    TQ_PRIMITIVE_POINTS,
+    TQ_PRIMITIVE_LINE_STRIP,
+    TQ_PRIMITIVE_LINE_LOOP,
+    TQ_PRIMITIVE_TRIANGLES,
+    TQ_PRIMITIVE_TRIANGLE_FAN,
+} tq_primitive;
 
-struct libtq_renderer_impl
+typedef struct tq_renderer_impl
 {
     void    (*initialize)(void);
     void    (*terminate)(void);
@@ -55,95 +55,28 @@ struct libtq_renderer_impl
     void    (*draw_textured)(int mode, float const *data, int num_vertices);
     void    (*draw_font)(float const *data, int num_vertices);
     void    (*draw_canvas)(float x0, float y0, float x1, float y1);
-};
+} tq_renderer_impl;
 
 #if defined(TQ_WIN32) || defined(TQ_LINUX)
-    void libtq_construct_gl_renderer(struct libtq_renderer_impl *renderer);
+    void tq_construct_gl_renderer(tq_renderer_impl *impl);
 #endif
 
 #if defined(TQ_ANDROID) || defined(TQ_USE_GLES2)
-    void libtq_construct_gles2_renderer(struct libtq_renderer_impl *renderer);
+    void tq_construct_gles2_renderer(tq_renderer_impl *impl);
 #endif
 
-void libtq_construct_null_renderer(struct libtq_renderer_impl *impl);
+void tq_construct_null_renderer(tq_renderer_impl *impl);
 
 //------------------------------------------------------------------------------
 
-void        libtq_initialize_graphics(void);
-void        libtq_terminate_graphics(void);
-void        libtq_process_graphics(void);
+void tq_initialize_graphics(void);
+void tq_terminate_graphics(void);
+void tq_process_graphics(void);
 
-tq_color    *libtq_get_color_key(void);
-void        libtq_set_color_key(tq_color color);
+tq_vec2i tq_conv_display_coord(tq_vec2i coord);
 
-int         libtq_get_antialiasing_level(void);
-void        libtq_set_antialiasing_level(int level);
-
-void        libtq_clear(void);
-tq_color    libtq_get_clear_color(void);
-void        libtq_set_clear_color(tq_color clear_color);
-
-void        libtq_get_canvas_size(int *width, int *height);
-void        libtq_set_canvas_size(int width, int height);
-float       libtq_get_canvas_aspect_ratio(void);
-
-bool        libtq_is_canvas_smooth(void);
-void        libtq_set_canvas_smooth(bool smooth);
-
-void        libtq_conv_display_coord_to_canvas_coord(int x, int y, int *u, int *v);
-
-void        libtq_get_relative_position(float ax, float ay, float *x, float *y);
-void        libtq_set_view(float x, float y, float w, float h, float rotation);
-void        libtq_reset_view(void);
-
-void        libtq_push_matrix(void);
-void        libtq_pop_matrix(void);
-void        libtq_translate_matrix(float x, float y);
-void        libtq_scale_matrix(float x, float y);
-void        libtq_rotate_matrix(float a);
-
-void        libtq_draw_point(float x, float y);
-void        libtq_draw_line(float ax, float ay, float bx, float by);
-void        libtq_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy);
-void        libtq_draw_rectangle(float x, float y, float w, float h);
-void        libtq_draw_circle(float x, float y, float radius);
-void        libtq_outline_triangle(float ax, float ay, float bx, float by, float cx, float cy);
-void        libtq_outline_rectangle(float x, float y, float w, float h);
-void        libtq_outline_circle(float x, float y, float radius);
-void        libtq_fill_triangle(float ax, float ay, float bx, float by, float cx, float cy);
-void        libtq_fill_rectangle(float x, float y, float w, float h);
-void        libtq_fill_circle(float x, float y, float radius);
-
-tq_color    libtq_get_point_color(void);
-void        libtq_set_point_color(tq_color point_color);
-tq_color    libtq_get_line_color(void);
-void        libtq_set_line_color(tq_color line_color);
-tq_color    libtq_get_outline_color(void);
-void        libtq_set_outline_color(tq_color outline_color);
-tq_color    libtq_get_fill_color(void);
-void        libtq_set_fill_color(tq_color fill_color);
-
-int         libtq_load_texture(libtq_stream *stream);
-int         libtq_load_texture_from_file(char const *path);
-int         libtq_load_texture_from_memory(void const *buffer, size_t length);
-void        libtq_delete_texture(int texture_id);
-
-void        libtq_get_texture_size(int texture_id, int *width, int *height);
-void        libtq_set_texture_smooth(int texture_id, bool smooth);
-
-void        libtq_draw_texture(int texture_id, float x, float y, float w, float h);
-void        libtq_draw_subtexture(int texture_id, float x, float y, float w, float h, float fx, float fy, float fw, float fh);
-
-int         libtq_create_surface(int width, int height);
-void        libtq_delete_surface(int surface_id);
-void        libtq_set_surface(int surface_id);
-void        libtq_reset_surface(void);
-int         libtq_get_surface_texture_id(int surface_id);
-
-void        libtq_set_blend_mode(tq_blend_mode mode);
-
-void        libtq_on_rc_create(int rc);
-void        libtq_on_rc_destroy(void);
+void tq_on_rc_create(int rc);
+void tq_on_rc_destroy(void);
 
 //------------------------------------------------------------------------------
 

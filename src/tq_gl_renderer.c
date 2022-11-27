@@ -287,15 +287,15 @@ static void decode_color32(GLfloat *dst, tq_color color)
 static GLenum conv_mode(int mode)
 {
     switch (mode) {
-    case LIBTQ_POINTS:
+    case TQ_PRIMITIVE_POINTS:
         return GL_POINTS;
-    case LIBTQ_LINE_STRIP:
+    case TQ_PRIMITIVE_LINE_STRIP:
         return GL_LINE_STRIP;
-    case LIBTQ_LINE_LOOP:
+    case TQ_PRIMITIVE_LINE_LOOP:
         return GL_LINE_LOOP;
-    case LIBTQ_TRIANGLES:
+    case TQ_PRIMITIVE_TRIANGLES:
         return GL_TRIANGLES;
-    case LIBTQ_TRIANGLE_FAN:
+    case TQ_PRIMITIVE_TRIANGLE_FAN:
         return GL_TRIANGLE_FAN;
     }
 
@@ -1131,9 +1131,9 @@ static void draw_canvas(float x0, float y0, float x1, float y1)
 //--------------------------------------
 // Construct abstract module for OpenGL renderer.
 //--------------------------------------
-void libtq_construct_gl_renderer(struct libtq_renderer_impl *renderer)
+void tq_construct_gl_renderer(tq_renderer_impl *impl)
 {
-    *renderer = (struct libtq_renderer_impl) {
+    *impl = (tq_renderer_impl) {
         .initialize = initialize,
         .terminate = terminate,
         .process = process,

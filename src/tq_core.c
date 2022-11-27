@@ -291,7 +291,10 @@ void libtq_on_mouse_button_released(tq_mouse_button mouse_button)
 
 void libtq_on_mouse_cursor_moved(int32_t x, int32_t y)
 {
-    libtq_conv_display_coord_to_canvas_coord(x, y, &core.mouse_cursor_x, &core.mouse_cursor_y);
+    tq_vec2i canvas_coord = tq_conv_display_coord((tq_vec2i) { x, y });
+
+    core.mouse_cursor_x = canvas_coord.x;
+    core.mouse_cursor_y = canvas_coord.y;
 
     if (core.mouse_cursor_move_callback) {
         tq_vec2i cursor = {core.mouse_cursor_x, core.mouse_cursor_y};
