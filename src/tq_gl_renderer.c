@@ -501,14 +501,6 @@ static void init_vertex_formats(void)
     }
 }
 
-static void init_vbo(void)
-{
-    CHECK_GL(glGenBuffers(NUM_VERTEX_FORMATS, priv.vbo));
-
-    CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, priv.vbo[VERTEX_FORMAT_SOLID]));
-    CHECK_GL(glBufferData(GL_ARRAY_BUFFER, DEFAULT_VBO_SIZE, NULL, GL_DYNAMIC_DRAW));
-}
-
 static void set_vertex_format(int vertex_format)
 {
     if (priv.vertex_format == vertex_format) {

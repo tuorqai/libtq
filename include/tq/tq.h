@@ -49,6 +49,7 @@
 #   define TQ_EXPORT        __attribute__((visibility("default")))
 #   define TQ_CALL
 #   define TQ_NO_RET        __attribute__((__noreturn__))
+#   define TQ_DEPREC        __attribute__((deprecated))
 #elif defined(_MSC_VER)
 #   if defined(TQ_BUILD)
 #       define TQ_EXPORT    __declspec(dllexport)
@@ -57,10 +58,12 @@
 #   endif
 #   define TQ_CALL          __cdecl
 #   define TQ_NO_RET        __declspec(noreturn)
+#   define TQ_DEPREC        __declspec(deprecated)
 #else
 #   define TQ_ENTRY
 #   define TQ_CALL
 #   define TQ_NO_RET
+#   define TQ_DEPREC
 #endif
 
 #ifdef TQ_SHARED
@@ -91,11 +94,6 @@
  * π number.
  */
 #define TQ_PI                           (3.14159265358979323846)
-
-/**
- * Maximum number of textures.
- */
-#define TQ_TEXTURE_LIMIT                (256)
 
 /**
  * Maximum number of open music tracks.

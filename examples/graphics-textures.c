@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     // Sometimes you want to load opaque texture as transparent one,
     // pretending like one of its colors is fully transparent.
     // This function can help you to do that.
-    tq_set_color_key((tq_color) {38, 53, 68});
+    tq_set_color_key((tq_color) {38, 53, 68, 255});
 
     // Load two texture files.
     tq_texture field = tq_load_texture_from_file("assets/textures/field.png");
