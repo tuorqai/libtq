@@ -22,10 +22,8 @@
 enum
 {
     COLOR_CLEAR,
-    COLOR_POINT,
-    COLOR_LINE,
+    COLOR_DRAW,
     COLOR_OUTLINE,
-    COLOR_FILL,
     COLOR_COUNT,
 };
 
@@ -181,11 +179,9 @@ void tq_initialize_graphics(void)
     matrices.current_model_view = 0;
     matrices.dirty_inverse_projection = true;
 
-    tq_set_clear_color(tq_c24(0, 0, 0));
-    tq_set_point_color(tq_c24(255, 255, 255));
-    tq_set_line_color(tq_c24(255, 255, 255));
-    tq_set_outline_color(tq_c24(255, 255, 255));
-    tq_set_fill_color(tq_c24(0, 0, 0));
+    tq_set_clear_color(tq_c24(0, 0, 255));
+    tq_set_draw_color(tq_c24(0, 255, 255));
+    tq_set_outline_color(tq_c24(255, 0, 255));
 
     priv.ready = true;
 
@@ -456,7 +452,7 @@ void tq_draw_point(tq_vec2f position)
         position.x, position.y,
     };
 
-    renderer.set_draw_color(colors[COLOR_POINT].value);
+    renderer.set_draw_color(colors[COLOR_DRAW].value);
     renderer.draw_solid(TQ_PRIMITIVE_POINTS, data, 1);
 }
 
@@ -467,7 +463,7 @@ void tq_draw_line(tq_vec2f a, tq_vec2f b)
         b.x, b.y,
     };
 
-    renderer.set_draw_color(colors[COLOR_LINE].value);
+    renderer.set_draw_color(colors[COLOR_DRAW].value);
     renderer.draw_solid(TQ_PRIMITIVE_LINE_STRIP, data, 2);
 }
 
@@ -479,7 +475,7 @@ void tq_draw_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c)
         c.x, c.y,
     };
 
-    renderer.set_draw_color(colors[COLOR_FILL].value);
+    renderer.set_draw_color(colors[COLOR_DRAW].value);
     renderer.draw_solid(TQ_PRIMITIVE_TRIANGLE_FAN, data, 3);
 
     renderer.set_draw_color(colors[COLOR_OUTLINE].value);
@@ -495,7 +491,7 @@ void tq_draw_rectangle(tq_rectf rect)
         rect.x,             rect.y + rect.h,
     };
 
-    renderer.set_draw_color(colors[COLOR_FILL].value);
+    renderer.set_draw_color(colors[COLOR_DRAW].value);
     renderer.draw_solid(TQ_PRIMITIVE_TRIANGLE_FAN, data, 4);
 
     renderer.set_draw_color(colors[COLOR_OUTLINE].value);
@@ -511,7 +507,7 @@ void tq_draw_circle(tq_vec2f position, float radius)
         return;
     }
 
-    renderer.set_draw_color(colors[COLOR_FILL].value);
+    renderer.set_draw_color(colors[COLOR_DRAW].value);
     renderer.draw_solid(TQ_PRIMITIVE_TRIANGLE_FAN, data, precision - 1);
 
     renderer.set_draw_color(colors[COLOR_OUTLINE].value);
@@ -568,7 +564,7 @@ void tq_fill_triangle(tq_vec2f a, tq_vec2f b, tq_vec2f c)
         c.x, c.y,
     };
 
-    renderer.set_draw_color(colors[COLOR_FILL].value);
+    renderer.set_draw_color(colors[COLOR_DRAW].value);
     renderer.draw_solid(TQ_PRIMITIVE_TRIANGLE_FAN, data, 3);
 }
 
@@ -581,7 +577,7 @@ void tq_fill_rectangle(tq_rectf rect)
         rect.x,             rect.y + rect.h,
     };
 
-    renderer.set_draw_color(colors[COLOR_FILL].value);
+    renderer.set_draw_color(colors[COLOR_DRAW].value);
     renderer.draw_solid(TQ_PRIMITIVE_TRIANGLE_FAN, data, 4);
 }
 
@@ -594,7 +590,7 @@ void tq_fill_circle(tq_vec2f position, float radius)
         return;
     }
 
-    renderer.set_draw_color(colors[COLOR_FILL].value);
+    renderer.set_draw_color(colors[COLOR_DRAW].value);
     renderer.draw_solid(TQ_PRIMITIVE_TRIANGLE_FAN, data, precision - 1);
 
     libtq_free(data);
@@ -684,24 +680,15 @@ void tq_fill_circle_f(float x, float y, float radius)
     tq_fill_circle(v, radius);
 }
 
-tq_color tq_get_point_color(void)
+tq_color tq_get_draw_color(void)
 {
-    return colors[COLOR_POINT].value;
+    return colors[COLOR_DRAW].value;
 }
 
-void tq_set_point_color(tq_color point_color)
+void tq_set_draw_color(tq_color draw_color)
 {
-    colors[COLOR_POINT].value = point_color;
-}
-
-tq_color tq_get_line_color(void)
-{
-    return colors[COLOR_LINE].value;
-}
-
-void tq_set_line_color(tq_color line_color)
-{
-    colors[COLOR_LINE].value = line_color;
+    colors[COLOR_DRAW].value = draw_color;
+    text_set_fill_color(draw_color);
 }
 
 tq_color tq_get_outline_color(void)
@@ -713,17 +700,6 @@ void tq_set_outline_color(tq_color outline_color)
 {
     colors[COLOR_OUTLINE].value = outline_color;
     text_set_outline_color(outline_color);
-}
-
-tq_color tq_get_fill_color(void)
-{
-    return colors[COLOR_FILL].value;
-}
-
-void tq_set_fill_color(tq_color fill_color)
-{
-    colors[COLOR_FILL].value = fill_color;
-    text_set_fill_color(fill_color);
 }
 
 //------------------------------------------------------------------------------

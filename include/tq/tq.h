@@ -764,44 +764,26 @@ TQ_API void TQ_CALL tq_fill_rectangle(tq_rectf rect);
 TQ_API void TQ_CALL tq_fill_circle(tq_vec2f position, float radius);
 
 /**
- * Get current point color (used by draw_point).
+ * Get draw color.
  */
-TQ_API tq_color TQ_CALL tq_get_point_color(void);
+TQ_API tq_color TQ_CALL tq_get_draw_color(void);
 
 /**
- * Set current point color (used by draw_point).
+ * Set draw color.
+ * This color is used by primitive drawing functions.
  */
-TQ_API void TQ_CALL tq_set_point_color(tq_color point_color);
+TQ_API void TQ_CALL tq_set_draw_color(tq_color draw_color);
 
 /**
- * Get current line color (used by draw_line).
- */
-TQ_API tq_color TQ_CALL tq_get_line_color(void);
-
-/**
- * Set current line color (used by draw_line).
- */
-TQ_API void TQ_CALL tq_set_line_color(tq_color line_color);
-
-/**
- * Get current outline color.
+ * Get outline color.
  */
 TQ_API tq_color TQ_CALL tq_get_outline_color(void);
 
 /**
- * Set current outline color.
+ * Set outline color.
+ * This color is used for outlining by primitive drawing functions.
  */
 TQ_API void TQ_CALL tq_set_outline_color(tq_color outline_color);
-
-/**
- * Get current fill color.
- */
-TQ_API tq_color TQ_CALL tq_get_fill_color(void);
-
-/**
- * Set current fill color.
- */
-TQ_API void TQ_CALL tq_set_fill_color(tq_color fill_color);
 
 //----------------------------------------------------------
 // Textures

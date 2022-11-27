@@ -79,11 +79,6 @@ int main(int argc, char *argv[])
     // Set light gray background.
     tq_set_clear_color((tq_color) {224, 224, 224, 255});
 
-    // These colors won't change in this sample, so they can be set here.
-    tq_set_line_color((tq_color) {255, 0, 0, 255}); // for red crosshair
-    tq_set_fill_color((tq_color) {32, 32, 32, 255});
-    tq_set_outline_color((tq_color) {224, 224, 224, 255});
-
     // Set mouse callback functions.
     // To remove the callback, you can pass NULL pointer.
     tq_on_mouse_button_pressed(on_button_down);
@@ -127,6 +122,9 @@ int main(int argc, char *argv[])
         tq_clear();
 
         // Draw all bubbles with positive radius.
+        tq_set_draw_color((tq_color) {32, 32, 32, 255});
+        tq_set_outline_color((tq_color) {224, 224, 224, 255});
+        
         for (int i = 0; i < NUM_BUBBLES; i++) {
             if (bubbles[i].rad > 0.0f) {
                 // Fill and outline circle area.
@@ -135,6 +133,7 @@ int main(int argc, char *argv[])
         }
 
         // Draw crosshair.
+        tq_set_draw_color((tq_color) {255, 0, 0, 255});
         tq_push_matrix();
         tq_translate_matrix(cursor_pos);
         tq_draw_line((tq_vec2f) {-crosshair_size, 0.0f}, (tq_vec2f) {crosshair_size, 0.0f});

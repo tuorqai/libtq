@@ -38,15 +38,12 @@ int main(int argc, char *argv[])
         tq_set_clear_color(bg);
         tq_clear();
 
-        // tq_set_fill_color() also sets current font color.
-        tq_set_fill_color((tq_color) {255, 255, 255, 255});
-
         // Use tq_draw_text() to print static text.
+        tq_set_draw_color((tq_color) {255, 255, 255, 255});
         tq_draw_text(regular, (tq_vec2f) {40, 40}, "Hello, world!");
 
-        tq_set_fill_color((tq_color) {255, 255, 0, 255});
-
         // Use tq_print_text() for printf-style formatted output.
+        tq_set_draw_color((tq_color) {255, 255, 0, 255});
         tq_print_text(italic, (tq_vec2f) {40, 100}, "Mouse position: [%d, %d]",
             tq_get_mouse_cursor_position().x,
             tq_get_mouse_cursor_position().y);

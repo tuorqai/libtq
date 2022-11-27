@@ -46,16 +46,16 @@ int main(int argc, char *argv[])
         tq_clear();
 
         // Draw alphabet.
-        tq_set_fill_color((tq_color) {255, 255, 255, 255});
+        tq_set_draw_color((tq_color) {255, 255, 255, 255});
         tq_draw_text(unispace, (tq_vec2f) {60, 120}, "Alphabet:");
 
         tq_vec2f char_pos = { 60, 200 };
 
         for (int i = 0; i < 26; i++) {
             if (alphabet[i]) {
-                tq_set_fill_color((tq_color) {0, 255, 0, 255});
+                tq_set_draw_color((tq_color) {0, 255, 0, 255});
             } else {
-                tq_set_fill_color((tq_color) {255, 255, 255, 255});
+                tq_set_draw_color((tq_color) {255, 255, 255, 255});
             }
 
             tq_print_text(unispace, char_pos, "%c", 'A' + i);
