@@ -379,6 +379,8 @@ libtq_audio_dec *libtq_open_audio_dec(libtq_stream *stream)
         }
     #endif
 
+    libtq_free(dec);
+
     return NULL;
 }
 
@@ -410,6 +412,7 @@ void libtq_audio_dec_seek(libtq_audio_dec *dec, long sample_offset)
 void libtq_audio_dec_close(libtq_audio_dec *dec)
 {
     dec->close(dec);
+    libtq_free(dec);
 }
 
 //------------------------------------------------------------------------------
