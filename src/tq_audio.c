@@ -12,13 +12,13 @@
 
 //------------------------------------------------------------------------------
 
-struct libtq_audio_priv
+struct tq_audio_priv
 {
-    struct libtq_audio_impl impl;
+    tq_audio_impl impl;
     int channel_source_id[TQ_CHANNEL_LIMIT];
 };
 
-static struct libtq_audio_priv priv;
+static struct tq_audio_priv priv;
 
 //------------------------------------------------------------------------------
 
@@ -33,35 +33,7 @@ static void decode_user_channel_id(int user_channel_id, int *source_id, int *rea
     *real_channel_id = (user_channel_id & 255) - 1;
 }
 
-//------------------------------------------------------------------------------
-
-void libtq_initialize_audio(void)
-{
-#if defined(TQ_WIN32) || defined(TQ_LINUX)
-    libtq_construct_al_audio(&priv.impl);
-#else
-    libtq_construct_null_audio(&priv.impl);
-#endif
-
-    priv.impl.initialize();
-}
-
-void libtq_terminate_audio(void)
-{
-    priv.impl.terminate();
-}
-
-void libtq_process_audio(void)
-{
-    priv.impl.process();
-}
-
-void libtq_set_master_volume(float volume)
-{
-    priv.impl.set_master_volume(volume);
-}
-
-int libtq_load_sound(libtq_stream *stream)
+static int load_sound(libtq_stream *stream)
 {
     if (!stream) {
         return -1;
@@ -69,27 +41,11 @@ int libtq_load_sound(libtq_stream *stream)
 
     int sound_id = priv.impl.load_sound(stream);
     libtq_stream_close(stream);
+
     return sound_id;
 }
 
-void libtq_delete_sound(int sound_id)
-{
-    priv.impl.delete_sound(sound_id);
-}
-
-int libtq_play_sound(int sound_id, int loop)
-{
-    int real_channel_id = priv.impl.play_sound(sound_id, loop);
-
-    if (real_channel_id == -1) {
-        return 0;
-    }
-
-    priv.channel_source_id[real_channel_id] = sound_id;
-    return encode_user_channel_id(sound_id, real_channel_id);
-}
-
-int libtq_open_music(libtq_stream *stream)
+static int open_music(libtq_stream *stream)
 {
     if (!stream) {
         return -1;
@@ -104,70 +60,148 @@ int libtq_open_music(libtq_stream *stream)
     return music_id;
 }
 
-void libtq_close_music(int music_id)
+//------------------------------------------------------------------------------
+
+void tq_initialize_audio(void)
 {
-    priv.impl.close_music(music_id);
+#if defined(TQ_WIN32) || defined(TQ_LINUX)
+    tq_construct_al_audio(&priv.impl);
+#else
+    tq_construct_null_audio(&priv.impl);
+#endif
+
+    priv.impl.initialize();
 }
 
-int libtq_play_music(int music_id, int loop)
+void tq_terminate_audio(void)
 {
-    int real_channel_id = priv.impl.play_music(music_id, loop);
+    priv.impl.terminate();
+}
 
-    if (real_channel_id == -1) {
-        return 0;
+void tq_process_audio(void)
+{
+    priv.impl.process();
+}
+
+void tq_set_master_volume(float volume)
+{
+    priv.impl.set_master_volume(volume);
+}
+
+tq_sound tq_load_sound_from_file(char const *path)
+{
+    return (tq_sound) {
+        .id = load_sound(libtq_open_file_stream(path)),
+    };
+}
+
+tq_sound tq_load_sound_from_memory(void const *buffer, size_t size)
+{
+    return (tq_sound) {
+        .id = load_sound(libtq_open_memory_stream(buffer, size)),
+    };
+}
+
+void tq_delete_sound(tq_sound sound)
+{
+    priv.impl.delete_sound(sound.id);
+}
+
+tq_channel tq_play_sound(tq_sound sound, int loop)
+{
+    int impl_channel_id = priv.impl.play_sound(sound.id, loop);
+
+    if (impl_channel_id == -1) {
+        return (tq_channel) { 0 };
     }
 
-    priv.channel_source_id[real_channel_id] = TQ_SOUND_LIMIT + music_id;
+    priv.channel_source_id[impl_channel_id] = sound.id;
 
-    return encode_user_channel_id(TQ_SOUND_LIMIT + music_id, real_channel_id);
+    return (tq_channel) {
+        .id = encode_user_channel_id(sound.id, impl_channel_id),
+    };
 }
 
-tq_channel_state libtq_get_channel_state(int channel_id)
+tq_music tq_open_music_from_file(char const *path)
 {
-    int source_id, real_channel_id;
-    decode_user_channel_id(channel_id, &source_id, &real_channel_id);
+    return (tq_music) {
+        .id = open_music(libtq_open_file_stream(path)),
+    };
+}
 
-    if (priv.channel_source_id[real_channel_id] != source_id) {
+tq_music tq_open_music_from_memory(void const *buffer, size_t size)
+{
+    return (tq_music) {
+        .id = open_music(libtq_open_memory_stream(buffer, size)),
+    };
+}
+
+void tq_close_music(tq_music music)
+{
+    priv.impl.close_music(music.id);
+}
+
+tq_channel tq_play_music(tq_music music, int loop)
+{
+    int impl_channel_id = priv.impl.play_music(music.id, loop);
+
+    if (impl_channel_id == -1) {
+        return (tq_channel) { 0 };
+    }
+
+    priv.channel_source_id[impl_channel_id] = TQ_SOUND_LIMIT + music.id;
+
+    return (tq_channel) {
+        .id = encode_user_channel_id(TQ_SOUND_LIMIT + music.id, impl_channel_id),
+    };
+}
+
+tq_channel_state tq_get_channel_state(tq_channel channel)
+{
+    int source_id, impl_channel_id;
+    decode_user_channel_id(channel.id, &source_id, &impl_channel_id);
+
+    if (priv.channel_source_id[impl_channel_id] != source_id) {
         return TQ_CHANNEL_INACTIVE;
     }
 
-    return priv.impl.get_channel_state(real_channel_id);
+    return priv.impl.get_channel_state(impl_channel_id);
 }
 
-void libtq_pause_channel(int channel_id)
+void tq_pause_channel(tq_channel channel)
 {
-    int source_id, real_channel_id;
-    decode_user_channel_id(channel_id, &source_id, &real_channel_id);
+    int source_id, impl_channel_id;
+    decode_user_channel_id(channel.id, &source_id, &impl_channel_id);
 
-    if (priv.channel_source_id[real_channel_id] != source_id) {
+    if (priv.channel_source_id[impl_channel_id] != source_id) {
         return;
     }
 
-    priv.impl.pause_channel(real_channel_id);
+    priv.impl.pause_channel(impl_channel_id);
 }
 
-void libtq_unpause_channel(int channel_id)
+void tq_unpause_channel(tq_channel channel)
 {
-    int source_id, real_channel_id;
-    decode_user_channel_id(channel_id, &source_id, &real_channel_id);
+    int source_id, impl_channel_id;
+    decode_user_channel_id(channel.id, &source_id, &impl_channel_id);
 
-    if (priv.channel_source_id[real_channel_id] != source_id) {
+    if (priv.channel_source_id[impl_channel_id] != source_id) {
         return;
     }
 
-    priv.impl.unpause_channel(real_channel_id);
+    priv.impl.unpause_channel(impl_channel_id);
 }
 
-void libtq_stop_channel(int channel_id)
+void tq_stop_channel(tq_channel channel)
 {
-    int source_id, real_channel_id;
-    decode_user_channel_id(channel_id, &source_id, &real_channel_id);
+    int source_id, impl_channel_id;
+    decode_user_channel_id(channel.id, &source_id, &impl_channel_id);
 
-    if (priv.channel_source_id[real_channel_id] != source_id) {
+    if (priv.channel_source_id[impl_channel_id] != source_id) {
         return;
     }
 
-    priv.impl.stop_channel(real_channel_id);
+    priv.impl.stop_channel(impl_channel_id);
 }
 
 //------------------------------------------------------------------------------

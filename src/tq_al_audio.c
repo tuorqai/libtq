@@ -735,7 +735,7 @@ static void stop_channel(int32_t channel_id)
 //------------------------------------------------------------------------------
 // Constructor
 
-void libtq_construct_al_audio(struct libtq_audio_impl *impl)
+void tq_construct_al_audio(tq_audio_impl *impl)
 {
     impl->initialize            = initialize;
     impl->terminate             = terminate;

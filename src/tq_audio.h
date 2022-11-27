@@ -10,55 +10,41 @@
 
 //------------------------------------------------------------------------------
 
-struct libtq_audio_impl
+typedef struct tq_audio_impl
 {
-    void                (*initialize)(void);
-    void                (*terminate)(void);
-    void                (*process)(void);
+    void (*initialize)(void);
+    void (*terminate)(void);
+    void (*process)(void);
 
-    void                (*set_master_volume)(float volume);
+    void (*set_master_volume)(float volume);
 
-    int                 (*load_sound)(libtq_stream *stream);
-    void                (*delete_sound)(int sound_id);
-    int                 (*play_sound)(int sound_id, int loop);
+    int (*load_sound)(libtq_stream *stream);
+    void (*delete_sound)(int sound_id);
+    int (*play_sound)(int sound_id, int loop);
 
-    int                 (*open_music)(libtq_stream *stream);
-    void                (*close_music)(int music_id);
-    int                 (*play_music)(int music_id, int loop);
+    int (*open_music)(libtq_stream *stream);
+    void (*close_music)(int music_id);
+    int (*play_music)(int music_id, int loop);
 
-    tq_channel_state    (*get_channel_state)(int channel_id);
-    void                (*pause_channel)(int channel_id);
-    void                (*unpause_channel)(int channel_id);
-    void                (*stop_channel)(int channel_id);
-};
+    tq_channel_state (*get_channel_state)(int channel_id);
+    void (*pause_channel)(int channel_id);
+    void (*unpause_channel)(int channel_id);
+    void (*stop_channel)(int channel_id);
+} tq_audio_impl;
 
 //------------------------------------------------------------------------------
 
 #if defined(TQ_WIN32) || defined(TQ_LINUX)
-    void libtq_construct_al_audio(struct libtq_audio_impl *impl);
+    void tq_construct_al_audio(tq_audio_impl *impl);
 #endif
 
-void libtq_construct_null_audio(struct libtq_audio_impl *impl);
+void tq_construct_null_audio(tq_audio_impl *impl);
 
 //------------------------------------------------------------------------------
 
-void                libtq_initialize_audio(void);
-void                libtq_terminate_audio(void);
-void                libtq_process_audio(void);
-
-void                libtq_set_master_volume(float volume);
-int                 libtq_load_sound(libtq_stream *stream);
-void                libtq_delete_sound(int sound_id);
-int                 libtq_play_sound(int sound_id, int loop);
-
-int                 libtq_open_music(libtq_stream *stream);
-void                libtq_close_music(int music_id);
-int                 libtq_play_music(int music_id, int loop);
-
-tq_channel_state    libtq_get_channel_state(int channel_id);
-void                libtq_pause_channel(int channel_id);
-void                libtq_unpause_channel(int channel_id);
-void                libtq_stop_channel(int channel_id);
+void tq_initialize_audio(void);
+void tq_terminate_audio(void);
+void tq_process_audio(void);
 
 //------------------------------------------------------------------------------
 

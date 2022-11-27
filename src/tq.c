@@ -19,12 +19,12 @@ void tq_initialize(void)
 {
     libtq_initialize_core();
     libtq_initialize_graphics();
-    libtq_initialize_audio();
+    tq_initialize_audio();
 }
 
 void tq_terminate(void)
 {
-    libtq_terminate_audio();
+    tq_terminate_audio();
     libtq_terminate_graphics();
     libtq_terminate_core();
 }
@@ -32,7 +32,7 @@ void tq_terminate(void)
 bool tq_process(void)
 {
     libtq_process_graphics();
-    libtq_process_audio();
+    tq_process_audio();
 
     return libtq_process_core();
 }
@@ -504,83 +504,6 @@ void tq_print_text(tq_font font, tq_vec2f position, char const *fmt, ...)
 void tq_set_blend_mode(tq_blend_mode mode)
 {
     libtq_set_blend_mode(mode);
-}
-
-//------------------------------------------------------------------------------
-// Audio
-
-//----------------------------------------------------------
-// Sounds
-
-void tq_set_master_volume(float volume)
-{
-    libtq_set_master_volume(volume);
-}
-
-tq_sound tq_load_sound_from_file(char const *path)
-{
-    return (tq_sound) {libtq_load_sound(libtq_open_file_stream(path))};
-}
-
-tq_sound tq_load_sound_from_memory(void const *buffer, size_t size)
-{
-    return (tq_sound) {libtq_load_sound(libtq_open_memory_stream(buffer, size))};
-}
-
-void tq_delete_sound(tq_sound sound)
-{
-    libtq_delete_sound(sound.id);
-}
-
-tq_channel tq_play_sound(tq_sound sound, int loop)
-{
-    return (tq_channel) {libtq_play_sound(sound.id, loop)};
-}
-
-//----------------------------------------------------------
-// Music
-
-tq_music tq_open_music_from_file(char const *path)
-{
-    return (tq_music) {libtq_open_music(libtq_open_file_stream(path))};
-}
-
-tq_music tq_open_music_from_memory(void const *buffer, size_t size)
-{
-    return (tq_music) {libtq_open_music(libtq_open_memory_stream(buffer, size))};
-}
-
-void tq_close_music(tq_music music)
-{
-    libtq_close_music(music.id);
-}
-
-tq_channel tq_play_music(tq_music music, int loop)
-{
-    return (tq_channel) {libtq_play_music(music.id, loop)};
-}
-
-//----------------------------------------------------------
-// Channels
-
-tq_channel_state tq_get_channel_state(tq_channel channel)
-{
-    return libtq_get_channel_state(channel.id);
-}
-
-void tq_pause_channel(tq_channel channel)
-{
-    libtq_pause_channel(channel.id);
-}
-
-void tq_unpause_channel(tq_channel channel)
-{
-    libtq_unpause_channel(channel.id);
-}
-
-void tq_stop_channel(tq_channel channel)
-{
-    libtq_stop_channel(channel.id);
 }
 
 //------------------------------------------------------------------------------
