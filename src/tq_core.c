@@ -102,6 +102,8 @@ void libtq_initialize_core(void)
     core.clock.initialize();
     core.threads.initialize();
 
+    libtq_log(0, "tq library version " TQ_VERSION "\n");
+
     if (!core.display_width || !core.display_height) {
         core.display_width = 1280;
         core.display_height = 720;
