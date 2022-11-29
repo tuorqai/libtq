@@ -50,6 +50,9 @@ int main(int argc, char *argv[])
         
         tq_print_text(italic, (tq_vec2f) {40, 130}, "Background: 0x%08x",
             (bg.r << 24) | (bg.g << 16) | (bg.b << 8) | 255);
+        
+        // Unicode
+        tq_print_text(italic, (tq_vec2f) { 40, 160 }, "Line 1\nLine 2");
     }
 
     return 0;

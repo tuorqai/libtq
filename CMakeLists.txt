@@ -28,6 +28,7 @@ project(tq
 option(BUILD_SHARED_LIBS "Build shared libraries" YES)
 option(BUILD_EXAMPLES "Build examples" YES)
 option(USE_GLES2 "Force OpenGL ES 2.0 usage on Linux" NO)
+option(USE_HARFBUZZ "Enable HarfBuzz (recommended)" YES)
 
 #-------------------------------------------------------------------------------
 # Platforms
@@ -109,6 +110,10 @@ elseif(TQ_PLATFORM_ANDROID)
     target_compile_definitions(tq PRIVATE TQ_ANDROID)
 endif()
 
+if(USE_HARFBUZZ)
+    target_compile_definitions(tq PRIVATE TQ_USE_HARFBUZZ)
+endif()
+
 # Enable AddressSanitizer for debug build
 if(NOT MSVC)
     target_compile_options(tq PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
@@ -150,8 +155,10 @@ find_package(Freetype MODULE REQUIRED) # Imports `Freetype::Freetype` target
 target_link_libraries(tq PRIVATE Freetype::Freetype)
 
 # HarfBuzz text shaper.
-find_package(harfbuzz CONFIG REQUIRED) # Imports `harfbuzz::harfbuzz` target
-target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
+if(USE_HARFBUZZ)
+    find_package(harfbuzz CONFIG REQUIRED) # Imports `harfbuzz::harfbuzz` target
+    target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
+endif()
 
 # Vorbis library.
 # This is an optional dependency.

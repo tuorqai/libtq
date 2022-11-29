@@ -19,7 +19,12 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#include <hb-ft.h>
+#if defined(TQ_USE_HARFBUZZ)
+#   include <hb-ft.h>
+#else
+#   include <ft2build.h>
+#   include FT_FREETYPE_H
+#endif
 
 #include "tq_error.h"
 #include "tq_log.h"
@@ -70,7 +75,10 @@ struct font_glyph
  */
 struct font
 {
+#if defined(TQ_USE_HARFBUZZ)
     hb_font_t *font;                // harfbuzz font handle
+#endif
+
     FT_Face face;                   // FreeType font handle
     FT_StreamRec stream;            // FreeType font handle
     struct font_atlas atlas;        // texture atlas (TODO: multiple atlases)
@@ -147,7 +155,9 @@ static int get_font_id(void)
 
     for (int i = font_id; i < next_count; i++) {
         next_array[i].face = NULL;
+#if defined(TQ_USE_HARFBUZZ)
         next_array[i].font = NULL;
+#endif
     }
 
     priv.font_count = next_count;
@@ -191,7 +201,11 @@ static int get_glyph_id(int font_id)
  * Render the glyph (if it isn't already) and return its index.
  * TODO: consider optimizing glyph indexing.
  */
+#if defined(TQ_USE_HARFBUZZ)
 static int cache_glyph(int font_id, unsigned long codepoint, float x_advance, float y_advance)
+#else
+static int cache_glyph(int font_id, unsigned long codepoint)
+#endif
 {
     struct font *font = &priv.fonts[font_id];
 
@@ -271,8 +285,15 @@ static int cache_glyph(int font_id, unsigned long codepoint, float x_advance, fl
     glyph->t0 = atlas->cursor_y;
     glyph->s1 = atlas->cursor_x + bitmap_width;
     glyph->t1 = atlas->cursor_y + bitmap_height;
+
+#if defined(TQ_USE_HARFBUZZ)
     glyph->x_advance = x_advance;
     glyph->y_advance = y_advance;
+#else
+    glyph->x_advance = font->face->glyph->advance.x / 64.0f;
+    glyph->y_advance = font->face->glyph->advance.y / 64.0f;
+#endif
+
     glyph->x_bearing = font->face->glyph->bitmap_left;
     glyph->y_bearing = font->face->glyph->bitmap_top;
 
@@ -332,6 +353,11 @@ void tq_initialize_text(tq_renderer_impl *renderer)
 
     priv.vertex_buffer = NULL;
     priv.vertex_buffer_size = 0;
+
+#if !defined(TQ_USE_HARFBUZZ)
+    libtq_log(LIBTQ_WARNING, "HarfBuzz support was disabled during compile time.\n");
+    libtq_log(LIBTQ_WARNING, "Text rendering functions are limited to ASCII charset.\n");
+#endif
 }
 
 /**
@@ -389,6 +415,7 @@ static int load_font(libtq_stream *stream, float pt, int weight)
 
     FT_Set_Char_Size(font->face, 0, (int) (pt * 64.0f), 0, 0);
 
+#if defined(TQ_USE_HARFBUZZ)
     font->font = hb_ft_font_create_referenced(font->face);
 
     if (!font->font) {
@@ -397,6 +424,7 @@ static int load_font(libtq_stream *stream, float pt, int weight)
 
         return -1;
     }
+#endif
 
     int width = 4096;
     int height = 16;
@@ -416,10 +444,12 @@ static int load_font(libtq_stream *stream, float pt, int weight)
 
     if (font->atlas.texture_id == -1 || !font->atlas.bitmap) {
         libtq_free(font->atlas.bitmap);
-        hb_font_destroy(font->font);
-
         font->face = NULL;
+
+#if defined(TQ_USE_HARFBUZZ)
+        hb_font_destroy(font->font);
         font->font = NULL;
+#endif
 
         return -1;
     }
@@ -436,6 +466,7 @@ static int load_font(libtq_stream *stream, float pt, int weight)
     font->atlas.line_height = 0;
 
     for (int i = 0x20; i <= 0xFF; i++) {
+#if defined(TQ_USE_HARFBUZZ)
         hb_codepoint_t codepoint;
 
         if (!hb_font_get_glyph(font->font, i, 0, &codepoint)) {
@@ -447,6 +478,15 @@ static int load_font(libtq_stream *stream, float pt, int weight)
             HB_DIRECTION_LTR, &x_advance, &y_advance);
 
         cache_glyph(font_id, codepoint, x_advance / 64.0f, y_advance / 64.0f);
+#else
+        FT_UInt char_index = FT_Get_Char_Index(font->face, i);
+
+        if (!char_index) {
+            continue;
+        }
+
+        cache_glyph(font_id, char_index);
+#endif
     }
 
     FT_F26Dot6 ascender = font->face->size->metrics.ascender;
@@ -503,12 +543,14 @@ void tq_delete_font(tq_font font)
     libtq_free(fontp->glyphs);
     libtq_free(fontp->atlas.bitmap);
     priv.renderer->delete_texture(fontp->atlas.texture_id);
+
+#if defined(TQ_USE_HARFBUZZ)
     hb_font_destroy(fontp->font);
+    fontp->font = NULL;
+#endif
 
     libtq_stream_close(fontp->stream.descriptor.pointer);
-
     fontp->face = NULL;
-    fontp->font = NULL;
 }
 
 /**
@@ -538,6 +580,11 @@ void tq_draw_text(tq_font font, tq_vec2f position, char const *text)
         return;
     }
 
+    float x_offset = 0.0f;
+    unsigned int length = 0;
+    int quad_count = 0;
+
+#if defined(TQ_USE_HARFBUZZ)
     hb_buffer_t *buffer = hb_buffer_create();
 
     hb_buffer_add_utf8(buffer, text, -1, 0, -1);
@@ -545,28 +592,52 @@ void tq_draw_text(tq_font font, tq_vec2f position, char const *text)
 
     hb_shape(fontp->font, buffer, NULL, 0);
 
-    unsigned int length = hb_buffer_get_length(buffer);
+    length = hb_buffer_get_length(buffer);
     hb_glyph_info_t *info = hb_buffer_get_glyph_infos(buffer, NULL);
     hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(buffer, NULL);
-
-    float x_offset = 0.0f;
 
     if (hb_buffer_get_direction(buffer) == HB_DIRECTION_RTL) {
         for (unsigned int i = 0; i < length; i++) {
             x_offset -= pos[i].x_advance / 64.0f;
         }
     }
+#else
+    length = strlen(text);
+#endif
 
     float x_current = position.x + x_offset;
     float y_current = position.y;
 
     float *v = maintain_vertex_buffer(24 * length);
 
-    int quad_count = 0;
-
     for (unsigned int i = 0; i < length; i++) {
-        int glyph_id = cache_glyph(font.id, info[i].codepoint,
-            pos[i].x_advance / 64.0f, pos[i].y_advance / 64.0f);
+        // Special case for newline character.
+        if (text[i] == '\n') {
+            x_current = position.x + x_offset;
+            y_current += fontp->height;
+            continue;
+        }
+
+#if defined(TQ_USE_HARFBUZZ)
+        float x_adv = pos[i].x_advance / 64.0f;
+        float y_adv = pos[i].y_advance / 64.0f;
+
+        int glyph_id = cache_glyph(font.id, info[i].codepoint, x_adv, y_adv);
+#else
+        // WARNING: temporary solution.
+        // Need some UTF-8 handling library.
+        if ((unsigned char) text[i] > 0x7f || text[i] == '\r') {
+            continue;
+        }
+
+        FT_UInt char_index = FT_Get_Char_Index(fontp->face, text[i]);
+
+        if (!char_index) {
+            continue;
+        }
+
+        int glyph_id = cache_glyph(font.id, char_index);
+#endif
 
         if (glyph_id == -1) {
             continue;
@@ -597,11 +668,13 @@ void tq_draw_text(tq_font font, tq_vec2f position, char const *text)
         quad_count++;
     }
 
+#if defined(TQ_USE_HARFBUZZ)
+    hb_buffer_destroy(buffer);
+#endif
+
     priv.renderer->bind_texture(fontp->atlas.texture_id);
     priv.renderer->set_draw_color(priv.text_color);
     priv.renderer->draw_font(priv.vertex_buffer, 6 * quad_count);
-
-    hb_buffer_destroy(buffer);
 }
 
 /**
