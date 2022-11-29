@@ -4,8 +4,6 @@
 #include <math.h>
 #include <string.h>
 
-#include <hb-ft.h>
-
 #include "tq_core.h"
 #include "tq_error.h"
 #include "tq_graphics.h"
