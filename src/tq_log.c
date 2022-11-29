@@ -27,7 +27,7 @@
 
 //------------------------------------------------------------------------------
 
-#define FORMAT_MESSAGE(Signature) (Signature " (%9.3f): %s")
+#define FORMAT_MESSAGE(Signature) (" (%9.3f):" Signature "%s")
 
 //------------------------------------------------------------------------------
 // TODO: make this thread-safe
@@ -70,16 +70,16 @@ void libtq_log(int level, char const *fmt, ...)
 
     switch (level) {
     case LIBTQ_LOG_DEBUG:
-        fprintf(stdout, FORMAT_MESSAGE("[DBG]"), t, logger.buffer);
+        fprintf(stdout, FORMAT_MESSAGE(" [DBG] "), t, logger.buffer);
         break;
     case LIBTQ_LOG_INFO:
-        fprintf(stdout, FORMAT_MESSAGE(""), t, logger.buffer);
+        fprintf(stdout, FORMAT_MESSAGE(" "), t, logger.buffer);
         break;
     case LIBTQ_LOG_WARNING:
-        fprintf(stdout, FORMAT_MESSAGE("[WRN]"), t, logger.buffer);
+        fprintf(stdout, FORMAT_MESSAGE(" [WRN] "), t, logger.buffer);
         break;
     case LIBTQ_LOG_ERROR:
-        fprintf(stderr, FORMAT_MESSAGE("[ERR]"), t, logger.buffer);
+        fprintf(stderr, FORMAT_MESSAGE(" [ERR] "), t, logger.buffer);
         break;
     }
 
