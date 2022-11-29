@@ -223,7 +223,6 @@ intptr_t libtq_stream_size(libtq_stream *stream)
 intptr_t libtq_stream_close(libtq_stream *stream)
 {
     if (!stream) {
-        libtq_log(LIBTQ_LOG_WARNING, "libtq_stream_close(): stream is NULL.\n");
         return -1;
     }
 
