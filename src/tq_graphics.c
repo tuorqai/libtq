@@ -688,7 +688,7 @@ tq_color tq_get_draw_color(void)
 void tq_set_draw_color(tq_color draw_color)
 {
     colors[COLOR_DRAW].value = draw_color;
-    text_set_fill_color(draw_color);
+    tq_set_text_color(draw_color);
 }
 
 tq_color tq_get_outline_color(void)
@@ -699,7 +699,7 @@ tq_color tq_get_outline_color(void)
 void tq_set_outline_color(tq_color outline_color)
 {
     colors[COLOR_OUTLINE].value = outline_color;
-    text_set_outline_color(outline_color);
+    tq_set_text_outline_color(outline_color);
 }
 
 //------------------------------------------------------------------------------
@@ -849,7 +849,7 @@ void tq_on_rc_create(int rc)
     renderer.update_projection(matrices.projection);
     renderer.update_model_view(matrices.model_view[0]);
 
-    text_initialize(&renderer);
+    tq_initialize_text(&renderer);
 }
 
 void tq_on_rc_destroy(void)
@@ -860,7 +860,7 @@ void tq_on_rc_destroy(void)
 
     priv.active_rc = 0;
 
-    text_terminate();
+    tq_terminate_text();
     renderer.terminate();
 }
 
