@@ -333,6 +333,34 @@ static float *maintain_vertex_buffer(int required_size)
     return priv.vertex_buffer;
 }
 
+#if !defined(TQ_USE_HARFBUZZ)
+/**
+ * My attempt to create UTF-8 -> code point conversion.
+ * Very simplistic, used when harfbuzz is disabled.
+ */
+static int conv_utf8(void const *s, unsigned long *char_code)
+{
+    unsigned char const *u = s;
+
+    if ((u[0] >> 7) == 0x00) {
+        *char_code = (u[0] & 0x7f);
+        return 0;
+    } else if (((u[0] >> 5) == 0x06) && ((u[1] >> 6) == 0x02)) {
+        *char_code = ((u[0] & 0x1f) << 6) | (u[1] & 0x3f);
+        return 1;
+    } else if (((u[0] >> 4) == 0x0e) && ((u[1] >> 6) == 0x02) && ((u[2] >> 6) == 0x02)) {
+        *char_code = ((u[0] & 0x0f) << 12) | ((u[1] & 0x3f) << 6) | (u[2] & 0x3f);
+        return 2;
+    } else if (((u[0] >> 3) == 0x1e) && ((u[1] >> 6) == 0x02) && ((u[2] >> 6) == 0x02) && ((u[3] >> 6) == 0x02)) {
+        *char_code = ((u[0] & 0x07) << 18) | ((u[1] & 0x3f) << 12) | ((u[2] & 0x3f) << 6) | (u[3] & 0x3f);
+        return 3;
+    }
+
+    *char_code = 0;
+    return 0;
+}
+#endif
+
 //------------------------------------------------------------------------------
 
 /**
@@ -584,6 +612,8 @@ void tq_draw_text(tq_font font, tq_vec2f position, char const *text)
     unsigned int length = 0;
     int quad_count = 0;
 
+    // TODO: add bidi
+
 #if defined(TQ_USE_HARFBUZZ)
     hb_buffer_t *buffer = hb_buffer_create();
 
@@ -596,11 +626,11 @@ void tq_draw_text(tq_font font, tq_vec2f position, char const *text)
     hb_glyph_info_t *info = hb_buffer_get_glyph_infos(buffer, NULL);
     hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(buffer, NULL);
 
-    if (hb_buffer_get_direction(buffer) == HB_DIRECTION_RTL) {
-        for (unsigned int i = 0; i < length; i++) {
-            x_offset -= pos[i].x_advance / 64.0f;
-        }
-    }
+    // if (hb_buffer_get_direction(buffer) == HB_DIRECTION_RTL) {
+    //     for (unsigned int i = 0; i < length; i++) {
+    //         x_offset -= pos[i].x_advance / 64.0f;
+    //     }
+    // }
 #else
     length = strlen(text);
 #endif
@@ -621,21 +651,12 @@ void tq_draw_text(tq_font font, tq_vec2f position, char const *text)
 #if defined(TQ_USE_HARFBUZZ)
         float x_adv = pos[i].x_advance / 64.0f;
         float y_adv = pos[i].y_advance / 64.0f;
-
         int glyph_id = cache_glyph(font.id, info[i].codepoint, x_adv, y_adv);
 #else
-        // WARNING: temporary solution.
-        // Need some UTF-8 handling library.
-        if ((unsigned char) text[i] > 0x7f || text[i] == '\r') {
-            continue;
-        }
+        unsigned long char_code;
+        i += conv_utf8(&text[i], &char_code);
 
-        FT_UInt char_index = FT_Get_Char_Index(fontp->face, text[i]);
-
-        if (!char_index) {
-            continue;
-        }
-
+        FT_UInt char_index = FT_Get_Char_Index(fontp->face, char_code);
         int glyph_id = cache_glyph(font.id, char_index);
 #endif
 
