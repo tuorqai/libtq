@@ -85,7 +85,7 @@ void libtq_initialize_core(void)
         libtq_construct_win32_clock(&core.clock);
         libtq_construct_win32_threads(&core.threads);
         libtq_construct_win32_display(&core.display);
-    #elif defined(TQ_LINUX)
+    #elif defined(TQ_LINUX) || defined(TQ_EMSCRIPTEN)
         libtq_construct_posix_clock(&core.clock);
         libtq_construct_posix_threads(&core.threads);
         libtq_construct_sdl_display(&core.display);

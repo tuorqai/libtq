@@ -13,6 +13,10 @@
 #include "tq_mem.h"
 #include "tq_text.h"
 
+#if defined(EMSCRIPTEN)
+#   include <emscripten.h>
+#endif
+
 //------------------------------------------------------------------------------
 
 void tq_initialize(void)
@@ -35,6 +39,33 @@ bool tq_process(void)
     tq_process_audio();
 
     return libtq_process_core();
+}
+
+#if defined(EMSCRIPTEN)
+void main_loop(void *callback_pointer)
+{
+    if (tq_process()) {
+        tq_loop_callback callback = callback_pointer;
+        callback();
+    } else {
+        emscripten_cancel_main_loop();
+    }
+}
+#endif
+
+void tq_run(tq_loop_callback callback)
+{
+    // Temporary.
+
+#if defined(EMSCRIPTEN)
+    emscripten_set_main_loop_arg(main_loop, callback, 0, 1);
+#else
+    while (tq_process()) {
+        callback();
+    }
+
+    tq_terminate();
+#endif
 }
 
 //------------------------------------------------------------------------------

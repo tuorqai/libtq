@@ -25,22 +25,28 @@ project(tq
 #-------------------------------------------------------------------------------
 # Options
 
-option(BUILD_SHARED_LIBS "Build shared libraries" YES)
+option(BUILD_SHARED_LIBS "Build shared libraries" NO)
 option(BUILD_EXAMPLES "Build examples" YES)
 option(USE_GLES2 "Force OpenGL ES 2.0 usage on Linux" NO)
 option(USE_HARFBUZZ "Enable HarfBuzz (recommended)" YES)
 
 #-------------------------------------------------------------------------------
-# Platforms
+# Detect target platform
 
-if(WIN32)
-    set(TQ_PLATFORM_WIN32 YES)
+if(EMSCRIPTEN)
+    set(TQ_PLATFORM "Emscripten")
+elseif(ANDROID)
+    set(TQ_PLATFORM "Android")
+elseif(WIN32)
+    set(TQ_PLATFORM "Win32")
 elseif(UNIX)
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-        set(TQ_PLATFORM_LINUX YES)
+        set(TQ_PLATFORM "Linux")
     endif()
-elseif(ANDROID) # is UNIX defined on Android?
-    set(TQ_PLATFORM_ANDROID YES)
+endif()
+
+if(NOT DEFINED TQ_PLATFORM)
+    message(FATAL_ERROR "Sorry, but your platform is out of luck.")
 endif()
 
 #-------------------------------------------------------------------------------
@@ -98,106 +104,89 @@ target_include_directories(tq PUBLIC "include")
 target_include_directories(tq PRIVATE "third-party")
 target_compile_definitions(tq PRIVATE TQ_BUILD)
 
-if(TQ_PLATFORM_WIN32)
-    target_compile_definitions(tq PRIVATE TQ_WIN32)
-elseif(TQ_PLATFORM_LINUX)
-    target_compile_definitions(tq PRIVATE TQ_LINUX)
-
-    if(USE_GLES2)
-        target_compile_definitions(tq PRIVATE TQ_USE_GLES2)
-    endif()
-elseif(TQ_PLATFORM_ANDROID)
-    target_compile_definitions(tq PRIVATE TQ_ANDROID)
-endif()
-
-if(USE_HARFBUZZ)
-    target_compile_definitions(tq PRIVATE TQ_USE_HARFBUZZ)
-endif()
-
-# Enable AddressSanitizer for debug build
-if(NOT MSVC)
-    target_compile_options(tq PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
-    target_link_libraries(tq PUBLIC $<$<CONFIG:Debug>:-fsanitize=address>)
-endif()
-
-#-------------------------------------------------------------------------------
-# Shared library support
-
-if(BUILD_SHARED_LIBS)
-    if(ANDROID)
-        message(FATAL_ERROR "Shared library build is not supported on Android.")
-    endif()
-
-    target_compile_definitions(tq PRIVATE TQ_SHARED)
-endif()
-
 #-------------------------------------------------------------------------------
 # Dependencies
 
-# Check if pkg-config is available.
-# It will be used as a fallback.
+# Check if pkg-config is available. It will be used as a fallback.
 find_package(PkgConfig MODULE)
 
-# Standard math library.
+#-----------------------------------------------------------
+# Standard math library
+
 find_library(MATH_LIB NAMES m)
 
 if(MATH_LIB)
     target_link_libraries(tq PUBLIC ${MATH_LIB})
 endif()
 
-# System-dependent threading library.
-# Win32 threads on Windows, pthreads otherwise.
-find_package(Threads MODULE REQUIRED) # Imports `Threads::Threads` target
+#-----------------------------------------------------------
+# Threads
+
+find_package(Threads MODULE REQUIRED)
 target_link_libraries(tq PRIVATE Threads::Threads)
 
-# FreeType font renderer.
-find_package(Freetype MODULE REQUIRED) # Imports `Freetype::Freetype` target
-target_link_libraries(tq PRIVATE Freetype::Freetype)
+#-----------------------------------------------------------
+# SDL 2
 
-# HarfBuzz text shaper.
-if(USE_HARFBUZZ)
-    find_package(harfbuzz CONFIG REQUIRED) # Imports `harfbuzz::harfbuzz` target
-    target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
-endif()
-
-# Vorbis library.
-# This is an optional dependency.
-find_package(Vorbis CONFIG QUIET) # Imports Vorbis::vorbisenc and Vorbis::vorbisfile
-
-if(Vorbis_FOUND)
-    target_compile_definitions(tq PRIVATE TQ_USE_OGG)
-    target_link_libraries(tq PRIVATE Vorbis::vorbisfile)
-elseif(PKG_CONFIG_FOUND)
-    pkg_check_modules(PC_vorbisfile IMPORTED_TARGET vorbisfile)
-
-    if(PC_vorbisfile_FOUND)
-        target_compile_definitions(tq PRIVATE TQ_USE_OGG)
-        target_link_libraries(tq PRIVATE PkgConfig::PC_vorbisfile)
-    endif()
-endif()
-
-#-------------------------------------------------------------------------------
-# Platform-specific dependencies
-
-if(TQ_PLATFORM_WIN32)
-    if(BUILD_SHARED_LIBS)
-        add_library(tq-main STATIC "src/tq_win32_system.c")
-        target_compile_definitions(tq-main PRIVATE TQ_WIN32)
-        target_link_libraries(tq INTERFACE tq-main)
-    else()
-        target_sources(tq PUBLIC "src/tq_win32_system.c")
-    endif()
-endif()
-
-if(TQ_PLATFORM_LINUX)
-    # Simple DirectMedia Layer 2
+if(TQ_PLATFORM STREQUAL "Emscripten" OR TQ_PLATFORM STREQUAL "Linux")
     find_package(SDL2 CONFIG REQUIRED) # Imports SDL2::SDL2
     target_link_libraries(tq PRIVATE SDL2::SDL2)
 endif()
 
-if(TQ_PLATFORM_WIN32 OR TQ_PLATFORM_LINUX)
-    # OpenAL
-    find_package(OpenAL CONFIG QUIET) # Imports OpenAL::OpenAL
+#-----------------------------------------------------------
+# Android system libraries
+
+if(TQ_PLATFORM STREQUAL "Android")
+    target_link_libraries(tq PRIVATE android log)
+endif()
+
+#-----------------------------------------------------------
+# OpenGL / OpenGL ES
+
+if(TQ_PLATFORM STREQUAL "Emscripten")
+    target_link_options(tq PUBLIC -sFULL_ES2=1 -sFULL_ES3=1)
+elseif(TQ_PLATFORM STREQUAL "Android")
+    target_link_libraries(tq PRIVATE GLESv2 EGL)
+else()
+    find_package(OpenGL MODULE REQUIRED)
+    find_package(GLEW MODULE REQUIRED)
+
+    target_link_libraries(tq PRIVATE OpenGL::GL GLEW::GLEW)
+
+    if(TQ_PLATFORM STREQUAL "Linux" AND USE_GLES2)
+        target_link_libraries(tq PRIVATE GLESv2) # should be ok?
+    endif()
+endif()
+
+#-----------------------------------------------------------
+# FreeType
+
+if(TQ_PLATFORM STREQUAL "Emscripten")
+    target_compile_options(tq PRIVATE -sUSE_FREETYPE=1)
+    target_link_libraries(tq PRIVATE freetype)
+else()
+    find_package(Freetype MODULE REQUIRED)
+    target_link_libraries(tq PRIVATE Freetype::Freetype)
+endif()
+
+#-----------------------------------------------------------
+# HarfBuzz
+
+if(USE_HARFBUZZ)
+    if(TQ_PLATFORM STREQUAL "Emscripten")
+        target_compile_options(tq PRIVATE -sUSE_HARFBUZZ=1)
+        target_link_libraries(tq PRIVATE harfbuzz)
+    else()
+        find_package(harfbuzz CONFIG REQUIRED)
+        target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
+    endif()
+endif()
+
+#-----------------------------------------------------------
+# OpenAL
+
+if(TQ_PLATFORM STREQUAL "Win32" OR TQ_PLATFORM STREQUAL "Linux")
+    find_package(OpenAL CONFIG QUIET)
 
     if(OpenAL_FOUND)
         target_link_libraries(tq PRIVATE OpenAL::OpenAL)
@@ -207,53 +196,102 @@ if(TQ_PLATFORM_WIN32 OR TQ_PLATFORM_LINUX)
     else()
         message(FATAL_ERROR "OpenAL is required, but not found.")
     endif()
+endif()
 
-    # OpenGL
-    find_package(OpenGL MODULE REQUIRED) # Imports OpenGL::GL and others
-    target_link_libraries(tq PRIVATE OpenGL::GL)
+#-----------------------------------------------------------
+# Vorbis
 
-    # OpenGL Extension Wrangler
-    find_package(GLEW MODULE REQUIRED) # Imports GLEW::GLEW
-    target_link_libraries(tq PRIVATE GLEW::GLEW)
+if(TQ_PLATFORM STREQUAL "Emscripten")
+    target_compile_options(tq PRIVATE -sUSE_VORBIS=1)
+    target_link_libraries(tq PRIVATE vorbis ogg)
+else()
+    # Imports ::vorbisenc and ::vorbisfile
+    find_package(Vorbis CONFIG QUIET)
 
-    if(USE_GLES2)
-        # OpenGL ES 2.0
-        target_link_libraries(tq PRIVATE GLESv2) # should be ok?
+    if(Vorbis_FOUND)
+        target_compile_definitions(tq PRIVATE TQ_USE_OGG)
+        target_link_libraries(tq PRIVATE Vorbis::vorbisfile)
+    elseif(PKG_CONFIG_FOUND)
+        pkg_check_modules(PC_vorbisfile IMPORTED_TARGET vorbisfile)
+
+        if(PC_vorbisfile_FOUND)
+            target_compile_definitions(tq PRIVATE TQ_USE_OGG)
+            target_link_libraries(tq PRIVATE PkgConfig::PC_vorbisfile)
+        endif()
     endif()
 endif()
 
-if(TQ_PLATFORM_ANDROID)
-    # -landroid
-    find_library(ANDROID_LIB NAMES android)
+#-----------------------------------------------------------
+# ASAN
 
-    # -llog
-    find_library(LOG_LIB NAMES log)
+# Enable AddressSanitizer for debug build
+if(NOT MSVC)
+    target_compile_options(tq PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
+    target_link_libraries(tq PUBLIC $<$<CONFIG:Debug>:-fsanitize=address>)
+endif()
 
-    # -lGLESv2
-    find_library(GLESV2_LIB NAMES GLESv2)
+#-----------------------------------------------------------
+# WinMain handler
 
-    # -lEGL
-    find_library(EGL_LIB NAMES EGL)
+if(TQ_PLATFORM STREQUAL "Win32")
+    if(BUILD_SHARED_LIBS)
+        add_library(tq-main STATIC "src/tq_win32_system.c")
+        target_compile_definitions(tq-main PRIVATE TQ_WIN32)
+        target_link_libraries(tq INTERFACE tq-main)
+    else()
+        target_sources(tq PUBLIC "src/tq_win32_system.c")
+    endif()
+endif()
 
-    target_link_libraries(tq PRIVATE
-        ${ANDROID_LIB}
-        ${LOG_LIB}
-        ${GLESV2_LIB}
-        ${EGL_LIB})
+#-------------------------------------------------------------------------------
+# Compile definitions
+
+#-----------------------------------------------------------
+# Platform
+
+if(BUILD_SHARED_LIBS)
+    target_compile_definitions(tq PRIVATE TQ_SHARED)
+endif()
+
+if(TQ_PLATFORM STREQUAL "Emscripten")
+    target_compile_definitions(tq PRIVATE TQ_EMSCRIPTEN)
+elseif(TQ_PLATFORM STREQUAL "Android")
+    target_compile_definitions(tq PRIVATE TQ_ANDROID)
+elseif(TQ_PLATFORM STREQUAL "Win32")
+    target_compile_definitions(tq PRIVATE TQ_WIN32)
+elseif(TQ_PLATFORM STREQUAL "Linux")
+    target_compile_definitions(tq PRIVATE TQ_LINUX)
+endif()
+
+#-----------------------------------------------------------
+# Dependencies
+
+if(USE_GLES2 OR TQ_PLATFORM STREQUAL "Emscripten")
+    target_compile_definitions(tq PRIVATE TQ_USE_GLES2)
+endif()
+
+if (USE_HARFBUZZ)
+    target_compile_definitions(tq PRIVATE TQ_USE_HARFBUZZ)
 endif()
 
 #-------------------------------------------------------------------------------
 # Examples
 
-set(EXAMPLES
-    "audio-music"
-    "core-hello"
-    "core-keyboard"
-    "core-mouse"
-    "graphics-textures"
-    "graphics-surfaces"
-    "graphics-text"
-    "graphics-blend")
+if(EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+    set(EXAMPLES
+        "emscripten")
+else()
+    set(EXAMPLES
+        "audio-music"
+        "core-hello"
+        "core-keyboard"
+        "core-mouse"
+        "graphics-textures"
+        "graphics-surfaces"
+        "graphics-text"
+        "graphics-blend")
+endif()
 
 if(BUILD_EXAMPLES)
     # Copy assets to build directory

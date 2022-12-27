@@ -22,7 +22,7 @@ struct libtq_clock_impl
     void libtq_construct_win32_clock(struct libtq_clock_impl *clock);
 #endif
 
-#if defined(TQ_LINUX) || defined(TQ_ANDROID)
+#if defined(TQ_LINUX) || defined(TQ_ANDROID) || defined(TQ_EMSCRIPTEN)
     void libtq_construct_posix_clock(struct libtq_clock_impl *clock);
 #endif
 
@@ -52,7 +52,7 @@ struct libtq_threads_impl
     void libtq_construct_win32_threads(struct libtq_threads_impl *threads);
 #endif
 
-#if defined(TQ_LINUX) || defined(TQ_ANDROID)
+#if defined(TQ_LINUX) || defined(TQ_ANDROID) || defined(TQ_EMSCRIPTEN)
     void libtq_construct_posix_threads(struct libtq_threads_impl *threads);
 #endif
 
@@ -77,7 +77,7 @@ struct libtq_display_impl
     void libtq_construct_win32_display(struct libtq_display_impl *display);
 #endif
 
-#if defined(TQ_LINUX)
+#if defined(TQ_LINUX) || defined(TQ_EMSCRIPTEN)
     void libtq_construct_sdl_display(struct libtq_display_impl *display);
 #endif
 

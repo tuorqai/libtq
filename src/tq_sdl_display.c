@@ -23,7 +23,7 @@
 // tq library: SDL display implementation
 //------------------------------------------------------------------------------
 
-#if defined(TQ_LINUX)
+#if defined(TQ_LINUX) || defined(TQ_EMSCRIPTEN)
 
 //------------------------------------------------------------------------------
 
@@ -357,6 +357,6 @@ void libtq_construct_sdl_display(struct libtq_display_impl *display)
 
 //------------------------------------------------------------------------------
 
-#endif // defined(TQ_LINUX)
+#endif // defined(TQ_LINUX) || defined(TQ_EMSCRIPTEN)
 
 //------------------------------------------------------------------------------

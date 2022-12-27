@@ -376,7 +376,8 @@ void tq_initialize_text(tq_renderer_impl *renderer)
     FT_Error error = FT_Init_FreeType(&priv.freetype);
 
     if (error) {
-        libtq_error("Failed to initialize Freetype library. Reason: %s\n", FT_Error_String(error));
+        //libtq_error("Failed to initialize Freetype library. Reason: %s\n", FT_Error_String(error));
+        libtq_error("Failed to initialize Freetype library.\n");
     }
 
     priv.vertex_buffer = NULL;
@@ -434,8 +435,10 @@ static int load_font(libtq_stream *stream, float pt, int weight)
     FT_Error error = FT_Open_Face(priv.freetype, &args, 0, &font->face);
 
     if (error) {
-        libtq_log(LIBTQ_LOG_WARNING, "Failed to open font %s. Reason: %s\n",
-            libtq_stream_repr(stream), FT_Error_String(error));
+        // libtq_log(LIBTQ_LOG_WARNING, "Failed to open font %s. Reason: %s\n",
+        //     libtq_stream_repr(stream), FT_Error_String(error));
+        libtq_log(LIBTQ_LOG_WARNING, "Failed to open font %s.\n",
+            libtq_stream_repr(stream));
 
         font->face = NULL;
         return -1;

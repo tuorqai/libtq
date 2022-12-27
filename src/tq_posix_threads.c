@@ -1,13 +1,11 @@
 
 //------------------------------------------------------------------------------
 
-#if defined(TQ_LINUX) || defined(TQ_ANDROID)
+#if defined(TQ_LINUX) || defined(TQ_ANDROID) || defined(TQ_EMSCRIPTEN)
 
 //------------------------------------------------------------------------------
 
-#if defined(__linux__)
-    #define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #include <errno.h>
 #include <pthread.h>
@@ -170,6 +168,6 @@ void libtq_construct_posix_threads(struct libtq_threads_impl *threads)
 
 //------------------------------------------------------------------------------
 
-#endif // defined(TQ_LINUX) || defined(TQ_ANDROID)
+#endif // defined(TQ_LINUX) || defined(TQ_ANDROID) || defined(TQ_EMSCRIPTEN)
 
 //------------------------------------------------------------------------------

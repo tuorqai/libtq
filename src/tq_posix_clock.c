@@ -1,14 +1,11 @@
 
 //------------------------------------------------------------------------------
 
-#if defined(TQ_LINUX) || defined(TQ_ANDROID)
+#if defined(TQ_LINUX) || defined(TQ_ANDROID) || defined(TQ_EMSCRIPTEN)
 
 //------------------------------------------------------------------------------
 
-#if defined(__linux__)
-    #define _POSIX_C_SOURCE 199309L
-#endif
-
+#define _POSIX_C_SOURCE 199309L
 #include <time.h>
 
 #include "tq_core.h"
@@ -73,6 +70,6 @@ void libtq_construct_posix_clock(struct libtq_clock_impl *clock)
 
 //------------------------------------------------------------------------------
 
-#endif // defined(TQ_LINUX) || defined(TQ_ANDROID)
+#endif // defined(TQ_LINUX) || defined(TQ_ANDROID) || defined(TQ_EMSCRIPTEN)
 
 //------------------------------------------------------------------------------

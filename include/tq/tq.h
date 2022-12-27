@@ -400,6 +400,16 @@ typedef struct tq_blend_mode
 } tq_blend_mode;
 
 /**
+ * Main loop callback.
+ */
+typedef void (*tq_loop_callback)(void);
+
+/**
+ * Quit callback.
+ */
+typedef void (*tq_quit_callback)(void);
+
+/**
  * Keyboard event callback.
  */
 typedef void (*tq_key_callback)(tq_key key);
@@ -432,9 +442,15 @@ TQ_API void TQ_CALL tq_initialize(void);
 TQ_API void TQ_CALL tq_terminate(void);
 
 /**
- * Process user input and do other important things.
+ * Process user input and draw to the display.
  */
 TQ_API bool TQ_CALL tq_process(void);
+
+/**
+ * Start game loop and give the control to tq library.
+ * This function never returns.
+ */
+TQ_API TQ_NO_RET void TQ_CALL tq_run(tq_loop_callback callback);
 
 //------------------------------------------------------------------------------
 // Core
