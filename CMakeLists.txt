@@ -1,7 +1,7 @@
 
 #-------------------------------------------------------------------------------
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.14)
 
 #-------------------------------------------------------------------------------
 
@@ -23,54 +23,75 @@ project(tq
     LANGUAGES C)
 
 #-------------------------------------------------------------------------------
-# Options
-
-option(BUILD_SHARED_LIBS "Build shared libraries" NO)
-option(BUILD_EXAMPLES "Build examples" YES)
-option(USE_GLES2 "Force OpenGL ES 2.0 usage on Linux" NO)
-option(USE_HARFBUZZ "Enable HarfBuzz (recommended)" YES)
-
-#-------------------------------------------------------------------------------
 # Detect target platform
 
 if(EMSCRIPTEN)
-    set(TQ_PLATFORM "Emscripten")
+    set(TQ_EMSCRIPTEN ON)
 elseif(ANDROID)
-    set(TQ_PLATFORM "Android")
+    set(TQ_ANDROID ON)
 elseif(WIN32)
-    set(TQ_PLATFORM "Win32")
+    set(TQ_WIN32 ON)
 elseif(UNIX)
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-        set(TQ_PLATFORM "Linux")
+        set(TQ_LINUX ON)
+    else()
+        message(FATAL_ERROR "Unsupported Unix system: ${CMAKE_SYSTEM_NAME}.")
     endif()
-endif()
 
-if(NOT DEFINED TQ_PLATFORM)
+    set(TQ_UNIX ON)
+else()
     message(FATAL_ERROR "Sorry, but your platform is out of luck.")
 endif()
 
 #-------------------------------------------------------------------------------
-# Common properties
+# Declare dependencies
 
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS OFF)
-set(CMAKE_C_VISIBILITY_PRESET hidden)
+include(FetchContent)
+
+FetchContent_Declare(sdl2
+    URL             https://github.com/libsdl-org/SDL/releases/download/release-2.26.1/SDL2-2.26.1.tar.gz
+    URL_HASH        SHA256=02537cc7ebd74071631038b237ec4bfbb3f4830ba019e569434da33f42373e04)
+
+FetchContent_Declare(glew
+    URL             https://downloads.sourceforge.net/project/glew/glew/2.1.0/glew-2.1.0.tgz
+    URL_HASH        SHA256=04de91e7e6763039bc11940095cd9c7f880baba82196a7765f727ac05a993c95
+    SOURCE_SUBDIR   build/cmake)
+
+FetchContent_Declare(freetype
+    URL             https://download.savannah.gnu.org/releases/freetype/freetype-2.12.1.tar.gz
+    URL_HASH        SHA256=efe71fd4b8246f1b0b1b9bfca13cfff1c9ad85930340c27df469733bbb620938)
+
+FetchContent_Declare(harfbuzz
+    URL             https://github.com/harfbuzz/harfbuzz/releases/download/5.3.1/harfbuzz-5.3.1.tar.xz
+    URL_HASH        SHA256=4a6ce097b75a8121facc4ba83b5b083bfec657f45b003cd5a3424f2ae6b4434d)
+
+FetchContent_Declare(openal
+    URL             https://openal-soft.org/openal-releases/openal-soft-1.22.2.tar.bz2
+    URL_HASH        SHA256=ae94cc95cda76b7cc6e92e38c2531af82148e76d3d88ce996e2928a1ea7c3d20)
+
+FetchContent_Declare(libogg
+    URL             https://downloads.xiph.org/releases/ogg/libogg-1.3.5.tar.gz
+    URL_HASH        SHA256=0eb4b4b9420a0f51db142ba3f9c64b333f826532dc0f48c6410ae51f4799b664)
+
+FetchContent_Declare(libvorbis
+    URL             https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.xz
+    URL_HASH        SHA256=b33cc4934322bcbf6efcbacf49e3ca01aadbea4114ec9589d1b1e9d20f72954b)
 
 #-------------------------------------------------------------------------------
-# Compiler settings
+# Options
 
-if(MSVC)
-    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-else()
-    add_compile_options(
-        -Wall
-        -Wextra
-        -Wno-switch
-        -Wno-switch-default
-        -Wno-unused-parameter
-        -Wno-unused-variable)
+option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+option(TQ_BUILD_EXAMPLES "Build examples" OFF)
+option(TQ_USE_HARFBUZZ "Enable HarfBuzz (recommended)" ON)
+option(TQ_USE_OGG "Enable Ogg Vorbis decoder" ON)
+
+if(TQ_LINUX)
+    option(TQ_USE_GLES2 "Force OpenGL ES 2.0 usage on Linux" OFF)
 endif()
+
+#-------------------------------------------------------------------------------
+
+set(CMAKE_POSITION_INDEPENDENT_CODE YES)
 
 #-------------------------------------------------------------------------------
 # tq target
@@ -100,15 +121,42 @@ add_library(tq
     "src/tq_win32_display.c"
     "src/tq_win32_threads.c")
 
-target_include_directories(tq PUBLIC "include")
-target_include_directories(tq PRIVATE "third-party")
-target_compile_definitions(tq PRIVATE TQ_BUILD)
+set_target_properties(tq PROPERTIES
+    C_STANDARD 99
+    C_STANDARD_REQUIRED ON
+    C_EXTENSIONS OFF
+    C_VISIBILITY_PRESET hidden)
+
+target_compile_definitions(tq
+    PRIVATE
+        TQ_BUILD
+        $<$<BOOL:${BUILD_SHARED_LIBS}>:TQ_SHARED>
+        $<$<BOOL:${TQ_UNIX}>:TQ_UNIX>
+        $<$<BOOL:${TQ_LINUX}>:TQ_LINUX>
+        $<$<BOOL:${TQ_WIN32}>:TQ_WIN32>
+        $<$<BOOL:${TQ_EMSCRIPTEN}>:TQ_EMSCRIPTEN>
+        $<$<BOOL:${TQ_ANDROID}>:TQ_ANDROID>
+        $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+
+if(NOT MSVC)
+    target_compile_options(tq
+        PUBLIC
+            -Wall
+            -Wextra
+            -Wno-switch
+            -Wno-switch-default
+            -Wno-unused-parameter
+            -Wno-unused-variable)
+endif()
+
+target_include_directories(tq
+    PUBLIC
+        include
+    PRIVATE
+        third-party)
 
 #-------------------------------------------------------------------------------
 # Dependencies
-
-# Check if pkg-config is available. It will be used as a fallback.
-find_package(PkgConfig MODULE)
 
 #-----------------------------------------------------------
 # Standard math library
@@ -128,32 +176,34 @@ target_link_libraries(tq PRIVATE Threads::Threads)
 #-----------------------------------------------------------
 # SDL 2
 
-if(TQ_PLATFORM STREQUAL "Emscripten" OR TQ_PLATFORM STREQUAL "Linux")
-    find_package(SDL2 CONFIG REQUIRED) # Imports SDL2::SDL2
+if(TQ_UNIX OR TQ_EMSCRIPTEN)
+    FetchContent_MakeAvailable(sdl2)
     target_link_libraries(tq PRIVATE SDL2::SDL2)
 endif()
 
 #-----------------------------------------------------------
 # Android system libraries
 
-if(TQ_PLATFORM STREQUAL "Android")
+if(TQ_ANDROID)
     target_link_libraries(tq PRIVATE android log)
 endif()
 
 #-----------------------------------------------------------
-# OpenGL / OpenGL ES
+# OpenGL / OpenGL ES + GLEW
 
-if(TQ_PLATFORM STREQUAL "Emscripten")
+if(TQ_EMSCRIPTEN)
     target_link_options(tq PUBLIC -sFULL_ES2=1 -sFULL_ES3=1)
-elseif(TQ_PLATFORM STREQUAL "Android")
+elseif(TQ_ANDROID)
     target_link_libraries(tq PRIVATE GLESv2 EGL)
 else()
     find_package(OpenGL MODULE REQUIRED)
-    find_package(GLEW MODULE REQUIRED)
+    FetchContent_MakeAvailable(glew)
 
-    target_link_libraries(tq PRIVATE OpenGL::GL GLEW::GLEW)
+    target_include_directories(tq PRIVATE ${glew_SOURCE_DIR}/include)
+    target_link_libraries(tq PRIVATE OpenGL::GL glew_s)
 
-    if(TQ_PLATFORM STREQUAL "Linux" AND USE_GLES2)
+    if(TQ_LINUX AND TQ_USE_GLES2)
+        target_compile_definitions(tq PRIVATE TQ_USE_GLES2)
         target_link_libraries(tq PRIVATE GLESv2) # should be ok?
     endif()
 endif()
@@ -161,64 +211,45 @@ endif()
 #-----------------------------------------------------------
 # FreeType
 
-if(TQ_PLATFORM STREQUAL "Emscripten")
-    target_compile_options(tq PRIVATE -sUSE_FREETYPE=1)
-    target_link_libraries(tq PRIVATE freetype)
-else()
-    find_package(Freetype MODULE REQUIRED)
-    target_link_libraries(tq PRIVATE Freetype::Freetype)
-endif()
+FetchContent_MakeAvailable(freetype)
+target_link_libraries(tq PRIVATE freetype)
 
 #-----------------------------------------------------------
 # HarfBuzz
 
-if(USE_HARFBUZZ)
-    if(TQ_PLATFORM STREQUAL "Emscripten")
-        target_compile_options(tq PRIVATE -sUSE_HARFBUZZ=1)
-        target_link_libraries(tq PRIVATE harfbuzz)
-    else()
-        find_package(harfbuzz CONFIG REQUIRED)
-        target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
-    endif()
+if(TQ_USE_HARFBUZZ)
+    FetchContent_MakeAvailable(harfbuzz)
+
+    target_compile_definitions(tq PRIVATE TQ_USE_HARFBUZZ)
+    target_link_libraries(tq PRIVATE harfbuzz)
 endif()
 
 #-----------------------------------------------------------
 # OpenAL
 
-if(TQ_PLATFORM STREQUAL "Win32" OR TQ_PLATFORM STREQUAL "Linux")
-    find_package(OpenAL CONFIG QUIET)
+if(TQ_UNIX OR TQ_WIN32)
+    set(ALSOFT_UTILS OFF CACHE INTERNAL "...")
+    set(ALSOFT_EXAMPLES OFF CACHE INTERNAL "...")
 
-    if(OpenAL_FOUND)
-        target_link_libraries(tq PRIVATE OpenAL::OpenAL)
-    elseif(PKG_CONFIG_FOUND)
-        pkg_check_modules(PC_openal REQUIRED IMPORTED_TARGET openal)
-        target_link_libraries(tq PRIVATE PkgConfig::PC_openal)
-    else()
-        message(FATAL_ERROR "OpenAL is required, but not found.")
-    endif()
+    FetchContent_MakeAvailable(openal)
+    target_link_libraries(tq PRIVATE OpenAL)
 endif()
 
 #-----------------------------------------------------------
 # Vorbis
 
-if(TQ_PLATFORM STREQUAL "Emscripten")
-    target_compile_options(tq PRIVATE -sUSE_VORBIS=1)
-    target_link_libraries(tq PRIVATE vorbis ogg)
-else()
-    # Imports ::vorbisenc and ::vorbisfile
-    find_package(Vorbis CONFIG QUIET)
+if(TQ_USE_OGG)
+    # libogg is a transient dependency of libvorbis.
 
-    if(Vorbis_FOUND)
-        target_compile_definitions(tq PRIVATE TQ_USE_OGG)
-        target_link_libraries(tq PRIVATE Vorbis::vorbisfile)
-    elseif(PKG_CONFIG_FOUND)
-        pkg_check_modules(PC_vorbisfile IMPORTED_TARGET vorbisfile)
+    FetchContent_MakeAvailable(libogg)
 
-        if(PC_vorbisfile_FOUND)
-            target_compile_definitions(tq PRIVATE TQ_USE_OGG)
-            target_link_libraries(tq PRIVATE PkgConfig::PC_vorbisfile)
-        endif()
-    endif()
+    set(OGG_INCLUDE_DIR ${libogg_SOURCE_DIR}/include ${libogg_BINARY_DIR}/include)
+    set(OGG_LIBRARY $<TARGET_FILE:ogg>)
+
+    FetchContent_MakeAvailable(libvorbis)
+
+    target_compile_definitions(tq PRIVATE TQ_USE_OGG)
+    target_link_libraries(tq PRIVATE vorbisfile)
 endif()
 
 #-----------------------------------------------------------
@@ -233,7 +264,7 @@ endif()
 #-----------------------------------------------------------
 # WinMain handler
 
-if(TQ_PLATFORM STREQUAL "Win32")
+if(TQ_WIN32)
     if(BUILD_SHARED_LIBS)
         add_library(tq-main STATIC "src/tq_win32_system.c")
         target_compile_definitions(tq-main PRIVATE TQ_WIN32)
@@ -241,37 +272,6 @@ if(TQ_PLATFORM STREQUAL "Win32")
     else()
         target_sources(tq PUBLIC "src/tq_win32_system.c")
     endif()
-endif()
-
-#-------------------------------------------------------------------------------
-# Compile definitions
-
-#-----------------------------------------------------------
-# Platform
-
-if(BUILD_SHARED_LIBS)
-    target_compile_definitions(tq PRIVATE TQ_SHARED)
-endif()
-
-if(TQ_PLATFORM STREQUAL "Emscripten")
-    target_compile_definitions(tq PRIVATE TQ_EMSCRIPTEN)
-elseif(TQ_PLATFORM STREQUAL "Android")
-    target_compile_definitions(tq PRIVATE TQ_ANDROID)
-elseif(TQ_PLATFORM STREQUAL "Win32")
-    target_compile_definitions(tq PRIVATE TQ_WIN32)
-elseif(TQ_PLATFORM STREQUAL "Linux")
-    target_compile_definitions(tq PRIVATE TQ_LINUX)
-endif()
-
-#-----------------------------------------------------------
-# Dependencies
-
-if(USE_GLES2 OR TQ_PLATFORM STREQUAL "Emscripten")
-    target_compile_definitions(tq PRIVATE TQ_USE_GLES2)
-endif()
-
-if (USE_HARFBUZZ)
-    target_compile_definitions(tq PRIVATE TQ_USE_HARFBUZZ)
 endif()
 
 #-------------------------------------------------------------------------------
@@ -293,7 +293,7 @@ else()
         "graphics-blend")
 endif()
 
-if(BUILD_EXAMPLES)
+if(TQ_BUILD_EXAMPLES)
     # Copy assets to build directory
     # TODO: move assets directory to examples/assets
     add_custom_command(TARGET tq POST_BUILD
@@ -321,7 +321,7 @@ if(WIN32 AND BUILD_SHARED_LIBS)
 endif()
 
 # -- Support example installation for Windows only
-if(WIN32 AND BUILD_EXAMPLES)
+if(WIN32 AND TQ_BUILD_EXAMPLES)
     install(DIRECTORY "assets" DESTINATION "examples")
 
     foreach(EXAMPLE ${EXAMPLES})
