@@ -23,7 +23,7 @@
 
 #if defined(NDEBUG)
 
-#define CHECK_GL(call_) call_
+#define CHECK_GLES2(call_) call_
 
 #else
 

@@ -65,6 +65,7 @@ void tq_run(tq_loop_callback callback)
     }
 
     tq_terminate();
+    exit(0);
 #endif
 }
 
