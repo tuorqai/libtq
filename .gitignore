@@ -1,6 +1,7 @@
 
 # Directory where all of the junk goes
 /build/
+/build-*/
 
 # Visual Studio Code things
 /.vscode/
