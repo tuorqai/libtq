@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Copyright (c) 2021-2022 tuorqai
+// Copyright (c) 2021-2023 tuorqai
 // 
 // This software is provided 'as-is', without any express or implied
 // warranty. In no event will the authors be held liable for any damages
@@ -16,8 +16,6 @@
 // 2. Altered source versions must be plainly marked as such, and must not be
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
-//------------------------------------------------------------------------------
-// tq library
 //------------------------------------------------------------------------------
 
 #ifndef TQ_PUBLIC_H_INC
