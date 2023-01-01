@@ -206,24 +206,30 @@ static ALenum choose_format(int num_channels)
 
 //------------------------------------------------------------------------------
 
-static void initialize(void)
+static bool initialize(void)
 {
     memset(&openal, 0, sizeof(openal));
 
     openal.device = alcOpenDevice(NULL);
 
     if (openal.device == NULL) {
-        libtq_error("OpenAL: failed to open audio device.");
+        libtq_log(LIBTQ_ERROR, "OpenAL: failed to open audio device.\n");
+        return false;
     }
 
     openal.context = alcCreateContext(openal.device, NULL);
 
     if (openal.context == NULL) {
-        libtq_error("OpenAL: failed to create context.");
+        libtq_log(LIBTQ_ERROR, "OpenAL: failed to create context.\n");
+        alcCloseDevice(openal.device);
+        return false;
     }
 
     if (!alcMakeContextCurrent(openal.context)) {
-        libtq_error("OpenAL: failed to activate context.");
+        libtq_log(LIBTQ_ERROR, "OpenAL: failed to activate context.\n");
+        alcDestroyContext(openal.context);
+        alcCloseDevice(openal.device);
+        return false;
     }
 
     CHECK_AL(alGenSources(TQ_CHANNEL_LIMIT, openal.channels.source));
@@ -231,6 +237,7 @@ static void initialize(void)
     openal.mutex = libtq_create_mutex();
 
     libtq_log(0, "OpenAL audio module is initialized.\n");
+    return true;
 }
 
 static void terminate(void)

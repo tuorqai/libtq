@@ -85,7 +85,10 @@ void tq_initialize_audio(void)
     tq_construct_null_audio(&priv.impl);
 #endif
 
-    priv.impl.initialize();
+    if (!priv.impl.initialize()) {
+        libtq_log(LIBTQ_WARNING, "Unable to properly initialize audio module. Audio will be disabled.\n");
+        tq_construct_null_audio(&priv.impl);
+    }
 }
 
 void tq_terminate_audio(void)

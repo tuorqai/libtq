@@ -22,9 +22,9 @@
 
 //------------------------------------------------------------------------------
 
-static void initialize(void)
+static bool initialize(void)
 {
-    return;
+    return true;
 }
 
 static void terminate(void)

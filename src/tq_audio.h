@@ -29,7 +29,7 @@
 
 typedef struct tq_audio_impl
 {
-    void (*initialize)(void);
+    bool (*initialize)(void);
     void (*terminate)(void);
     void (*process)(void);
 
