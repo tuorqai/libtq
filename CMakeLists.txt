@@ -3,6 +3,10 @@
 
 cmake_minimum_required(VERSION 3.14)
 
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 #-------------------------------------------------------------------------------
 
 # Quite dirty regex to pick up version from tq.h
@@ -177,7 +181,12 @@ target_link_libraries(tq PRIVATE Threads::Threads)
 # SDL 2
 
 if(TQ_UNIX OR TQ_EMSCRIPTEN)
-    FetchContent_MakeAvailable(sdl2)
+    find_package(SDL2 CONFIG 2.0)
+
+    if(NOT SDL2_FOUND)
+        FetchContent_MakeAvailable(sdl2)
+    endif()
+
     target_link_libraries(tq PRIVATE SDL2::SDL2)
 endif()
 
@@ -189,50 +198,82 @@ if(TQ_ANDROID)
 endif()
 
 #-----------------------------------------------------------
-# OpenGL / OpenGL ES + GLEW
+# OpenGL / OpenGL ES
 
 if(TQ_EMSCRIPTEN)
     target_link_options(tq PUBLIC -sFULL_ES2=1 -sFULL_ES3=1)
 elseif(TQ_ANDROID)
     target_link_libraries(tq PRIVATE GLESv2 EGL)
 else()
-    find_package(OpenGL MODULE REQUIRED)
-    FetchContent_MakeAvailable(glew)
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(tq PRIVATE OpenGL::GL)
 
-    target_include_directories(tq PRIVATE ${glew_SOURCE_DIR}/include)
-    target_link_libraries(tq PRIVATE OpenGL::GL glew_s)
-
-    if(TQ_LINUX AND TQ_USE_GLES2)
+    if(TQ_USE_GLES2)
         target_compile_definitions(tq PRIVATE TQ_USE_GLES2)
         target_link_libraries(tq PRIVATE GLESv2) # should be ok?
     endif()
 endif()
 
 #-----------------------------------------------------------
+# GLEW
+
+if(TQ_UNIX OR TQ_WIN32)
+    find_package(GLEW)
+
+    if(GLEW_FOUND)
+        target_link_libraries(tq PRIVATE GLEW::GLEW)
+    else()
+        FetchContent_MakeAvailable(glew)
+
+        target_include_directories(tq PRIVATE ${glew_SOURCE_DIR}/include)
+        target_link_libraries(tq PRIVATE glew_s)
+    endif()
+endif()
+
+#-----------------------------------------------------------
 # FreeType
 
-FetchContent_MakeAvailable(freetype)
-target_link_libraries(tq PRIVATE freetype)
+find_package(Freetype 2.6)
+
+if(FREETYPE_FOUND)
+    target_link_libraries(tq PRIVATE Freetype::Freetype)
+else()
+    FetchContent_MakeAvailable(freetype)
+    target_link_libraries(tq PRIVATE freetype)
+endif()
 
 #-----------------------------------------------------------
 # HarfBuzz
 
 if(TQ_USE_HARFBUZZ)
-    FetchContent_MakeAvailable(harfbuzz)
+    find_package(harfbuzz)
+
+    if(harfbuzz_FOUND)
+        target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
+    else()
+        FetchContent_MakeAvailable(harfbuzz)
+        target_link_libraries(tq PRIVATE harfbuzz)
+    endif()
 
     target_compile_definitions(tq PRIVATE TQ_USE_HARFBUZZ)
-    target_link_libraries(tq PRIVATE harfbuzz)
 endif()
 
 #-----------------------------------------------------------
 # OpenAL
 
 if(TQ_UNIX OR TQ_WIN32)
-    set(ALSOFT_UTILS OFF CACHE INTERNAL "...")
-    set(ALSOFT_EXAMPLES OFF CACHE INTERNAL "...")
+    find_package(OpenAL)
 
-    FetchContent_MakeAvailable(openal)
-    target_link_libraries(tq PRIVATE OpenAL)
+    if(OPENAL_FOUND)
+        target_include_directories(tq PRIVATE ${OPENAL_INCLUDE_DIR})
+        target_link_libraries(tq PRIVATE ${OPENAL_LIBRARY})
+    else()
+        set(ALSOFT_UTILS OFF CACHE INTERNAL "...")
+        set(ALSOFT_EXAMPLES OFF CACHE INTERNAL "...")
+
+        FetchContent_MakeAvailable(openal)
+        target_link_libraries(tq PRIVATE OpenAL)
+    endif()
 endif()
 
 #-----------------------------------------------------------
