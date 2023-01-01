@@ -188,7 +188,7 @@ void initialize(void)
     priv.cursor = LoadCursor(NULL, IDC_CROSS);
     priv.hide_cursor = FALSE;
 
-    priv.key_autorepeat = libtq_is_key_autorepeat_enabled();
+    priv.key_autorepeat = tq_is_key_autorepeat_enabled();
 
     // -- Register window class and create window
 
@@ -222,9 +222,8 @@ void initialize(void)
     // -- Set initial window size, place it in the center of
     // the default monitor and show it
 
-    int width, height;
-    libtq_get_display_size(&width, &height);
-    set_size(width, height);
+    tq_vec2i display_size = tq_get_display_size();
+    set_size(display_size.x, display_size.y);
 
     // -- Done.
 

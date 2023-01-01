@@ -174,13 +174,12 @@ void tq_initialize_graphics(void)
     tq_construct_null_renderer(&renderer);
 #endif
 
-    int display_width, display_height;
-    libtq_get_display_size(&display_width, &display_height);
+    tq_vec2i display_size = tq_get_display_size();
 
     if (!graphics.canvas_width || !graphics.canvas_height) {
-        graphics.canvas_width = display_width;
-        graphics.canvas_height = display_height;
-        graphics.canvas_aspect_ratio = (float) display_width / (float) display_height;
+        graphics.canvas_width = display_size.x;
+        graphics.canvas_height = display_size.y;
+        graphics.canvas_aspect_ratio = (float) display_size.x / (float) display_size.y;
     }
 
     make_default_projection(matrices.default_projection,
@@ -253,27 +252,26 @@ void tq_process_graphics(void)
 
 tq_vec2i tq_conv_display_coord(tq_vec2i coord)
 {
-    int display_width, display_height;
-    libtq_get_display_size(&display_width, &display_height);
+    tq_vec2i display_size = tq_get_display_size();
 
     float canvas_aspect = graphics.canvas_aspect_ratio;
     float display_aspect = libtq_get_display_aspect_ratio();
 
     if (display_aspect > canvas_aspect) {
-        float x_scale = display_height / (float) graphics.canvas_height;
-        float x_offset = (display_width - (graphics.canvas_width * x_scale)) / (x_scale * 2.0f);
+        float x_scale = display_size.y / (float) graphics.canvas_height;
+        float x_offset = (display_size.x - (graphics.canvas_width * x_scale)) / (x_scale * 2.0f);
 
         return (tq_vec2i) {
-            .x = (coord.x * (float) graphics.canvas_height) / display_height - x_offset,
-            .y = (coord.y / (float) display_height) * graphics.canvas_height,
+            .x = (coord.x * (float) graphics.canvas_height) / display_size.y - x_offset,
+            .y = (coord.y / (float) display_size.y) * graphics.canvas_height,
         };
     } else {
-        float y_scale = display_width / (float) graphics.canvas_width;
-        float y_offset = (display_height - (graphics.canvas_height * y_scale)) / (y_scale * 2.0f);
+        float y_scale = display_size.x / (float) graphics.canvas_width;
+        float y_offset = (display_size.y - (graphics.canvas_height * y_scale)) / (y_scale * 2.0f);
 
         return (tq_vec2i) {
-            .x = (coord.x / (float) display_width) * graphics.canvas_width,
-            .y = (coord.y * (float) graphics.canvas_width) / display_width - y_offset,
+            .x = (coord.x / (float) display_size.x) * graphics.canvas_width,
+            .y = (coord.y * (float) graphics.canvas_width) / display_size.x - y_offset,
         };
     }
 }

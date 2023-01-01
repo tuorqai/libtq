@@ -92,7 +92,7 @@ static bool get_key_state(tq_key key)
 
 //------------------------------------------------------------------------------
 
-void libtq_initialize_core(void)
+void tq_initialize_core(void)
 {
     /**
      * Construct clock, thread and display implementations.
@@ -145,7 +145,7 @@ void libtq_initialize_core(void)
     core.framerate_time = core.current_time + 1.0;
 }
 
-void libtq_terminate_core(void)
+void tq_terminate_core(void)
 {
     core.display.terminate();
     core.threads.terminate();
@@ -154,7 +154,7 @@ void libtq_terminate_core(void)
     memset(&core, 0, sizeof(tq_core_t));
 }
 
-bool libtq_process_core(void)
+bool tq_process_core(void)
 {
     core.display.present();
 
@@ -173,34 +173,45 @@ bool libtq_process_core(void)
     return core.display.process_events();
 }
 
-void libtq_get_display_size(int *width, int *height)
+//------------------------------------------------------------------------------
+
+/**
+ * API entry: tq_get_display_size()
+ */
+tq_vec2i tq_get_display_size(void)
 {
-    *width = core.display_width;
-    *height = core.display_height;
+    return (tq_vec2i) {
+        .x = core.display_width,
+        .y = core.display_height,
+    };
 }
 
-void libtq_set_display_size(int width, int height)
+/**
+ * API entry: tq_set_display_size()
+ */
+void tq_set_display_size(tq_vec2i size)
 {
-    core.display_width = width;
-    core.display_height = height;
-    core.display_aspect_ratio = (float) width / (float) height;
+    core.display_width = size.x;
+    core.display_height = size.y;
+    core.display_aspect_ratio = (float) size.x / (float) size.y;
 
     if (core.display.set_size) {
-        core.display.set_size(width, height);
+        core.display.set_size(size.x, size.y);
     }
 }
 
-float libtq_get_display_aspect_ratio(void)
-{
-    return core.display_aspect_ratio;
-}
-
-char const *libtq_get_title(void)
+/**
+ * API entry: tq_get_title()
+ */
+char const *tq_get_title(void)
 {
     return core.title;
 }
 
-void libtq_set_title(char const *title)
+/**
+ * API entry: tq_set_title()
+ */
+void tq_set_title(char const *title)
 {
     strncpy(core.title, title, sizeof(core.title) - 1);
 
@@ -209,12 +220,20 @@ void libtq_set_title(char const *title)
     }
 }
 
-bool libtq_is_key_autorepeat_enabled(void)
+//------------------------------------------------------------------------------
+
+/**
+ * API entry: tq_is_key_autorepeat_enabled()
+ */
+bool tq_is_key_autorepeat_enabled(void)
 {
     return (core.key_autorepeat == 1);
 }
 
-void libtq_set_key_autorepeat_enabled(bool enabled)
+/**
+ * API entry: tq_set_key_autorepeat_enabled()
+ */
+void tq_set_key_autorepeat_enabled(bool enabled)
 {
     core.key_autorepeat = (enabled) ? 1 : -1;
 
@@ -223,40 +242,139 @@ void libtq_set_key_autorepeat_enabled(bool enabled)
     }
 }
 
-bool libtq_is_key_pressed(tq_key key)
+/**
+ * API entry: tq_is_key_pressed()
+ */
+bool tq_is_key_pressed(tq_key key)
 {
     return get_key_state(key);
 }
 
-bool libtq_is_mouse_button_pressed(tq_mouse_button mouse_button)
+/**
+ * API entry: tq_on_key_pressed()
+ */
+void tq_on_key_pressed(tq_key_callback callback)
+{
+    core.key_press_callback = callback;
+}
+
+/**
+ * API entry: tq_on_key_released()
+ */
+void tq_on_key_released(tq_key_callback callback)
+{
+    core.key_release_callback = callback;
+}
+
+//------------------------------------------------------------------------------
+
+/**
+ * API entry: tq_is_mouse_cursor_hidden()
+ */
+bool tq_is_mouse_cursor_hidden(void)
+{
+    return core.mouse_cursor_hidden;
+}
+
+/**
+ * API entry: tq_set_mouse_cursor_hidden()
+ */
+void tq_set_mouse_cursor_hidden(bool hidden)
+{
+    core.display.set_mouse_cursor_hidden(hidden);
+    core.mouse_cursor_hidden = hidden;
+}
+
+/**
+ * API entry: tq_is_mouse_button_pressed()
+ */
+bool tq_is_mouse_button_pressed(tq_mouse_button mouse_button)
 {
     return (core.mouse_button_state & (1 << mouse_button));
 }
 
-void libtq_get_mouse_cursor_position(int *x, int *y)
+/**
+ * API entry: tq_get_mouse_cursor_position()
+ */
+tq_vec2i tq_get_mouse_cursor_position(void)
 {
-    *x = core.mouse_cursor_x;
-    *y = core.mouse_cursor_y;
+    return (tq_vec2i) {
+        .x = core.mouse_cursor_x,
+        .y = core.mouse_cursor_y,
+    };
 }
 
-float libtq_get_time_mediump(void)
+/**
+ * API entry: tq_on_mouse_button_pressed()
+ */
+void tq_on_mouse_button_pressed(tq_mouse_button_callback callback)
+{
+    core.mouse_button_press_callback = callback;
+}
+
+/**
+ * API entry: tq_on_mouse_button_released()
+ */
+void tq_on_mouse_button_released(tq_mouse_button_callback callback)
+{
+    core.mouse_button_release_callback = callback;
+}
+
+/**
+ * API entry: tq_on_mouse_cursor_moved()
+ */
+void tq_on_mouse_cursor_moved(tq_mouse_cursor_callback callback)
+{
+    core.mouse_cursor_move_callback = callback;
+}
+
+/**
+ * API entry: tq_on_mouse_wheel_scrolled()
+ */
+void tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback callback)
+{
+    core.mouse_wheel_scroll_callback = callback;
+}
+
+//------------------------------------------------------------------------------
+
+/**
+ * API entry: tq_get_time_mediump()
+ */
+float tq_get_time_mediump(void)
 {
     return core.clock.get_time_mediump();
 }
 
-double libtq_get_time_highp(void)
+/**
+ * API entry: tq_get_time_highp()
+ */
+double tq_get_time_highp(void)
 {
     return core.clock.get_time_highp();
 }
 
-double libtq_get_delta_time(void)
+/**
+ * API entry: tq_get_delta_time()
+ */
+double tq_get_delta_time(void)
 {
     return core.delta_time;
 }
 
-int libtq_get_framerate(void)
+/**
+ * API entry: tq_get_framerate()
+ */
+int tq_get_framerate(void)
 {
     return core.framerate;
+}
+
+//------------------------------------------------------------------------------
+
+float libtq_get_display_aspect_ratio(void)
+{
+    return core.display_aspect_ratio;
 }
 
 void libtq_on_key_pressed(tq_key key)
@@ -275,17 +393,6 @@ void libtq_on_key_released(tq_key key)
     if (core.key_release_callback) {
         core.key_release_callback(key);
     }
-}
-
-bool libtq_is_mouse_cursor_hidden(void)
-{
-    return core.mouse_cursor_hidden;
-}
-
-void libtq_set_mouse_cursor_hidden(bool hidden)
-{
-    core.display.set_mouse_cursor_hidden(hidden);
-    core.mouse_cursor_hidden = hidden;
 }
 
 void libtq_on_mouse_button_pressed(tq_mouse_button mouse_button)
@@ -343,36 +450,6 @@ void libtq_on_focus_gain(void)
 
 void libtq_on_focus_loss(void)
 {
-}
-
-void libtq_set_key_press_callback(tq_key_callback callback)
-{
-    core.key_press_callback = callback;
-}
-
-void libtq_set_key_release_callback(tq_key_callback callback)
-{
-    core.key_release_callback = callback;
-}
-
-void libtq_set_mousebutton_press_callback(tq_mouse_button_callback callback)
-{
-    core.mouse_button_press_callback = callback;
-}
-
-void libtq_set_mousebutton_release_callback(tq_mouse_button_callback callback)
-{
-    core.mouse_button_release_callback = callback;
-}
-
-void libtq_set_mousecursor_move_callback(tq_mouse_cursor_callback callback)
-{
-    core.mouse_cursor_move_callback = callback;
-}
-
-void libtq_set_mousewheel_scroll_callback(tq_mouse_wheel_callback callback)
-{
-    core.mouse_wheel_scroll_callback = callback;
 }
 
 void libtq_show_msgbox(char const *title, char const *message)

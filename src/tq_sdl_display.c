@@ -178,8 +178,7 @@ static void initialize(void)
         libtq_error("Failed to initialize SDL: %s", SDL_GetError());
     }
 
-    int width, height;
-    libtq_get_display_size(&width, &height);
+    tq_vec2i display_size = tq_get_display_size();
 
 #ifdef TQ_USE_GLES2
     int gl_versions[] = { 300, 200 };
@@ -201,10 +200,10 @@ static void initialize(void)
 #endif
 
         sdl.window = SDL_CreateWindow(
-            libtq_get_title(),
+            tq_get_title(),
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
-            width, height,
+            display_size.x, display_size.y,
             SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN
         );
 
@@ -238,7 +237,7 @@ static void initialize(void)
 
     SDL_GL_SetSwapInterval(1);
 
-    sdl.key_autorepeat = libtq_is_key_autorepeat_enabled();
+    sdl.key_autorepeat = tq_is_key_autorepeat_enabled();
 
     libtq_log(0, "SDL window initialized.\n");
 }

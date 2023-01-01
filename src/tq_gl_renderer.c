@@ -1006,24 +1006,23 @@ static void bind_surface(int surface_id)
     }
 
     GLuint framebuffer;
-    int width;
-    int height;
+    tq_vec2i display_size;
 
     if (!gl_surface_array_check(&surfaces, surface_id)) {
         framebuffer = 0;
-        libtq_get_display_size(&width, &height);
+        display_size = tq_get_display_size();
     } else {
         if (surfaces.data[surface_id].samples > 1) {
             framebuffer = surfaces.data[surface_id].ms_framebuffer;
         } else {
             framebuffer = surfaces.data[surface_id].framebuffer;
         }
-        width = textures.data[surfaces.data[surface_id].texture_id].width;
-        height = textures.data[surfaces.data[surface_id].texture_id].height;
+        display_size.x = textures.data[surfaces.data[surface_id].texture_id].width;
+        display_size.y = textures.data[surfaces.data[surface_id].texture_id].height;
     }
 
     CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, framebuffer));
-    CHECK_GL(glViewport(0, 0, width, height));
+    CHECK_GL(glViewport(0, 0, display_size.x, display_size.y));
 
     state.bound_surface_id = surface_id;
 }

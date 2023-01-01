@@ -66,7 +66,7 @@ void libtq_log(int level, char const *fmt, ...)
 
     va_end(vp);
 
-    float t = libtq_get_time_mediump();
+    float t = tq_get_time_mediump();
 
     switch (level) {
     case LIBTQ_LOG_DEBUG:

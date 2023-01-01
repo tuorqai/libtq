@@ -104,36 +104,14 @@ struct libtq_display_impl
 
 //------------------------------------------------------------------------------
 
-void            libtq_initialize_core(void);
-void            libtq_terminate_core(void);
-bool            libtq_process_core(void);
+void            tq_initialize_core(void);
+void            tq_terminate_core(void);
+bool            tq_process_core(void);
 
-void            libtq_get_display_size(int *width, int *height);
-void            libtq_set_display_size(int width, int height);
 float           libtq_get_display_aspect_ratio(void);
-
-char const      *libtq_get_title(void);
-void            libtq_set_title(char const *title);
-
-bool            libtq_is_key_autorepeat_enabled(void);
-void            libtq_set_key_autorepeat_enabled(bool enabled);
-
-bool            libtq_is_key_pressed(tq_key key);
-bool            libtq_is_mouse_button_pressed(tq_mouse_button mouse_button);
-
-void            libtq_get_mouse_cursor_position(int *x, int *y);
-
-float           libtq_get_time_mediump(void);
-double          libtq_get_time_highp(void);
-double          libtq_get_delta_time(void);
-
-int             libtq_get_framerate(void);
 
 void            libtq_on_key_pressed(tq_key key);
 void            libtq_on_key_released(tq_key key);
-
-bool            libtq_is_mouse_cursor_hidden(void);
-void            libtq_set_mouse_cursor_hidden(bool hidden);
 
 void            libtq_on_mouse_button_pressed(tq_mouse_button mouse_button);
 void            libtq_on_mouse_button_released(tq_mouse_button mouse_button);
@@ -144,13 +122,6 @@ void            libtq_on_display_resize(int width, int height);
 
 void            libtq_on_focus_gain(void);
 void            libtq_on_focus_loss(void);
-
-void            libtq_set_key_press_callback(tq_key_callback callback);
-void            libtq_set_key_release_callback(tq_key_callback callback);
-void            libtq_set_mousebutton_press_callback(tq_mouse_button_callback callback);
-void            libtq_set_mousebutton_release_callback(tq_mouse_button_callback callback);
-void            libtq_set_mousecursor_move_callback(tq_mouse_cursor_callback callback);
-void            libtq_set_mousewheel_scroll_callback(tq_mouse_wheel_callback callback);
 
 void            libtq_show_msgbox(char const *title, char const *message);
 

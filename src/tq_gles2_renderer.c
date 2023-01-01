@@ -876,20 +876,19 @@ static void bind_surface(int surface_id)
     struct gles2_surface *surface = &priv.surfaces.data[surface_id];
 
     GLuint framebuffer;
-    int width;
-    int height;
+    tq_vec2i display_size;
 
     if (!gles2_surface_array_check(&priv.surfaces, surface_id)) {
         framebuffer = 0;
-        libtq_get_display_size(&width, &height);
+        display_size = tq_get_display_size();
     } else {
         framebuffer = surface->framebuffer;
-        width = priv.textures.data[surface->texture_id].width;
-        height = priv.textures.data[surface->texture_id].height;
+        display_size.x = priv.textures.data[surface->texture_id].width;
+        display_size.y = priv.textures.data[surface->texture_id].height;
     }
 
     CHECK_GLES2(glBindFramebuffer(GL_FRAMEBUFFER, framebuffer));
-    CHECK_GLES2(glViewport(0, 0, width, height));
+    CHECK_GLES2(glViewport(0, 0, display_size.x, display_size.y));
 
     priv.surface_id = surface_id;
 }

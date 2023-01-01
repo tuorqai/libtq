@@ -25,6 +25,7 @@
 #include "tq_audio.h"
 #include "tq_core.h"
 #include "tq_graphics.h"
+#include "tq_log.h"
 #include "tq_mem.h"
 #include "tq_text.h"
 
@@ -34,18 +35,42 @@
 
 //------------------------------------------------------------------------------
 
+typedef enum tq_status {
+    TQ_STATUS_ZERO,
+    TQ_STATUS_READY,
+} tq_status;
+
+//------------------------------------------------------------------------------
+
+static tq_status status = TQ_STATUS_ZERO;
+
+//------------------------------------------------------------------------------
+
 void tq_initialize(void)
 {
-    libtq_initialize_core();
+    if (status == TQ_STATUS_READY) {
+        libtq_log(LIBTQ_LOG_WARNING, "tq_initialize is called more than once. Ignoring.\n");
+        return;
+    }
+
+    tq_initialize_core();
     tq_initialize_graphics();
     tq_initialize_audio();
+
+    status = TQ_STATUS_READY;
 }
 
 void tq_terminate(void)
 {
+    if (status == TQ_STATUS_ZERO) {
+        return;
+    }
+
     tq_terminate_audio();
     tq_terminate_graphics();
-    libtq_terminate_core();
+    tq_terminate_core();
+
+    status = TQ_STATUS_ZERO;
 }
 
 bool tq_process(void)
@@ -53,7 +78,7 @@ bool tq_process(void)
     tq_process_graphics();
     tq_process_audio();
 
-    return libtq_process_core();
+    return tq_process_core();
 }
 
 #if defined(EMSCRIPTEN)
@@ -70,8 +95,6 @@ void main_loop(void *callback_pointer)
 
 void tq_run(tq_loop_callback callback)
 {
-    // Temporary.
-
 #if defined(EMSCRIPTEN)
     emscripten_set_main_loop_arg(main_loop, callback, 0, 1);
 #else
@@ -80,137 +103,8 @@ void tq_run(tq_loop_callback callback)
     }
 
     tq_terminate();
-    exit(0);
+    exit(EXIT_SUCCESS);
 #endif
-}
-
-//------------------------------------------------------------------------------
-// Core
-
-//----------------------------------------------------------
-// Display
-
-tq_vec2i tq_get_display_size(void)
-{
-    tq_vec2i size;
-    libtq_get_display_size(&size.x, &size.y);
-
-    return size;
-}
-
-void tq_set_display_size(tq_vec2i size)
-{
-    libtq_set_display_size(size.x, size.y);
-}
-
-char const *tq_get_title(void)
-{
-    return libtq_get_title();
-}
-
-void tq_set_title(char const *title)
-{
-    libtq_set_title(title);
-}
-
-//----------------------------------------------------------
-// Keyboard
-
-bool tq_is_key_autorepeat_enabled(void)
-{
-    return libtq_is_key_autorepeat_enabled();
-}
-
-void tq_set_key_autorepeat_enabled(bool enabled)
-{
-    libtq_set_key_autorepeat_enabled(enabled);
-}
-
-bool tq_is_key_pressed(tq_key key)
-{
-    return libtq_is_key_pressed(key);
-}
-
-bool tq_is_mouse_button_pressed(tq_mouse_button mouse_button)
-{
-    return libtq_is_mouse_button_pressed(mouse_button);
-}
-
-void tq_on_key_pressed(tq_key_callback callback)
-{
-    libtq_set_key_press_callback(callback);
-}
-
-void tq_on_key_released(tq_key_callback callback)
-{
-    libtq_set_key_release_callback(callback);
-}
-
-//----------------------------------------------------------
-// Mouse
-
-bool tq_is_mouse_cursor_hidden(void)
-{
-    return libtq_is_mouse_cursor_hidden();
-}
-
-void tq_set_mouse_cursor_hidden(bool hidden)
-{
-    libtq_set_mouse_cursor_hidden(hidden);
-}
-
-tq_vec2i tq_get_mouse_cursor_position(void)
-{
-    tq_vec2i position;
-    libtq_get_mouse_cursor_position(&position.x, &position.y);
-
-    return position;
-}
-
-void tq_on_mouse_button_pressed(tq_mouse_button_callback callback)
-{
-    libtq_set_mousebutton_press_callback(callback);
-}
-
-void tq_on_mouse_button_released(tq_mouse_button_callback callback)
-{
-    libtq_set_mousebutton_release_callback(callback);
-}
-
-void tq_on_mouse_cursor_moved(tq_mouse_cursor_callback callback)
-{
-    libtq_set_mousecursor_move_callback(callback);
-}
-
-void tq_on_mouse_wheel_scrolled(tq_mouse_wheel_callback callback)
-{
-    libtq_set_mousewheel_scroll_callback(callback);
-}
-
-//----------------------------------------------------------
-// Time
-
-float tq_get_time_mediump(void)
-{
-    return libtq_get_time_mediump();
-}
-
-double tq_get_time_highp(void)
-{
-    return libtq_get_time_highp();
-}
-
-double tq_get_delta_time(void)
-{
-    return libtq_get_delta_time();
-}
-
-//----------------------------------------------------------
-// Stats
-
-int tq_get_framerate(void)
-{
-    return libtq_get_framerate();
 }
 
 //------------------------------------------------------------------------------
