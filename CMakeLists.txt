@@ -181,7 +181,7 @@ target_link_libraries(tq PRIVATE Threads::Threads)
 # SDL 2
 
 if(TQ_UNIX OR TQ_EMSCRIPTEN)
-    find_package(SDL2 CONFIG 2.0)
+    find_package(SDL2 CONFIG)
 
     if(NOT SDL2_FOUND)
         FetchContent_MakeAvailable(sdl2)
@@ -221,13 +221,19 @@ if(TQ_UNIX OR TQ_WIN32)
     find_package(GLEW)
 
     if(GLEW_FOUND)
-        target_link_libraries(tq PRIVATE GLEW::GLEW)
+        add_library(GLEW INTERFACE)
+        target_include_directories(GLEW INTERFACE ${GLEW_INCLUDE_DIRS})
+        target_link_libraries(GLEW INTERFACE ${GLEW_LIBRARIES})
     else()
+        set(BUILD_UTILS OFF CACHE INTERNAL "...")
         FetchContent_MakeAvailable(glew)
 
-        target_include_directories(tq PRIVATE ${glew_SOURCE_DIR}/include)
-        target_link_libraries(tq PRIVATE glew_s)
+        add_library(GLEW INTERFACE)
+        target_include_directories(GLEW INTERFACE ${glew_SOURCE_DIR}/include)
+        target_link_libraries(GLEW INTERFACE glew_s)
     endif()
+
+    target_link_libraries(tq PRIVATE GLEW)
 endif()
 
 #-----------------------------------------------------------
@@ -235,12 +241,12 @@ endif()
 
 find_package(Freetype 2.6)
 
-if(FREETYPE_FOUND)
-    target_link_libraries(tq PRIVATE Freetype::Freetype)
-else()
+if(NOT FREETYPE_FOUND)
     FetchContent_MakeAvailable(freetype)
-    target_link_libraries(tq PRIVATE freetype)
+    add_library(Freetype::Freetype ALIAS freetype)
 endif()
+
+target_link_libraries(tq PRIVATE Freetype::Freetype)
 
 #-----------------------------------------------------------
 # HarfBuzz
@@ -248,13 +254,13 @@ endif()
 if(TQ_USE_HARFBUZZ)
     find_package(harfbuzz)
 
-    if(harfbuzz_FOUND)
-        target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
-    else()
+    if(NOT harfbuzz_FOUND)
+        set(HB_BUILD_SUBSET OFF CACHE INTERNAL "...")
         FetchContent_MakeAvailable(harfbuzz)
-        target_link_libraries(tq PRIVATE harfbuzz)
+        add_library(harfbuzz::harfbuzz ALIAS harfbuzz)
     endif()
 
+    target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
     target_compile_definitions(tq PRIVATE TQ_USE_HARFBUZZ)
 endif()
 
@@ -265,15 +271,16 @@ if(TQ_UNIX OR TQ_WIN32)
     find_package(OpenAL)
 
     if(OPENAL_FOUND)
-        target_include_directories(tq PRIVATE ${OPENAL_INCLUDE_DIR})
-        target_link_libraries(tq PRIVATE ${OPENAL_LIBRARY})
+        add_library(OpenAL INTERFACE)
+        target_include_directories(OpenAL INTERFACE ${OPENAL_INCLUDE_DIR})
+        target_link_libraries(OpenAL INTERFACE ${OPENAL_LIBRARY})
     else()
         set(ALSOFT_UTILS OFF CACHE INTERNAL "...")
         set(ALSOFT_EXAMPLES OFF CACHE INTERNAL "...")
-
         FetchContent_MakeAvailable(openal)
-        target_link_libraries(tq PRIVATE OpenAL)
     endif()
+
+    target_link_libraries(tq PRIVATE OpenAL)    
 endif()
 
 #-----------------------------------------------------------

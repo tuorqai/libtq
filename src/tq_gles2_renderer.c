@@ -18,7 +18,7 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#if defined(TQ_ANDROID) || defined(TQ_USE_GLES2)
+#if defined(TQ_ANDROID) || defined(TQ_EMSCRIPTEN) || defined(TQ_USE_GLES2)
 
 //------------------------------------------------------------------------------
 
@@ -1054,6 +1054,6 @@ void tq_construct_gles2_renderer(tq_renderer_impl *impl)
 
 //------------------------------------------------------------------------------
 
-#endif // defined(TQ_ANDROID) || defined(TQ_USE_GLES2)
+#endif // defined(TQ_ANDROID) || defined(TQ_EMSCRIPTEN) || defined(TQ_USE_GLES2)
 
 //------------------------------------------------------------------------------

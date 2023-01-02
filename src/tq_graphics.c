@@ -166,7 +166,7 @@ static int load_texture(libtq_stream *stream)
 
 void tq_initialize_graphics(void)
 {
-#if defined(TQ_ANDROID) || defined(TQ_USE_GLES2)
+#if defined(TQ_ANDROID) || defined(TQ_EMSCRIPTEN) || defined(TQ_USE_GLES2)
     tq_construct_gles2_renderer(&renderer);
 #elif defined(TQ_WIN32) || defined(TQ_LINUX)
     tq_construct_gl_renderer(&renderer);

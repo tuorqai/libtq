@@ -180,7 +180,7 @@ static void initialize(void)
 
     tq_vec2i display_size = tq_get_display_size();
 
-#ifdef TQ_USE_GLES2
+#if defined(TQ_EMSCRIPTEN) || defined(TQ_USE_GLES2)
     int gl_versions[] = { 300, 200 };
 #else
     int gl_versions[] = { 460, 450, 440, 430, 420, 410, 400, 330 };
@@ -193,7 +193,7 @@ static void initialize(void)
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
 
-#ifdef TQ_USE_GLES2
+#if defined(TQ_EMSCRIPTEN) || defined(TQ_USE_GLES2)
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 #else
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);

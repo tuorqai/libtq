@@ -78,7 +78,7 @@ typedef struct tq_renderer_impl
     void tq_construct_gl_renderer(tq_renderer_impl *impl);
 #endif
 
-#if defined(TQ_ANDROID) || defined(TQ_USE_GLES2)
+#if defined(TQ_ANDROID) || defined(TQ_EMSCRIPTEN) || defined(TQ_USE_GLES2)
     void tq_construct_gles2_renderer(tq_renderer_impl *impl);
 #endif
 
