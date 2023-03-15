@@ -27,61 +27,6 @@ project(tq
     LANGUAGES C)
 
 #-------------------------------------------------------------------------------
-# Detect target platform
-
-if(EMSCRIPTEN)
-    set(TQ_EMSCRIPTEN ON)
-elseif(ANDROID)
-    set(TQ_ANDROID ON)
-elseif(WIN32)
-    set(TQ_WIN32 ON)
-elseif(UNIX)
-    if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-        set(TQ_LINUX ON)
-    else()
-        message(FATAL_ERROR "Unsupported Unix system: ${CMAKE_SYSTEM_NAME}.")
-    endif()
-
-    set(TQ_UNIX ON)
-else()
-    message(FATAL_ERROR "Sorry, but your platform is out of luck.")
-endif()
-
-#-------------------------------------------------------------------------------
-# Declare dependencies
-
-include(FetchContent)
-
-FetchContent_Declare(sdl2
-    URL             https://github.com/libsdl-org/SDL/releases/download/release-2.26.1/SDL2-2.26.1.tar.gz
-    URL_HASH        SHA256=02537cc7ebd74071631038b237ec4bfbb3f4830ba019e569434da33f42373e04)
-
-FetchContent_Declare(glew
-    URL             https://downloads.sourceforge.net/project/glew/glew/2.1.0/glew-2.1.0.tgz
-    URL_HASH        SHA256=04de91e7e6763039bc11940095cd9c7f880baba82196a7765f727ac05a993c95
-    SOURCE_SUBDIR   build/cmake)
-
-FetchContent_Declare(freetype
-    URL             https://download.savannah.gnu.org/releases/freetype/freetype-2.12.1.tar.gz
-    URL_HASH        SHA256=efe71fd4b8246f1b0b1b9bfca13cfff1c9ad85930340c27df469733bbb620938)
-
-FetchContent_Declare(harfbuzz
-    URL             https://github.com/harfbuzz/harfbuzz/releases/download/5.3.1/harfbuzz-5.3.1.tar.xz
-    URL_HASH        SHA256=4a6ce097b75a8121facc4ba83b5b083bfec657f45b003cd5a3424f2ae6b4434d)
-
-FetchContent_Declare(openal
-    URL             https://openal-soft.org/openal-releases/openal-soft-1.22.2.tar.bz2
-    URL_HASH        SHA256=ae94cc95cda76b7cc6e92e38c2531af82148e76d3d88ce996e2928a1ea7c3d20)
-
-FetchContent_Declare(libogg
-    URL             https://downloads.xiph.org/releases/ogg/libogg-1.3.5.tar.gz
-    URL_HASH        SHA256=0eb4b4b9420a0f51db142ba3f9c64b333f826532dc0f48c6410ae51f4799b664)
-
-FetchContent_Declare(libvorbis
-    URL             https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.xz
-    URL_HASH        SHA256=b33cc4934322bcbf6efcbacf49e3ca01aadbea4114ec9589d1b1e9d20f72954b)
-
-#-------------------------------------------------------------------------------
 # Options
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
@@ -89,8 +34,8 @@ option(TQ_BUILD_EXAMPLES "Build examples" OFF)
 option(TQ_USE_HARFBUZZ "Enable HarfBuzz (recommended)" ON)
 option(TQ_USE_OGG "Enable Ogg Vorbis decoder" ON)
 
-if(TQ_LINUX)
-    option(TQ_USE_GLES2 "Force OpenGL ES 2.0 usage on Linux" OFF)
+if(UNIX)
+    option(TQ_USE_GLES2 "Force OpenGL ES 2.0 usage" OFF)
 endif()
 
 #-------------------------------------------------------------------------------
@@ -98,7 +43,7 @@ endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE YES)
 
 #-------------------------------------------------------------------------------
-# tq target
+# tq target and its dependencies
 
 add_library(tq
     "src/tq.c"
@@ -135,12 +80,10 @@ target_compile_definitions(tq
     PRIVATE
         TQ_BUILD
         $<$<BOOL:${BUILD_SHARED_LIBS}>:TQ_SHARED>
-        $<$<BOOL:${TQ_UNIX}>:TQ_UNIX>
-        $<$<BOOL:${TQ_LINUX}>:TQ_LINUX>
-        $<$<BOOL:${TQ_WIN32}>:TQ_WIN32>
-        $<$<BOOL:${TQ_EMSCRIPTEN}>:TQ_EMSCRIPTEN>
-        $<$<BOOL:${TQ_ANDROID}>:TQ_ANDROID>
-        $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+        $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
+        $<$<BOOL:${TQ_USE_HARFBUZZ}>:TQ_USE_HARFBUZZ>
+        $<$<BOOL:${TQ_USE_OGG}>:TQ_USE_OGG>
+        $<$<BOOL:${TQ_USE_GLES2}>:TQ_USE_GLES2>)
 
 if(NOT MSVC)
     target_compile_options(tq
@@ -159,73 +102,70 @@ target_include_directories(tq
     PRIVATE
         third-party)
 
-#-------------------------------------------------------------------------------
-# Dependencies
-
-#-----------------------------------------------------------
-# Standard math library
+include(FetchContent)
 
 find_library(MATH_LIB NAMES m)
-
-if(MATH_LIB)
-    target_link_libraries(tq PUBLIC ${MATH_LIB})
-endif()
-
-#-----------------------------------------------------------
-# Threads
-
 find_package(Threads MODULE REQUIRED)
-target_link_libraries(tq PRIVATE Threads::Threads)
+find_package(Freetype 2.6)
 
-#-----------------------------------------------------------
-# SDL 2
+if(NOT FREETYPE_FOUND)
+    FetchContent_Declare(freetype
+        URL https://download.savannah.gnu.org/releases/freetype/freetype-2.12.1.tar.gz
+        URL_HASH SHA256=efe71fd4b8246f1b0b1b9bfca13cfff1c9ad85930340c27df469733bbb620938)
+    FetchContent_MakeAvailable(freetype)
 
-if(TQ_UNIX OR TQ_EMSCRIPTEN)
-    find_package(SDL2 CONFIG)
+    add_library(Freetype::Freetype ALIAS freetype)
+endif()
 
-    if(NOT SDL2_FOUND)
-        FetchContent_MakeAvailable(sdl2)
+if(TQ_USE_HARFBUZZ)
+    find_package(harfbuzz)
+
+    if(NOT harfbuzz_FOUND)
+        set(HB_HAVE_FREETYPE ON CACHE INTERNAL "Enable FreeType for Harfbuzz")
+        set(HB_BUILD_SUBSET OFF CACHE INTERNAL "Build hb-subset")
+
+        FetchContent_Declare(harfbuzz
+            URL https://github.com/harfbuzz/harfbuzz/releases/download/5.3.1/harfbuzz-5.3.1.tar.xz
+            URL_HASH SHA256=4a6ce097b75a8121facc4ba83b5b083bfec657f45b003cd5a3424f2ae6b4434d)
+        FetchContent_MakeAvailable(harfbuzz)
+
+        add_library(harfbuzz::harfbuzz ALIAS harfbuzz)
     endif()
-
-    target_link_libraries(tq PRIVATE SDL2::SDL2)
 endif()
 
-#-----------------------------------------------------------
-# Android system libraries
+if(TQ_USE_OGG)
+    # libogg is a transient dependency of libvorbis.
 
-if(TQ_ANDROID)
-    target_link_libraries(tq PRIVATE android log)
+    FetchContent_Declare(libogg
+        URL https://downloads.xiph.org/releases/ogg/libogg-1.3.5.tar.gz
+        URL_HASH SHA256=0eb4b4b9420a0f51db142ba3f9c64b333f826532dc0f48c6410ae51f4799b664)
+    FetchContent_MakeAvailable(libogg)
+
+    set(OGG_INCLUDE_DIR ${libogg_SOURCE_DIR}/include ${libogg_BINARY_DIR}/include)
+    set(OGG_LIBRARY $<TARGET_FILE:ogg>)
+
+    FetchContent_Declare(libvorbis
+        URL https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.xz
+        URL_HASH SHA256=b33cc4934322bcbf6efcbacf49e3ca01aadbea4114ec9589d1b1e9d20f72954b)
+    FetchContent_MakeAvailable(libvorbis)
 endif()
 
-#-----------------------------------------------------------
-# OpenGL / OpenGL ES
-
-if(TQ_EMSCRIPTEN)
-    target_link_options(tq PUBLIC -sFULL_ES2=1 -sFULL_ES3=1)
-elseif(TQ_ANDROID)
-    target_link_libraries(tq PRIVATE GLESv2 EGL)
-else()
+if(WIN32 OR UNIX)
     find_package(OpenGL REQUIRED)
-    target_link_libraries(tq PRIVATE OpenGL::GL)
-
-    if(TQ_USE_GLES2)
-        target_compile_definitions(tq PRIVATE TQ_USE_GLES2)
-        target_link_libraries(tq PRIVATE GLESv2) # should be ok?
-    endif()
-endif()
-
-#-----------------------------------------------------------
-# GLEW
-
-if(TQ_UNIX OR TQ_WIN32)
     find_package(GLEW)
+    find_package(OpenAL)
 
     if(GLEW_FOUND)
         add_library(GLEW INTERFACE)
         target_include_directories(GLEW INTERFACE ${GLEW_INCLUDE_DIRS})
         target_link_libraries(GLEW INTERFACE ${GLEW_LIBRARIES})
     else()
-        set(BUILD_UTILS OFF CACHE INTERNAL "...")
+        set(BUILD_UTILS OFF CACHE INTERNAL "Build GLEW utils")
+
+        FetchContent_Declare(glew
+            URL https://downloads.sourceforge.net/project/glew/glew/2.1.0/glew-2.1.0.tgz
+            URL_HASH SHA256=04de91e7e6763039bc11940095cd9c7f880baba82196a7765f727ac05a993c95
+            SOURCE_SUBDIR build/cmake)
         FetchContent_MakeAvailable(glew)
 
         add_library(GLEW INTERFACE)
@@ -233,71 +173,65 @@ if(TQ_UNIX OR TQ_WIN32)
         target_link_libraries(GLEW INTERFACE glew_s)
     endif()
 
-    target_link_libraries(tq PRIVATE GLEW)
-endif()
-
-#-----------------------------------------------------------
-# FreeType
-
-find_package(Freetype 2.6)
-
-if(NOT FREETYPE_FOUND)
-    FetchContent_MakeAvailable(freetype)
-    add_library(Freetype::Freetype ALIAS freetype)
-endif()
-
-target_link_libraries(tq PRIVATE Freetype::Freetype)
-
-#-----------------------------------------------------------
-# HarfBuzz
-
-if(TQ_USE_HARFBUZZ)
-    find_package(harfbuzz)
-
-    if(NOT harfbuzz_FOUND)
-        set(HB_BUILD_SUBSET OFF CACHE INTERNAL "...")
-        FetchContent_MakeAvailable(harfbuzz)
-        add_library(harfbuzz::harfbuzz ALIAS harfbuzz)
-    endif()
-
-    target_link_libraries(tq PRIVATE harfbuzz::harfbuzz)
-    target_compile_definitions(tq PRIVATE TQ_USE_HARFBUZZ)
-endif()
-
-#-----------------------------------------------------------
-# OpenAL
-
-if(TQ_UNIX OR TQ_WIN32)
-    find_package(OpenAL)
-
     if(OPENAL_FOUND)
         add_library(OpenAL INTERFACE)
         target_include_directories(OpenAL INTERFACE ${OPENAL_INCLUDE_DIR})
         target_link_libraries(OpenAL INTERFACE ${OPENAL_LIBRARY})
     else()
-        set(ALSOFT_UTILS OFF CACHE INTERNAL "...")
-        set(ALSOFT_EXAMPLES OFF CACHE INTERNAL "...")
+        set(ALSOFT_UTILS OFF CACHE INTERNAL "Enable OpenAL utils")
+        set(ALSOFT_EXAMPLES OFF CACHE INTERNAL "Enable OpenAL examples")
+
+        FetchContent_Declare(openal
+            URL https://openal-soft.org/openal-releases/openal-soft-1.22.2.tar.bz2
+            URL_HASH SHA256=ae94cc95cda76b7cc6e92e38c2531af82148e76d3d88ce996e2928a1ea7c3d20)
         FetchContent_MakeAvailable(openal)
     endif()
-
-    target_link_libraries(tq PRIVATE OpenAL)    
 endif()
 
-#-----------------------------------------------------------
-# Vorbis
+target_link_libraries(tq
+    PUBLIC
+        ${MATH_LIB}
+    PRIVATE
+        Threads::Threads
+        Freetype::Freetype
+        $<$<BOOL:${TQ_USE_HARFBUZZ}>:harfbuzz::harfbuzz>
+        $<$<BOOL:${TQ_USE_OGG}>:vorbisfile>)
 
-if(TQ_USE_OGG)
-    # libogg is a transient dependency of libvorbis.
+if(WIN32)
+    target_compile_definitions(tq PRIVATE TQ_WIN32)
+    target_link_libraries(tq PRIVATE Threads::Threads OpenGL::GL GLEW OpenAL)
+elseif(EMSCRIPTEN)
+    target_compile_definitions(tq PRIVATE TQ_EMSCRIPTEN)
+    target_link_options(tq PUBLIC -sUSE_SDL2=1 -sFULL_ES2=1 -sFULL_ES3=1)
+elseif(ANDROID)
+    target_compile_definitions(tq PRIVATE TQ_ANDROID)
+    target_link_libraries(tq PRIVATE android log GLESv2 EGL)
+elseif(UNIX)
+    find_package(SDL2)
 
-    FetchContent_MakeAvailable(libogg)
+    if(NOT SDL2_FOUND)
+        FetchContent_Declare(sdl2
+            URL https://github.com/libsdl-org/SDL/releases/download/release-2.26.1/SDL2-2.26.1.tar.gz
+            URL_HASH SHA256=02537cc7ebd74071631038b237ec4bfbb3f4830ba019e569434da33f42373e04)
+        FetchContent_MakeAvailable(sdl2)
+    endif()
 
-    set(OGG_INCLUDE_DIR ${libogg_SOURCE_DIR}/include ${libogg_BINARY_DIR}/include)
-    set(OGG_LIBRARY $<TARGET_FILE:ogg>)
+    target_compile_definitions(tq PRIVATE TQ_UNIX)
 
-    FetchContent_MakeAvailable(libvorbis)
+    if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+        target_compile_definitions(tq PRIVATE TQ_LINUX)
+    endif()
 
-    target_compile_definitions(tq PRIVATE TQ_USE_OGG)
-    target_link_libraries(tq PRIVATE vorbisfile)
+    target_link_libraries(tq
+        PRIVATE
+            Threads::Threads
+            SDL2::SDL2
+            OpenGL::GL
+            $<$<BOOL:${TQ_USE_GLES2}>:GLESv2>
+            GLEW
+            OpenAL)
+else()
+    message(FATAL_ERROR "Sorry, but your platform is out of luck.")
 endif()
 
 #-----------------------------------------------------------
@@ -312,7 +246,7 @@ endif()
 #-----------------------------------------------------------
 # WinMain handler
 
-if(TQ_WIN32)
+if(WIN32)
     if(BUILD_SHARED_LIBS)
         add_library(tq-main STATIC "src/tq_win32_system.c")
         target_compile_definitions(tq-main PRIVATE TQ_WIN32)
@@ -325,11 +259,7 @@ endif()
 #-------------------------------------------------------------------------------
 # Examples
 
-if(EMSCRIPTEN)
-    set(CMAKE_EXECUTABLE_SUFFIX ".html")
-    set(EXAMPLES
-        "emscripten")
-else()
+if(TQ_BUILD_EXAMPLES)
     set(EXAMPLES
         "audio-music"
         "core-hello"
@@ -339,15 +269,17 @@ else()
         "graphics-surfaces"
         "graphics-text"
         "graphics-blend")
-endif()
 
-if(TQ_BUILD_EXAMPLES)
     # Copy assets to build directory
     # TODO: move assets directory to examples/assets
     add_custom_command(TARGET tq POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/assets
             $<TARGET_FILE_DIR:tq>/assets)
+
+    if(EMSCRIPTEN)
+        set(CMAKE_EXECUTABLE_SUFFIX ".html")
+    endif()
 
     foreach(EXAMPLE ${EXAMPLES})
         add_executable(${EXAMPLE} "examples/${EXAMPLE}.c")
