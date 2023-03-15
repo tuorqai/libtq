@@ -190,22 +190,23 @@ endif()
 
 target_link_libraries(tq
     PUBLIC
-        ${MATH_LIB}
+        $<$<BOOL:${MATH_LIB}>:${MATH_LIB}>
     PRIVATE
         Threads::Threads
         Freetype::Freetype
         $<$<BOOL:${TQ_USE_HARFBUZZ}>:harfbuzz::harfbuzz>
         $<$<BOOL:${TQ_USE_OGG}>:vorbisfile>)
 
-if(WIN32)
-    target_compile_definitions(tq PRIVATE TQ_WIN32)
-    target_link_libraries(tq PRIVATE Threads::Threads OpenGL::GL GLEW OpenAL)
-elseif(EMSCRIPTEN)
+if(EMSCRIPTEN)
     target_compile_definitions(tq PRIVATE TQ_EMSCRIPTEN)
-    target_link_options(tq PUBLIC -sUSE_SDL2=1 -sFULL_ES2=1 -sFULL_ES3=1)
+    target_compile_options(tq PUBLIC -sUSE_SDL=2)
+    target_link_options(tq PUBLIC -sUSE_SDL=2 -sFULL_ES2=1 -sFULL_ES3=1)
 elseif(ANDROID)
     target_compile_definitions(tq PRIVATE TQ_ANDROID)
     target_link_libraries(tq PRIVATE android log GLESv2 EGL)
+elseif(WIN32)
+    target_compile_definitions(tq PRIVATE TQ_WIN32)
+    target_link_libraries(tq PRIVATE Threads::Threads OpenGL::GL GLEW OpenAL)
 elseif(UNIX)
     find_package(SDL2)
 
