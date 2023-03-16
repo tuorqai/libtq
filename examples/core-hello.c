@@ -8,6 +8,15 @@
 // This example shows some basic usage of tq library.
 //------------------------------------------------------------------------------
 
+static void loop(void)
+{
+    // Clear the screen using background color we set earlier.
+    tq_clear();
+
+    // Draw yellowish circle.
+    tq_outline_circle((tq_vec2f) {256, 256}, 100);
+}
+
 int main(int argc, char *argv[])
 {
     // Set initial display size.
@@ -23,10 +32,6 @@ int main(int argc, char *argv[])
     // your application will be terminated.
     tq_initialize();
 
-    // Use standard atexit() function to call tq_terminate()
-    // when your program ends.
-    atexit(tq_terminate);
-
     // Set background color (used by tq_clear()).
     tq_set_clear_color((tq_color) {0, 0, 30, 255});
 
@@ -34,19 +39,9 @@ int main(int argc, char *argv[])
     // such as rectangles and circles).
     tq_set_outline_color((tq_color) {180, 180, 0, 255});
 
-    // tq_process() will return `false` in two cases only:
-    // either when the user wants to exit or when some serious
-    // error happens.
-    // Otherwise, it will return `true`.
-    // This function should be called every frame, since it does
-    // a lot of things under the hood.
-    while (tq_process()) {
-        // Clear the screen using background color we set earlier.
-        tq_clear();
-
-        // Draw yellowish circle.
-        tq_outline_circle((tq_vec2f) {256, 256}, 100);
-    }
+    // Give control to the library. This function never returns.
+    // loop() will be called every frame until application exits.
+    tq_run(loop);
 
     // As a result, you should see a square window with a yellow circle
     // on the center.

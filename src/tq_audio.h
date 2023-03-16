@@ -51,7 +51,7 @@ typedef struct tq_audio_impl
 
 //------------------------------------------------------------------------------
 
-#if defined(TQ_WIN32) || defined(TQ_LINUX)
+#if defined(TQ_WIN32) || defined(TQ_LINUX) || defined(TQ_EMSCRIPTEN)
     void tq_construct_al_audio(tq_audio_impl *impl);
 #endif
 

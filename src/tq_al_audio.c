@@ -18,14 +18,19 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#if defined(TQ_WIN32) || defined(TQ_LINUX)
+#if defined(TQ_WIN32) || defined(TQ_LINUX) || defined(TQ_EMSCRIPTEN)
 
 //------------------------------------------------------------------------------
 
 #include <string.h>
 
-#include <al.h>
-#include <alc.h>
+#if defined(__EMSCRIPTEN__)
+#   include <AL/al.h>
+#   include <AL/alc.h>
+#else
+#   include <al.h>
+#   include <alc.h>
+#endif
 
 #include "tq_audio.h"
 #include "tq_core.h"

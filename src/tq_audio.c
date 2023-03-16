@@ -79,7 +79,7 @@ static int open_music(libtq_stream *stream)
 
 void tq_initialize_audio(void)
 {
-#if defined(TQ_WIN32) || defined(TQ_LINUX)
+#if defined(TQ_WIN32) || defined(TQ_LINUX) || defined(TQ_EMSCRIPTEN)
     tq_construct_al_audio(&priv.impl);
 #else
     tq_construct_null_audio(&priv.impl);

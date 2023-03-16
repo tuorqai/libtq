@@ -8,12 +8,13 @@
 // In this example we demonstrate how tq library handles music.
 //------------------------------------------------------------------------------
 
-tq_channel music_channel = { -1 };
+static tq_channel music_channel = { -1 };
+static float rotation = 0.0f;
 
 // Key press callback.
 // Use this to handle key presses. Here we use it to pause the music if
 // SPACE key is pressed.
-void on_key_pressed(tq_key key)
+static void on_key_pressed(tq_key key)
 {
     if (key == TQ_KEY_SPACE) {
         // Use this function to find out if the channel is playing or not.
@@ -28,6 +29,31 @@ void on_key_pressed(tq_key key)
     }
 }
 
+// Main loop callback.
+// In the main loop, we will draw rotating rectangle.
+// It will rotate only if the music plays.
+static void loop(void)
+{
+    // We also will scale the rectangle back and forth.
+    float scale = 1.0f + (0.25f * sinf(2.0f * tq_get_time_mediump()));
+
+    tq_channel_state state = tq_get_channel_state(music_channel);
+
+    if (state == TQ_CHANNEL_PLAYING) {
+        // 45 degrees per second
+        rotation += 45.0f * (float) tq_get_delta_time();
+    }
+
+    tq_clear();
+
+    tq_push_matrix();
+        tq_translate_matrix((tq_vec2f) {256, 256});
+        tq_scale_matrix((tq_vec2f) {scale, scale});
+        tq_rotate_matrix(rotation);
+        tq_outline_rectangle((tq_rectf) {-64, -64, 128, 128});
+    tq_pop_matrix();
+}
+
 int main(int argc, char *argv[])
 {
     tq_set_display_size((tq_vec2i) {512, 512});
@@ -35,7 +61,6 @@ int main(int argc, char *argv[])
     tq_set_antialiasing_level(8);
 
     tq_initialize();
-    atexit(tq_terminate);
 
     // Set key press callback.
     tq_on_key_pressed(on_key_pressed);
@@ -46,31 +71,7 @@ int main(int argc, char *argv[])
     tq_music music = tq_open_music_from_file("assets/music/ostrich.ogg");
     music_channel = tq_play_music(music, -1);
 
-    // In the main loop, we will draw rotating rectangle.
-    // It will rotate only if the music plays.
-
-    float rotation = 0.0f;
-
-    while (tq_process()) {
-        // We also will scale the rectangle back and forth.
-        float scale = 1.0f + (0.25f * sinf(2.0f * tq_get_time_mediump()));
-    
-        tq_channel_state state = tq_get_channel_state(music_channel);
-
-        if (state == TQ_CHANNEL_PLAYING) {
-            // 45 degrees per second
-            rotation += 45.0f * (float) tq_get_delta_time();
-        }
-
-        tq_clear();
-
-        tq_push_matrix();
-            tq_translate_matrix((tq_vec2f) {256, 256});
-            tq_scale_matrix((tq_vec2f) {scale, scale});
-            tq_rotate_matrix(rotation);
-            tq_outline_rectangle((tq_rectf) {-64, -64, 128, 128});
-        tq_pop_matrix();
-    }
+    tq_run(loop);
 
     return 0;
 }
