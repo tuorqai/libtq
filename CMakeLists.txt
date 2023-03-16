@@ -42,6 +42,11 @@ endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE YES)
 
+if(EMSCRIPTEN)
+    add_compile_options(-pthread)
+    add_link_options(-pthread)
+endif()
+
 #-------------------------------------------------------------------------------
 # tq target and its dependencies
 
