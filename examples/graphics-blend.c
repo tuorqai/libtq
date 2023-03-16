@@ -36,6 +36,8 @@ int main(int argc, char *argv[])
 
     tq_initialize();
 
+    tq_set_clear_color((tq_color) { 0, 0, 0, 255 });
+
     field = tq_load_texture_from_file("assets/textures/field.png");
     glow = tq_load_texture_from_file("assets/textures/glow.png");
     mask = tq_create_surface((tq_vec2i) {512, 512});
