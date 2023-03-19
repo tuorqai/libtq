@@ -347,7 +347,7 @@ bool check_gl_ext(char const *name)
 
 //------------------------------------------------------------------------------
 
-LRESULT wndproc(HWND window, UINT msg, WPARAM wp, LPARAM lp)
+LRESULT CALLBACK wndproc(HWND window, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
     case WM_CREATE:
